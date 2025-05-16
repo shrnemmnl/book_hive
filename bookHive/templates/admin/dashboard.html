@@ -1,0 +1,62 @@
+{% extends "admin/admin_base.html" %}
+{% block heading %}
+<h2>{{heading.name}}</h2>
+{% endblock heading %}
+{% block content %}
+            <div class="row my-4">
+                {% if messages %}
+    <div class="container mt-3">
+        {% for message in messages %}
+            <div class="alert alert-success text-center" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Users</h5>
+                            <h3>40,689</h3>
+                            <p class="text-success">8.5% Up from last month</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Orders</h5>
+                            <h3>10,293</h3>
+                            <p class="text-success">1.3% Up from last month</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Sales</h5>
+                            <h3>$89,000</h3>
+                            <p class="text-danger">4.3% Down from last month</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary">Today</button>
+                <button class="btn btn-success">Week</button>
+                <button class="btn btn-purple">Month</button>
+            </div>
+
+            <div class="my-4">
+                <h5>Sales Report :</h5>
+                <div class="d-flex gap-2">
+                    <input type="date" class="form-control" placeholder="Start Date">
+                    <input type="date" class="form-control" placeholder="End Date">
+                    <button class="btn btn-dark">Apply Range</button>
+                    <button class="btn btn-primary">Download PDF</button>
+                </div>
+            </div>
+        </div>
+{% endblock  %}

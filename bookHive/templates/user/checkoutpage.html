@@ -1,0 +1,451 @@
+{% load static %}
+<!-- Header Placeholder - This will include your header component -->
+{% include 'includes/header.html' %}
+
+<!-- Checkout Section -->
+<section class="checkout-section py-5">
+  <div class="container">
+    <!-- Checkout Header with Progress -->
+    <div class="checkout-progress mb-5">
+      <div class="row justify-content-center">
+        <div class="col-lg-10">
+          <div class="progress-container d-flex justify-content-between position-relative">
+            <div class="progress-bar-bg"></div>
+            <div class="progress-step active">
+              <div class="step-icon">
+                <i class="bi bi-cart-check"></i>
+              </div>
+              <div class="step-label">Cart</div>
+            </div>
+            <div class="progress-step active">
+              <div class="step-icon">
+                <i class="bi bi-credit-card"></i>
+              </div>
+              <div class="step-label">Checkout</div>
+            </div>
+            <div class="progress-step">
+              <div class="step-icon">
+                <i class="bi bi-check-circle"></i>
+              </div>
+              <div class="step-label">Confirmation</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Checkout Form -->
+      <div class="col-lg-8 mb-4 mb-lg-0">
+        <div class="checkout-form bg-white p-4 shadow-sm rounded">
+          <!-- Shipping Information -->
+          <div class="checkout-section mb-4">
+            <h4 class="section-title">
+              <span class="section-number">1</span> Shipping Information
+            </h4>
+
+            <!-- Saved Addresses -->
+            <div class="saved-addresses mb-4 py-4 px-3"
+              style="background-color: #f9f9f9; border-radius: 10px; min-height: 300px;">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Select a saved address</h6>
+                <a href="{% url 'user_address' %}" class="btn btn-sm btn-outline-primary"
+                  data-bs-target="#addAddressModal">
+                  <i class="bi bi-plus-lg me-1"></i> Add New
+                </a>
+              </div>
+
+              <form method="POST">
+                {% csrf_token %}
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    {% for address in addresss %}
+                    <div class="address-card border rounded p-3 mb-3 {% if forloop.first %}active{% endif %}"
+                      style="min-height: 140px; display: flex; flex-direction: column; justify-content: space-between;">
+                      <div class="form-check mb-3">
+                        <input class="form-check-input me-2" type="radio" name="shippingAddress"
+                          id="address{{ forloop.counter }}" value="{{ address.id }}" {% if forloop.first %}checked{%
+                          endif %}>
+                        <label class="form-check-label fw-bold fs-5" for="address{{ forloop.counter }}">
+                          {{ address.address_type|title }}
+                        </label>
+                      </div>
+
+                      <p class="address-details mb-2" style="font-size: 0.875rem; color: #555;">
+                        {{ address.name }}<br>
+                        {{ address.street }}<br>
+                        {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
+                        Phone: {{ address.phone }}
+                      </p>
+                    </div>
+                    {% empty %}
+                    <p>No saved addresses found.</p>
+                    {% endfor %}
+                  </div>
+                </div>
+
+            </div>
+
+
+            <!-- Payment Information -->
+            <div class="checkout-section mb-4 py-4 px-3"
+              style="background-color: #f9f9f9; border-radius: 10px; min-height: 250px;">
+              <h4 class="section-title mb-4">
+                <span class="section-number">2</span> Payment Method
+              </h4>
+
+              {% comment %} <form method="post" action="{% url 'checkoutpage' %}"> {% endcomment %}
+                {% csrf_token %}
+
+                <!-- Razorpay -->
+                <div class="form-check mb-3 d-flex align-items-center" style="height: 60px;">
+                  <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentPayPal"
+                    value="paypal" required>
+                  <label class="form-check-label fs-5" for="paymentPayPal">
+                    <i class="bi bi-paypal me-2"></i> Razorpay
+                  </label>
+                </div>
+
+                <!-- Wallet -->
+                <div class="form-check mb-3 d-flex align-items-center" style="height: 60px;">
+                  <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentWallet"
+                    value="wallet">
+                  <label class="form-check-label fs-5" for="paymentWallet">
+                    <i class="bi bi-wallet2 me-2"></i> Wallet
+                  </label>
+                </div>
+
+                <!-- Cash on Delivery -->
+                <div class="form-check mb-3 d-flex align-items-center" style="height: 60px;">
+                  <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentCOD" value="cod">
+                  <label class="form-check-label fs-5" for="paymentCOD">
+                    <i class="bi bi-cash-coin me-2"></i> Cash on Delivery (COD)
+                  </label>
+                </div>
+                <hr class="my-4">
+
+
+
+
+                <!-- Order Summary -->
+                <div class="col-lg-4">
+                  <div class="order-summary bg-white p-4 shadow-sm rounded mb-4">
+                    <h4 class="mb-4">Order Summary</h4>
+
+                    <!-- Cart Items -->
+                    <div class="cart-items mb-4">
+                      {% for item in cart_items %}
+                      <div class="card mb-3">
+                        <div class="card-body">
+                          <div class="row align-items-center">
+                            <div class="col-md-2">
+                              <img src="{{ item.product_variant.product.image.url }}" alt="Book Cover"
+                                class="img-fluid" />
+                            </div>
+                            <div class="col-md-10">
+                              <h5 class=" mb-1">{{ item.product_variant.product.book_title }}</h5>
+
+                            </div>
+
+
+
+                          </div>
+                        </div>
+                      </div>
+                      {% empty %}
+                      <p>Your cart is empty.</p>
+                      {% endfor %}
+
+                    </div>
+
+                    <hr class="my-3">
+
+                    <!-- Order Totals -->
+                    <div class="order-totals">
+                      <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>{{subtotal}}</span>
+                      </div>
+                      <div class="d-flex justify-content-between mb-2">
+                        <span>Shipping</span>
+                        <span>Free</span>
+                      </div>
+                      {% comment %} <div class="d-flex justify-content-between mb-2">
+                        <span>Tax</span>
+                        <span>$14.97</span>
+                      </div>
+                      <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Discount (WELCOME10)</span>
+                        <span>-$18.00</span>
+                      </div> {% endcomment %}
+                      <input type="hidden" name="total_amount" value={{total}}>
+                      <hr class="my-2">
+                      <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fw-bold">Total</span>
+                        <span class="total-price h5 mb-0">{{total}}</span>
+                      </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-3">
+                      Complete Order
+                    </button>
+
+              </form>
+              <div class="text-center mt-3">
+                <small class="text-muted">
+                  By placing your order, you agree to our
+                  <a href="#" class="text-decoration-none">Terms of Service</a> and
+                  <a href="#" class="text-decoration-none">Privacy Policy</a>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+</section>
+
+<!-- Footer Placeholder - This will include your footer component -->
+{% include 'includes/footer.html' %}
+
+<style>
+  /* Checkout Progress Bar */
+  .checkout-progress {
+    padding: 20px 0;
+  }
+
+  .progress-container {
+    padding: 10px 0 30px;
+  }
+
+  .progress-bar-bg {
+    position: absolute;
+    top: 24px;
+    left: 50px;
+    right: 50px;
+    height: 2px;
+    background-color: #e9ecef;
+    z-index: 0;
+  }
+
+  .progress-step {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    width: 33.333%;
+  }
+
+  .progress-step .step-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background-color: #fff;
+    border: 2px solid #e9ecef;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    font-size: 20px;
+    color: #adb5bd;
+    transition: all 0.3s ease;
+  }
+
+  .progress-step .step-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #adb5bd;
+    transition: all 0.3s ease;
+  }
+
+  .progress-step.active .step-icon {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+    color: #0d6efd;
+  }
+
+  .progress-step.active .step-label {
+    color: #0d6efd;
+    font-weight: 600;
+  }
+
+  /* Section Styling */
+  .section-title {
+    font-size: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+  }
+
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 50%;
+    font-size: 16px;
+    margin-right: 10px;
+  }
+
+  /* Address Card Styling */
+  .address-card {
+    height: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .address-card:hover {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 1px #0d6efd;
+  }
+
+  .address-card.active {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 1px #0d6efd;
+    background-color: #f8f9fa;
+  }
+
+  .address-details {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Shipping Method Styling */
+  .shipping-option {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .shipping-option:hover {
+    border-color: #0d6efd !important;
+    background-color: #f8f9fa;
+  }
+
+  .shipping-option .form-check-input:checked~.form-check-label {
+    font-weight: 500;
+  }
+
+  .shipping-price {
+    font-weight: 500;
+  }
+
+  /* Order Summary */
+  .cart-item {
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #f1f1f1;
+  }
+
+  .cart-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .total-price {
+    color: #0d6efd;
+    font-weight: 600;
+  }
+
+  /* Payment Methods */
+  .payment-icon img {
+    filter: grayscale(100%);
+    opacity: 0.7;
+    transition: all 0.2s ease;
+  }
+
+  .payment-icon:hover img {
+    filter: grayscale(0%);
+    opacity: 1;
+  }
+
+  .btn-paypal {
+    background-color: #0070ba;
+    border-color: #0070ba;
+  }
+
+  .btn-paypal:hover {
+    background-color: #005ea6;
+    border-color: #005ea6;
+  }
+
+  /* Ensure Order Summary stays on the right */
+  @media (min-width: 992px) {
+    .col-lg-4 {
+      position: relative;
+      min-height: 1px;
+    }
+
+    .order-summary {
+      position: sticky;
+      top: 20px;
+    }
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 991px) {
+    .order-summary {
+      margin-top: 20px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .progress-container {
+      padding-bottom: 20px;
+    }
+
+    .progress-bar-bg {
+      left: 30px;
+      right: 30px;
+      top: 20px;
+    }
+
+    .progress-step .step-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 16px;
+    }
+
+    .progress-step .step-label {
+      font-size: 12px;
+    }
+  }
+</style>
+
+<script>
+  // Initialize tooltips
+  document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Handle "Same as shipping" checkbox
+    const sameAsShippingCheckbox = document.getElementById('sameAsShipping');
+    const billingAddressForm = document.getElementById('billingAddressForm');
+
+    if (sameAsShippingCheckbox && billingAddressForm) {
+      sameAsShippingCheckbox.addEventListener('change', function () {
+        if (this.checked) {
+          billingAddressForm.classList.add('d-none');
+        } else {
+          billingAddressForm.classList.remove('d-none');
+        }
+      });
+    }
+
+    // Address card selection
+    const addressCards = document.querySelectorAll('.address-card');
+    addressCards.forEach(card => {
+      card.addEventListener('click', function () {
+        const radioInput = this.querySelector('input[type="radio"]');
+        radioInput.checked = true;
+
+        // Update active state
+        addressCards.forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+  });
+</script>

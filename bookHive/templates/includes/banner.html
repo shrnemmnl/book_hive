@@ -1,0 +1,176 @@
+{% load static %}
+<!-- HERO BANNER COMPONENT -->
+<section id="home" class="hero-section position-relative">
+  <!-- Main Banner -->
+  <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+    </div>
+    
+    <div class="carousel-inner">
+      <!-- Slide 1 -->
+      <div class="carousel-item active">
+        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('{% static 'images/main-banner1.jpg' %}') center/cover no-repeat; height: 500px;">
+          <div class="container h-100">
+            <div class="row h-100 align-items-center">
+              <div class="col-lg-6">
+                <div class="hero-content text-white">
+                  <h1 class="display-4 fw-bold mb-4 animated fadeInDown">Discover Your Next Favorite Book</h1>
+                  <p class="lead mb-4 animated fadeInUp">Explore our curated collection of bestsellers, classics, and new releases at unbeatable prices.</p>
+                  <div class="animated fadeInUp delay-1">
+                    <a href="#library" class="btn btn-primary btn-lg me-2">Explore Now</a>
+                    <a href="#special-offer" class="btn btn-outline-light btn-lg">Special Offers</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Slide 2 -->
+      <div class="carousel-item">
+        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('{% static 'images/main-banner2.jpg' %}') center/cover no-repeat; height: 500px;">
+          <div class="container h-100">
+            <div class="row h-100 align-items-center">
+              <div class="col-lg-6 offset-lg-6">
+                <div class="hero-content text-white text-lg-end">
+                  <h1 class="display-4 fw-bold mb-4 animated fadeInDown">Summer Reading Collection</h1>
+                  <p class="lead mb-4 animated fadeInUp">Dive into our selection of beach reads and summer adventures.</p>
+                  <div class="animated fadeInUp delay-1">
+                    <a href="#" class="btn btn-primary btn-lg">Shop Collection</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Slide 3 -->
+      <div class="carousel-item">
+        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('{% static 'images/main-banner3.jpg' %}') center/cover no-repeat; height: 500px;">
+          <div class="container h-100">
+            <div class="row h-100 align-items-center">
+              <div class="col-lg-6">
+                <div class="hero-content text-white">
+                  <h1 class="display-4 fw-bold mb-4 animated fadeInDown">Books For Every Age</h1>
+                  <p class="lead mb-4 animated fadeInUp">From children's picture books to adult fiction, find the perfect read for everyone.</p>
+                  <div class="animated fadeInUp delay-1">
+                    <a href="#" class="btn btn-primary btn-lg">Browse Categories</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+  </div>
+  
+  <!-- Category Pills -->
+  <div class="category-pills py-3 bg-white border-bottom">
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <div class="category-scroll d-flex overflow-auto pb-2">
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Fiction</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Non-Fiction</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Mystery</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Science Fiction</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Romance</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Children's</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Biography</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">History</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Self-Help</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Cooking</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+/* Add some custom styles for the hero section */
+.hero-section {
+  margin-bottom: 30px;
+}
+
+.hero-slide {
+  position: relative;
+}
+
+.hero-content {
+  padding: 20px;
+  border-radius: 10px;
+}
+
+/* Animations for the hero content */
+.animated {
+  animation-duration: 1s;
+}
+
+.fadeInDown {
+  animation-name: fadeInDown;
+}
+
+.fadeInUp {
+  animation-name: fadeInUp;
+}
+
+.delay-1 {
+  animation-delay: 0.3s;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Style for category pills */
+.category-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+
+.category-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.category-scroll::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+.category-scroll::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+</style>

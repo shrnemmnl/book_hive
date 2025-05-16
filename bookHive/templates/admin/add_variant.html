@@ -1,0 +1,73 @@
+{% extends "admin/admin_base.html" %}
+
+{% block heading %}
+<h2>Add Variant</h2>
+{% endblock heading %}
+
+{% block content %}
+<br>
+{% comment %} <nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url "books" %}">Books</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'add_variant' first_variant %}">Varient View</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Add Varient</li>
+  </ol>
+</nav> {% endcomment %}
+<br>
+<form id="addBookForm" method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+  
+  <input type="text" class="form-control" placeholder="Publisher" name="publisher" required /><br />
+  <input type="date" class="form-control" placeholder="Published Date" name="published_date" required /><br />
+  <input type="number" class="form-control" placeholder="Price" name="price" required /><br />
+  <input type="number" class="form-control" placeholder="Page" name="page" required /><br />
+  <input type="number" class="form-control" placeholder="Available Quantity" name="stock" required /><br />
+  <input type="text" class="form-control" placeholder="Language" name="language" required /><br />
+  <input type="file" class="form-control" placeholder="Image" name="image1" required /><br />
+  <input type="file" class="form-control" placeholder="Image" name="image2" required /><br />
+  <input type="file" class="form-control" placeholder="Image" name="image3" required /><br />
+  {% comment %} <select class="form-control" name="language" required>
+    <option value="" disabled selected>Select language</option>
+    <option value="" disabled selected></option>
+    <option value="" disabled selected>Select language</option> {% endcomment %}
+  <!-- Dropdown for Genre -->
+  {% comment %} <select class="form-control" name="genre_id" required>
+    <option value="" disabled selected>Select Genre</option>
+    {% for genre in all_genres %}
+    <option value="{{ genre.id }}">{{ genre.genre_name }}</option>
+    {% endfor %}
+    
+  </select><br /> {% endcomment %}
+
+  {% comment %} <input type="file" class="form-control" multiple required /><br /> {% endcomment %}
+  
+  <button type="submit" class="btn btn-primary w-100">Add</button>
+  <br>
+  <!-- Display Messages -->
+  {% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+    <div
+      class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3"
+      role="alert"
+    >
+      {{ message }}
+      <button
+        type="button"
+        class="btn-close"
+        data-bs-dismiss="alert"
+        aria-label="Close"
+      ></button>
+    </div>
+    {% endfor %}
+  </ul>
+  {% endif %} {% if redirect %}
+  <script>
+    setTimeout(function () {
+      window.location.href = "{{ redirect_url }}";
+    }, 2000); // 2000ms = 2 seconds
+  </script>
+  {% endif %}
+</form>
+
+{% endblock %}

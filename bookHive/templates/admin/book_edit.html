@@ -1,0 +1,104 @@
+{% extends "admin/admin_base.html" %} {% block heading %}
+<h2>Edit Book</h2>
+{% endblock heading %} {% block content %}
+<div class="container mt-4">
+  <!-- Form for Adding/Editing a Book -->
+  <div class="card mt-4">
+    <div class="card-header bg-primary text-white">
+      {% comment %}
+      <h5 class="mb-0">Edit Book</h5>
+      {% endcomment %}
+    </div>
+    <div class="card-body">
+      <form
+        method="POST"
+        action="{% url 'book_edit_post' %}"
+        enctype="multipart/form-data"
+      >
+        {% csrf_token %}
+
+        <input type="hidden" name="book_id" value="{{ book.id }}" />
+
+        <!-- Book Title -->
+        <div class="mb-3">
+          <label for="bookTitle" class="form-label">Book Title</label>
+          <input
+            type="text"
+            name="book_title"
+            value="{{ book.book_title }}"
+            id="bookTitle"
+            class="form-control"
+            required
+          />
+        </div>
+        <!-- Book Author -->
+        <div class="mb-3">
+          <label for="bookTitle" class="form-label">Book Author</label>
+          <input
+            type="text"
+            name="book_author"
+            value="{{ book.author }}"
+            class="form-control"
+            required
+          />
+        </div>
+        <input type="file" class="form-control" name="image" multiple  /><br />
+
+        <!-- Genre -->
+        <div class="mb-3">
+          <label for="bookGenre" class="form-label">Genre</label>
+          <select class="form-control" name="genre_id" required>
+            <option value="{{ book.genre.id }}">
+              {{ book.genre.genre_name }}
+            </option>
+            {% for genre in genres %}
+            <option value="{{ genre.id }}">{{ genre.genre_name }}</option>
+            {% endfor %}</select
+          ><br />
+        </div>
+        <!-- Dropdown for Genre -->
+        <!-- Book description -->
+        <div class="mb-3">
+          <label for="bookTitle" class="form-label">Book Description</label>
+          <textarea
+            type="text"
+            name="book_description"
+          
+            class="form-control"
+            required
+          >{{ book.description }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Book</button>
+
+        <!-- Display Messages -->
+        {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+          <div
+            class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3"
+            role="alert"
+          >
+            {{ message }}
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+          {% endfor %}
+        </ul>
+        {% endif %} {% if redirect %}
+        <script>
+          setTimeout(function () {
+            window.location.href = "{{ redirect_url }}";
+          }, 2000); // 2000ms = 2 seconds
+        </script>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}

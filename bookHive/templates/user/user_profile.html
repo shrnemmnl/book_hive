@@ -1,0 +1,101 @@
+{% load static %} {% include 'includes/header.html' %}
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Include sidebar -->
+    <div class="col-lg-3">{% include 'user/UserProfile/sidebar.html' %}</div>
+
+    <!-- Main Content Column -->
+    <div class="col-lg-9 py-5">
+      <div class="content-wrapper bg-white p-4 shadow-sm rounded">
+        <h4 class="mb-4">Personal Information</h4>
+        <form method="POST" >
+          {% csrf_token %}
+          <div class="row mb-3">
+            <div class="col-md-6 mb-3 mb-md-0">
+              <label for="firstName" class="form-label">First Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="firstName"
+                name="firstName"
+                value={{user.first_name}}
+              />
+            </div>
+            <div class="col-md-6">
+              <label for="lastName" class="form-label">Last Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="lastName"
+                name="lastName"
+                value={{user.last_name}}
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Email Address</label>
+            <input
+              type="email"
+              class="form-control"
+              id="email"
+              name="email"
+              value={{user.email}}
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="phone" class="form-label">Phone Number</label>
+            <input
+              type="tel"
+              class="form-control"
+              id="phone"
+              name="phone_no"
+              value={{user.phone_no}}
+            />
+          </div>
+          <div>
+            <button type="submit" class="btn btn-success">Save Changes</button>
+          </div>
+          
+        </form>     
+         {% comment %}********************************************  {% endcomment %}
+         {% comment %} <form>
+          <hr class="my-4" />
+
+          <h4 class="mb-4">Change Password</h4>
+          <div class="mb-3">
+            <label for="currentPassword" class="form-label"
+              >Current Password</label
+            >
+            <input type="password" class="form-control" id="currentPassword" />
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6 mb-3 mb-md-0">
+              <label for="newPassword" class="form-label">New Password</label>
+              <input type="password" class="form-control" id="newPassword" />
+            </div>
+            <div class="col-md-6">
+              <label for="confirmPassword" class="form-label"
+                >Confirm New Password</label
+              >
+              <input
+                type="password"
+                class="form-control"
+                id="confirmPassword"
+              />
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Change Password</button>
+          </div>
+        </form> {% endcomment %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% include 'includes/footer.html' %}

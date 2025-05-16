@@ -1,0 +1,25 @@
+{% include 'includes/header.html' %}
+<section id="featured-books" class="py-5 my-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+
+                <div class="section-header align-center">
+                    {% comment %} <div class="title">
+                        <span>Some quality items</span>
+                    </div> {% endcomment %}
+                    <h2 class="section-title">{% block page_heading%} {% endblock%}</h2>
+                </div>
+
+                <div class="product-list" data-aos="fade-up">
+                    {% block page_content %} {% endblock%}
+                </div><!--grid-->
+
+
+            </div><!--inner-content-->
+        </div>
+    </div>
+    
+</section>
+
+{% include 'includes/footer.html' %}

@@ -1,0 +1,117 @@
+{% load static %}
+{% include 'includes/header.html' %}
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Include sidebar -->
+    <div class="col-lg-3">
+      {% include 'user/UserProfile/sidebar.html' %}
+    </div>
+
+    <!-- Main Content Column -->
+    <div class="col-lg-9 py-5">
+      <div class="content-wrapper bg-white p-4 shadow-sm rounded">
+        <h4 class="mb-4">Customer Support</h4>
+
+        <div class="row mb-4">
+          <!-- Contact Us -->
+          <div class="col-md-6 mb-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h5 class="card-title mb-3">Contact Us</h5>
+                <ul class="list-unstyled">
+                  <li class="mb-2">
+                    <i class="bi bi-envelope me-2"></i>
+                    <strong>Email:</strong>
+                    <span class="text-primary">support@bookstore.com</span>
+                  </li>
+                  <li class="mb-2">
+                    <i class="bi bi-telephone me-2"></i>
+                    <strong>Phone:</strong>
+                    <span class="text-primary">+91 1800-123-4567</span>
+                  </li>
+                  <li>
+                    <i class="bi bi-clock me-2"></i>
+                    <strong>Hours:</strong>
+                    <span>Mon - Sat: 9:00 AM - 6:00 PM</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Help Center -->
+          <div class="col-md-6 mb-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h5 class="card-title mb-3">Help Center</h5>
+                <div class="list-group list-group-flush">
+                  <a href="#" class="list-group-item list-group-item-action">
+                    <i class="bi bi-question-circle me-2"></i> FAQs
+                  </a>
+                  <a href="#" class="list-group-item list-group-item-action">
+                    <i class="bi bi-truck me-2"></i> Shipping & Delivery
+                  </a>
+                  <a href="#" class="list-group-item list-group-item-action">
+                    <i class="bi bi-arrow-return-left me-2"></i> Returns & Refunds
+                  </a>
+                  <a href="#" class="list-group-item list-group-item-action">
+                    <i class="bi bi-shield-check me-2"></i> Privacy Policy
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Query Form -->
+        <h5 class="mb-3">Submit a Query</h5>
+        <div class="card">
+          <div class="card-body">
+            <form>
+              <div class="row mb-3">
+                <div class="col-md-6 mb-3">
+                  <label for="querySubject" class="form-label">Subject</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="querySubject"
+                    placeholder="Enter subject"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="queryCategory" class="form-label">Category</label>
+                  <select class="form-select" id="queryCategory">
+                    <option selected>Select category</option>
+                    <option>Order Related</option>
+                    <option>Payment Related</option>
+                    <option>Product Related</option>
+                    <option>Shipping Related</option>
+                    <option>Returns & Refunds</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="queryMessage" class="form-label">Message</label>
+                <textarea
+                  class="form-control"
+                  id="queryMessage"
+                  rows="4"
+                  placeholder="Describe your issue in detail"
+                ></textarea>
+              </div>
+              <div class="mb-3">
+                <label for="queryAttachment" class="form-label">Attachments (Optional)</label>
+                <input type="file" class="form-control" id="queryAttachment" />
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Submit Query</button>
+            </form>
+          </div>
+        </div>
+      </div> <!-- end content-wrapper -->
+    </div> <!-- end main content -->
+  </div> <!-- end row -->
+</div> <!-- end container -->
+
+{% include 'includes/footer.html' %}

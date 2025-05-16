@@ -1,0 +1,400 @@
+{% load static %}
+{% include 'includes/header.html' %}
+    
+{% block slider %}
+{% include "includes/banner.html" %}
+{% endblock slider %}
+    
+    <!-- PRODUCT LISTING COMPONENT WITH SIDEBAR -->
+    <section id="library" class="product-listing py-5">
+      <div class="container">
+        <div class="section-header text-center mb-5">
+          <h6 class="text-primary text-uppercase fw-bold">Our Collection</h6>
+          <h2 class="display-6 fw-bold">The Library</h2>
+          <div class="divider mx-auto my-2"></div>
+          <p class="text-muted">Discover books that will take you on incredible journeys</p>
+        </div>
+        
+        <div class="row">
+          <!-- Side Panel for Filters and Sorting -->
+          <div class="col-lg-3 mb-4 mb-lg-0">
+            <div class="filter-sidebar bg-white p-4 shadow-sm rounded">
+              <!-- Sorting Options -->
+              <div class="filter-section mb-4">
+                <h5 class="fw-bold mb-3">Sort Based On</h5>
+                <form id="sortForm">
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="sortOption" id="sortFeatured" value="featured" checked>
+                    <label class="form-check-label" for="sortFeatured">Featured</label>
+                  </div>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="sortOption" id="sortLowHigh" value="lh">
+                    <label class="form-check-label" for="sortLowHigh">Price: Low to High</label>
+                  </div>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="sortOption" id="sortHighLow" value="hl">
+                    <label class="form-check-label" for="sortHighLow">Price: High to Low</label>
+                  </div>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="sortOption" id="sortAZ" value="az">
+                    <label class="form-check-label" for="sortAZ">aA - zZ</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="sortOption" id="sortZA" value="za">
+                    <label class="form-check-label" for="sortZA">zZ - aA</label>
+                  </div>
+                </form>
+              </div>
+              
+              <!-- Genre Filter -->
+              <div class="filter-section mb-4">
+                <h5 class="fw-bold mb-3">Filter by Genre</h5>
+                <div class="genre-options">
+                  <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="genreAll" checked>
+                    <label class="form-check-label" for="genreAll">All Genres</label>
+                  </div>
+                  <div class="form-check mb-2">
+                    <input class="form-check-input genre-checkbox" type="checkbox" id="genreBusiness" value="Business & Management">
+                    <label class="form-check-label" for="genreBusiness">Business and Management</label>
+                  </div>
+                  
+                  
+                  <div class="form-check">
+                    <input class="form-check-input genre-checkbox" type="checkbox" id="genreSports" value="Sports">
+                    <label class="form-check-label" for="genreSports">Sports</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input genre-checkbox" type="checkbox" id="genreRomance" value="Romance">
+                    <label class="form-check-label" for="genreRomance">Romance</label>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Price Range Filter -->
+              <div class="filter-section mb-4">
+                <h5 class="fw-bold mb-3">Price Range</h5>
+                <div class="price-slider">
+                  <div class="range-slider">
+                    <input type="range" class="form-range" id="priceMin" min="0" max="2000" step="100" value="0">
+                    <input type="range" class="form-range" id="priceMax" min="0" max="2000" step="100" value="2000">
+                  </div>
+                  <div class="range-input d-flex align-items-center mt-3">
+                    <div class="input-group">
+                      <span class="input-group-text">₹</span>
+                      <input type="number" class="form-control" id="minPriceInput" value="0" min="0">
+                    </div>
+                    <div class="mx-2">-</div>
+                    <div class="input-group">
+                      <span class="input-group-text">₹</span>
+                      <input type="number" class="form-control" id="maxPriceInput" value="2000" min="0">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Apply Filters Button -->
+              <button id="applyFilters" class="btn btn-primary w-100">Apply Filters</button>
+            </div>
+          </div>
+          
+          <!-- Product Grid -->
+          <div class="col-lg-9">
+            <div class="product-grid">
+              <div class="row g-4">
+                {% for book in books %}
+                <div class="col-6 col-md-4 col-lg-4">
+                  <div class="product-card h-100 bg-white rounded overflow-hidden shadow-sm position-relative">
+                    {% if book.is_featured %}
+                    <div class="product-badge bg-primary text-white position-absolute py-1 px-2" style="top: 10px; left: 10px; font-size: 12px;">
+                      Featured
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Book Image -->
+                    <div class="product-img position-relative">
+                      <a href="{% url 'product_details' book.id %}">
+                        <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid w-100" style="height: 250px; object-fit: cover;">
+                      </a>
+                      <div class="product-actions position-absolute start-0 bottom-0 end-0 bg-white bg-opacity-75 d-flex justify-content-around py-2 translate-middle-y opacity-0">
+                        <a href="#" class="text-dark" title="Add to wishlist"><i class="bi bi-heart"></i></a>
+                        <a href="#" class="text-dark" title="Quick view"><i class="bi bi-eye"></i></a>
+                        <a href="#" class="text-dark" title="Add to cart"><i class="bi bi-cart-plus"></i></a>
+                      </div>
+                      
+                    </div>
+                    
+                    <!-- Book Info -->
+                    <div class="product-info p-3">
+                      <div class="product-category mb-1">
+                        <small class="text-muted">{{ book.category|default:"Fiction" }}</small>
+                      </div>
+                      <h3 class="product-title fs-6 fw-bold mb-1">
+                        <a href="{% url 'product_details' book.id %}" class="text-dark text-decoration-none">{{ book.book_title }}</a>
+                      </h3>
+                      <div class="product-author mb-2">
+                        <small>by <span class="text-muted">{{ book.author }}</span></small>
+                      </div>
+                      <div class="d-flex justify-content-between align-items-center">
+                        
+                        {% if book.min_price %}
+                        <div class="product-price fw-bold">₹{{ book.min_price }}</div>
+                        {% else %}
+                        <div class="product-price text-muted">Price Not Available</div>
+                        
+                        {% endif %}
+                        <div class="product-rating">
+                          <i class="bi bi-star-fill text-warning"></i>
+                          <span class="ms-1">{{ book.rating|default:"4.5" }}</span>
+                        </div>
+                      </div>
+                      
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination-wrapper mt-5">
+              <nav>
+                <ul class="pagination justify-content-center">
+                  <li class="page-item disabled"><a class="page-link" href="#"><i class="bi bi-chevron-left"></i></a></li>
+                  <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                  <li class="page-item"><a class="page-link" href="#">2</a></li>
+                  <li class="page-item"><a class="page-link" href="#">3</a></li>
+                  <li class="page-item"><a class="page-link" href="#"><i class="bi bi-chevron-right"></i></a></li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <style>
+    .product-listing .divider {
+      width: 50px;
+      height: 3px;
+      background-color: #0d6efd;
+    }
+    
+    .product-card {
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .product-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;
+    }
+    
+    .product-card:hover .product-actions {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .product-actions {
+      transition: all 0.3s ease;
+    }
+    
+    .product-title {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .filter-sidebar {
+      position: sticky;
+      top: 20px;
+    }
+    
+    .filter-section {
+      border-bottom: 1px solid #eee;
+      padding-bottom: 1.5rem;
+    }
+    
+    .filter-section:last-child {
+      border-bottom: none;
+    }
+    
+    @media (max-width: 991px) {
+      .filter-sidebar {
+        position: relative;
+        top: 0;
+      }
+    }
+    </style>
+    
+    <script>
+    // Sort functionality
+    document.querySelectorAll('input[name="sortOption"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.checked) {
+          let sortValue = this.value;
+          if (sortValue !== 'featured') {
+            window.location.href = `?sort=${sortValue}`;
+          } else {
+            window.location.href = window.location.pathname;
+          }
+        }
+      });
+    });
+    
+    // Handle "All Genres" checkbox
+    document.getElementById('genreAll').addEventListener('change', function() {
+      let isChecked = this.checked;
+      document.querySelectorAll('.genre-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+        checkbox.disabled = isChecked;
+      });
+    });
+    
+    document.querySelectorAll('.genre-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        if (this.checked) {
+          document.getElementById('genreAll').checked = false;
+        }
+        
+        // If no genre is selected, check "All Genres"
+        let anyGenreSelected = false;
+        document.querySelectorAll('.genre-checkbox').forEach(cb => {
+          if (cb.checked) anyGenreSelected = true;
+        });
+        
+        if (!anyGenreSelected) {
+          document.getElementById('genreAll').checked = true;
+        }
+      });
+    });
+    
+    // Price range slider
+    const priceMin = document.getElementById('priceMin');
+    const priceMax = document.getElementById('priceMax');
+    const minPriceInput = document.getElementById('minPriceInput');
+    const maxPriceInput = document.getElementById('maxPriceInput');
+    
+    priceMin.addEventListener('input', function() {
+      minPriceInput.value = this.value;
+      // Ensure min doesn't exceed max
+      if (parseInt(this.value) > parseInt(priceMax.value)) {
+        priceMax.value = this.value;
+        maxPriceInput.value = this.value;
+      }
+    });
+    
+    priceMax.addEventListener('input', function() {
+      maxPriceInput.value = this.value;
+      // Ensure max doesn't go below min
+      if (parseInt(this.value) < parseInt(priceMin.value)) {
+        priceMin.value = this.value;
+        minPriceInput.value = this.value;
+      }
+    });
+    
+    minPriceInput.addEventListener('input', function() {
+      priceMin.value = this.value;
+      // Ensure min doesn't exceed max
+      if (parseInt(this.value) > parseInt(maxPriceInput.value)) {
+        maxPriceInput.value = this.value;
+        priceMax.value = this.value;
+      }
+    });
+    
+    maxPriceInput.addEventListener('input', function() {
+      priceMax.value = this.value;
+      // Ensure max doesn't go below min
+      if (parseInt(this.value) < parseInt(minPriceInput.value)) {
+        minPriceInput.value = this.value;
+        priceMin.value = this.value;
+      }
+    });
+    
+    // Apply filters button
+    document.getElementById('applyFilters').addEventListener('click', function() {
+      let params = new URLSearchParams(window.location.search);
+      
+      // Get sort option
+      const sortOption = document.querySelector('input[name="sortOption"]:checked').value;
+      if (sortOption !== 'featured') {
+        params.set('sort', sortOption);
+      } else {
+        params.delete('sort');
+      }
+      
+      // Get selected genres
+      if (!document.getElementById('genreAll').checked) {
+        let selectedGenres = [];
+        document.querySelectorAll('.genre-checkbox:checked').forEach(checkbox => {
+          selectedGenres.push(checkbox.value);
+        });
+        
+        if (selectedGenres.length > 0) {
+          params.set('genres', selectedGenres.join(','));
+        } else {
+          params.delete('genres');
+        }
+      } else {
+        params.delete('genres');
+      }
+      
+      // Get price range
+      const minPrice = document.getElementById('minPriceInput').value;
+      const maxPrice = document.getElementById('maxPriceInput').value;
+      
+      if (minPrice !== '0') {
+        params.set('min_price', minPrice);
+      } else {
+        params.delete('min_price');
+      }
+      
+      if (maxPrice !== '2000') {
+        params.set('max_price', maxPrice);
+      } else {
+        params.delete('max_price');
+      }
+      
+      // Redirect with params
+      const queryString = params.toString();
+      window.location.href = queryString ? `?${queryString}` : window.location.pathname;
+    });
+    
+    // Initialize sort option on page load
+    window.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sortParam = urlParams.get('sort');
+      
+      if (sortParam) {
+        const sortRadio = document.getElementById(`sort${sortParam === 'lh' ? 'LowHigh' : 
+                                                  sortParam === 'hl' ? 'HighLow' : 
+                                                  sortParam === 'az' ? 'AZ' : 
+                                                  sortParam === 'za' ? 'ZA' : 'Featured'}`);
+        if (sortRadio) {
+          sortRadio.checked = true;
+        }
+      }
+      
+      // Initialize genre filters
+      
+      // Initialize price range
+      const minPriceParam = urlParams.get('min_price');
+      if (minPriceParam) {
+        priceMin.value = minPriceParam;
+        minPriceInput.value = minPriceParam;
+      }
+      
+      const maxPriceParam = urlParams.get('max_price');
+      if (maxPriceParam) {
+        priceMax.value = maxPriceParam;
+        maxPriceInput.value = maxPriceParam;
+      }
+    });
+    </script>
+    
+    {% include 'includes/footer.html' %}
+   
+
+    

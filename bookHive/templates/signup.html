@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block page_heading %}SignUp{% endblock %}
+{%block page_content %} 
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card" style="border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+            <div class="card-body p-4">
+                <h3 class="text-center mb-4">Create an Account</h3>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="firstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control {% if errors.firstName %}is-invalid{% endif %}" 
+                                   id="firstName" name="firstName" value="{{ request.POST.firstName|default:'' }}" required 
+                                   style="border-radius: 20px;">
+                            {% if errors.firstName %}
+                                <div class="text-danger small">{{ errors.firstName }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="lastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control {% if errors.lastName %}is-invalid{% endif %}" 
+                                   id="lastName" name="lastName" value="{{ request.POST.lastName|default:'' }}" required
+                                   style="border-radius: 20px;">
+                            {% if errors.lastName %}
+                                <div class="text-danger small">{{ errors.lastName }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control {% if errors.email %}is-invalid{% endif %}" 
+                               id="email" name="email" value="{{ request.POST.email|default:'' }}" required
+                               style="border-radius: 20px;">
+                        {% if errors.email %}
+                            <div class="text-danger small">{{ errors.email }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="mobile" class="form-label">Mobile Number</label>
+                        <input type="tel" class="form-control {% if errors.mobile %}is-invalid{% endif %}" 
+                               id="mobile" name="mobile" value="{{ request.POST.mobile|default:'' }}" required
+                               style="border-radius: 20px;">
+                        {% if errors.mobile %}
+                            <div class="text-danger small">{{ errors.mobile }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control {% if errors.password %}is-invalid{% endif %}" 
+                               id="password" name="password" required
+                               style="border-radius: 20px;">
+                    </div>
+                    <div class="mb-4">
+                        <label for="confirmPassword" class="form-label">Re-enter Password</label>
+                        <input type="password" class="form-control {% if errors.password %}is-invalid{% endif %}" 
+                               id="confirmPassword" name="confirmPassword" required
+                               style="border-radius: 20px;">
+                        {% if errors.password %}
+                            <div class="text-danger small">{{ errors.password }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" style="border-radius: 20px; padding: 10px;">
+                        Sign Up
+                    </button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    {% comment %} <p>Already have an account? <a href="{% url 'login' %}">Login</a></p> {% endcomment %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock%}
