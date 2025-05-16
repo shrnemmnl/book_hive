@@ -12,7 +12,7 @@ from django.http import JsonResponse
 from django.db.models import Min, Max
 import json
 import re
-from .utils import send_verification_email, generate_otp,send_verification_email_fg
+from .utils import send_verification_email, generate_otp
 
 
 
@@ -78,7 +78,7 @@ def signup(request):
             request.session['verification_email'] = email
             request.session['otp'] = otp
 
-            send_verification_email(email, otp)
+            send_verification_email(email, otp, type)
 
             # messages.success(request, f"Account created! A verification code has been sent to {email}.")
             
@@ -498,7 +498,7 @@ def verification(request):
 
             email = request.session.get('verification_email')
             if email:
-                send_verification_email(email, new_otp)
+                send_verification_email(email, new_otp,'signup')
                 messages.info(request, "A new OTP has been sent to your email.")
             else:
                 messages.error(request, "Something went wrong. Email not found in session.")
@@ -555,7 +555,7 @@ def fg_verification(request):
 
             email = request.session.get('verification_email')
             if email:
-                send_verification_email_fg(email, new_otp)
+                send_verification_email(email, new_otp,'password')
                 messages.info(request, "A new OTP has been sent to your email.")
             else:
                 messages.error(request, "Something went wrong. Email not found in session.")
