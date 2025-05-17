@@ -533,6 +533,7 @@ def otp_page_fg(request):
 
     if request.method == 'POST':
         action = request.POST.get('action')
+        print('action',action)
         if action == 'verify':
             entered_otp = ''.join([
             request.POST.get('digit1', ''),
@@ -545,12 +546,12 @@ def otp_page_fg(request):
             session_otp=request.session['otp_generate_pls']
             print('hi')
 
-        if entered_otp == session_otp:
-            del request.session['otp_generate_pls']
-            print('hi')
-            # messages.success(request, "Email verified! You can now change the password.")
-            return redirect('password_change')
-                # messages.error(request, "Something went wrong.")
+            if entered_otp == session_otp:
+                del request.session['otp_generate_pls']
+                print('hi')
+                # messages.success(request, "Email verified! You can now change the password.")
+                return redirect('password_change')
+                    # messages.error(request, "Something went wrong.")
 
     return render (request, 'login/otp_page_fg.html')
 

@@ -95,7 +95,7 @@
   </head>
   <body>
     <div class="container">
-      <form method="POST">
+      <form method="POST" id="otpForm">
         {% csrf_token %}
         <!-- OTP Verification Section -->
         <div class="verification-section" id="verificationSection">
@@ -122,7 +122,7 @@
             Verification code expired. Please request a new code.
           </p>
 
-          <button id="verifyBtn" name="action" value="verify" type="button">
+          <button id="verifyBtn" name="action" value="verify" type="submit">
             Verify
           </button>
           <button
@@ -131,7 +131,7 @@
             value="resend"
             style="display: none"
             class="resend-button"
-            type="button"
+            type="submit"
           >
             Resend Code
           </button>
@@ -139,7 +139,7 @@
       </form>
       <!-- Success Message -->
       <div id="successMessage" class="success-message">
-        Email verified successfully!
+        Email verified successfully! Redirecting...
       </div>
     </div>
 
@@ -153,57 +153,23 @@
       const timeoutMessage = document.getElementById("timeout-message");
       const successMessage = document.getElementById("successMessage");
       const inputs = document.querySelectorAll(".otp-inputs input");
+      const otpForm = document.getElementById("otpForm");
 
       let timeLeft = 5 * 60; // 5 minutes in seconds
       let countdownTimer;
       let userEmail = "";
-      let mockVerificationCode = ""; // In a real app, this would be generated on the server
 
-    //   // Get email from URL parameter if available
-    //   function getEmailFromURL() {
-    //     const urlParams = new URLSearchParams(window.location.search);
-    //     const email = urlParams.get('email');
-    //     if (email) {
-    //       userEmail = email;
-    //       emailDisplay.textContent = email;
-    //     } else {
-    //       emailDisplay.textContent = "(Email address not provided)";
-    //     }
-    //   }
-
-    //   // Setup OTP input fields
-    //   inputs.forEach((input, index) => {
-    //     input.addEventListener("keyup", (e) => {
-    //       if (e.key >= 0 && e.key <= 9) {
-    //         // Move to next input after entering a digit
-    //         if (index < inputs.length - 1) {
-    //           inputs[index + 1].focus();
-    //         }
-    //         // If on last input and a digit is entered, try to submit
-    //         else if (index === inputs.length - 1) {
-    //           const allFilled = Array.from(inputs).every(input => input.value.length === 1);
-    //           if (allFilled) {
-    //             verifyBtn.focus();
-    //           }
-    //         }
-    //       } else if (e.key === "Backspace") {
-    //         // Move to previous input on backspace
-    //         if (index > 0 && input.value === "") {
-    //           inputs[index - 1].focus();
-    //         }
-    //       }
-    //     });
-
-
-        
-        
-    //     // Also handle input event for auto-forwarding when pasting or using browser autofill
-    //     input.addEventListener("input", (e) => {
-    //       if (input.value.length === 1 && index < inputs.length - 1) {
-    //         inputs[index + 1].focus();
-    //       }
-    //     });
-    //   });
+      // Get email from URL parameter if available
+      function getEmailFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const email = urlParams.get('email');
+        if (email) {
+          userEmail = email;
+          emailDisplay.textContent = email;
+        } else {
+          emailDisplay.textContent = "(Email address not provided)";
+        }
+      }
 
       // Setup OTP input fields
       inputs.forEach((input, index) => {
@@ -213,19 +179,28 @@
             if (index < inputs.length - 1) {
               inputs[index + 1].focus();
             }
+            // If on last input and a digit is entered, try to submit
+            else if (index === inputs.length - 1) {
+              const allFilled = Array.from(inputs).every(input => input.value.length === 1);
+              if (allFilled) {
+                verifyBtn.focus();
+              }
+            }
           } else if (e.key === "Backspace") {
             // Move to previous input on backspace
-            if (index > 0) {
+            if (index > 0 && input.value === "") {
               inputs[index - 1].focus();
             }
           }
         });
+        
+        // Also handle input event for auto-forwarding when pasting or using browser autofill
+        input.addEventListener("input", (e) => {
+          if (input.value.length === 1 && index < inputs.length - 1) {
+            inputs[index + 1].focus();
+          }
+        });
       });
-
-      // Generate a random 6-digit code (for demo purposes only)
-      function generateVerificationCode() {
-        return Math.floor(100000 + Math.random() * 900000).toString();
-      }
 
       // Start the countdown timer
       function startTimer() {
@@ -258,60 +233,33 @@
         }, 1000);
       }
 
-      // Verify the entered OTP
-      function verifyOTP() {
+      // Ensure all OTP fields are filled before form submission
+      otpForm.addEventListener("submit", function(e) {
         const enteredOTP = Array.from(inputs)
           .map((input) => input.value)
           .join("");
 
-        if (enteredOTP.length === 6 && /^\d+$/.test(enteredOTP)) {
-          // For demo purposes, we'll consider any 6-digit code as valid
-          // In a real application, you would validate against the server-generated code
-          
-          // Demo validation logic (replace with actual server validation)
-          if (mockVerificationCode && enteredOTP === mockVerificationCode) {
-            alert("Verification successful!");
-            clearInterval(countdownTimer);
-            verificationSection.style.display = "none";
-            successMessage.style.display = "block";
-            
-            // In a real app, you might redirect to another page after successful verification
-            // window.location.href = "dashboard.html";
-          } 
-          else {
-            // For demo, assume successful if no mockVerificationCode is set
-            if (!mockVerificationCode) {
-              alert("Demo mode: Verification successful!");
-              clearInterval(countdownTimer);
-              verificationSection.style.display = "none";
-              successMessage.style.display = "block";
-            } else {
-              alert("Invalid verification code. Please try again.");
-            }
-          }
-        } else {
+        if (enteredOTP.length !== 6 || !/^\d+$/.test(enteredOTP)) {
+          e.preventDefault();
           alert("Please enter a valid 6-digit code");
+        } else {
+          // Show a loading state or some indication that verification is happening
+          verifyBtn.textContent = "Verifying...";
+          verifyBtn.disabled = true;
+          
+          // The form will naturally submit to the server
+          // No need to prevent default
         }
-      }
+      });
 
       // Reset and resend verification code
-      function resendVerificationCode() {
+      function handleResend(e) {
+        e.preventDefault();
+        
         inputs.forEach((input) => {
           input.value = "";
           input.disabled = false;
         });
-
-        // Generate a new verification code for demo purposes
-        mockVerificationCode = generateVerificationCode();
-
-        // In a real app, you would make a server request to resend the code
-        console.log(
-          `Resending verification code ${mockVerificationCode} to ${userEmail}`
-        );
-
-        alert(
-          `New verification code sent to ${userEmail || "your email"}\n\nIn a real application, this would be sent via SMTP email.`
-        );
 
         // Reset and restart the timer
         timeoutMessage.style.display = "none";
@@ -319,28 +267,41 @@
         verifyBtn.style.display = "block";
         resendBtn.style.display = "none";
 
-        startTimer();
-        inputs[0].focus();
+        // Submit the form with resend action
+        const formData = new FormData(otpForm);
+        formData.set('action', 'resend');
+        
+        fetch(window.location.href, {
+          method: 'POST',
+          body: formData
+        }).then(response => {
+          if (response.ok) {
+            startTimer();
+            inputs[0].focus();
+          } else {
+            alert("Error resending code. Please try again.");
+          }
+        }).catch(error => {
+          console.error("Error:", error);
+          alert("Network error. Please try again.");
+        });
       }
 
-      // Initialize page
-      function init() {
+      // Handle form submission errors or success from Django messages if available
+      document.addEventListener("DOMContentLoaded", function() {
+        // Check for any Django messages that might be displayed
+        const messages = document.querySelectorAll('.messages .error, .messages .success');
+        if (messages.length > 0) {
+          // Handle messages if needed
+        }
+        
         getEmailFromURL();
-        
-        // For demo purposes, generate a verification code
-        mockVerificationCode = generateVerificationCode();
-        console.log("Demo verification code:", mockVerificationCode);
-        
         startTimer();
         inputs[0].focus();
-      }
+      });
 
       // Event Listeners
-      verifyBtn.addEventListener("click", verifyOTP);
-      resendBtn.addEventListener("click", resendVerificationCode);
-
-      // Initialize when page loads
-      document.addEventListener("DOMContentLoaded", init);
+      resendBtn.addEventListener("click", handleResend);
     </script>
   </body>
 </html>
