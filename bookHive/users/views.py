@@ -512,6 +512,26 @@ def fg_verification(request):
 
     if request.method == 'POST':
 
+        email= request.POST.get('email', '').strip()
+         
+        if CustomUser.objects.filter(email=email).exists():
+            request.session['verification_email'] = email
+            otp_generate_pls= generate_otp()
+            request.session['otp_generate_pls']=otp_generate_pls
+            
+            send_verification_email(email, otp_generate_pls,'password')
+            return redirect('otp_page_fg')
+        else:
+            messages.error(request, "Email not found or an error occurred. Please check the email you entered. If you haven’t signed up yet, please register first.")
+            redirect('fg_verification')
+
+
+    return render(request, 'login/fg_verification.html')
+
+
+def otp_page_fg(request):
+
+    if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'verify':
             entered_otp = ''.join([
@@ -522,43 +542,19 @@ def fg_verification(request):
             request.POST.get('digit5', ''),
             request.POST.get('digit6', ''),
         ])
+            session_otp=request.session['otp_generate_pls']
+            print('hi')
 
-            session_otp = request.session.get('otp')
-            email = request.session.get('verification_email')
+        if entered_otp == session_otp:
+            del request.session['otp_generate_pls']
+            print('hi')
+            # messages.success(request, "Email verified! You can now change the password.")
+            return redirect('password_change')
+                # messages.error(request, "Something went wrong.")
 
-            if entered_otp == session_otp:
-            # You can mark user as verified here (maybe add `is_verified` field to model)
-                user_session_data=request.session.get('userdata')
-                user=CustomUser.objects.create(
-                    first_name=user_session_data['first_name'],
-                    last_name=user_session_data['last_name'],
-                    email=user_session_data['email'],
-                    phone_no=user_session_data['phone_no'],
-                    password=user_session_data['password']
-
-                )
-
-                # Clear session after creating
-                del request.session['userdata']
-                del request.session['otp']
-                del request.session['verification_email']
+    return render (request, 'login/otp_page_fg.html')
 
 
-                messages.success(request, "Email verified and account created! You can now log in.")
-                return redirect('login')  # or home page
-            else:
-                messages.error(request, "Invalid OTP. Try again.")
-        
-        elif action == 'resend':
-            new_otp = generate_otp()
-            request.session['otp'] = new_otp
-
-            email = request.session.get('verification_email')
-            if email:
-                send_verification_email(email, new_otp,'password')
-                messages.info(request, "A new OTP has been sent to your email.")
-            else:
-                messages.error(request, "Something went wrong. Email not found in session.")
-
-
-    return render(request, 'login/fg_verification.html')
+def password_change(request):
+    print('hi')
+    return render (request, 'login/password_change.html')

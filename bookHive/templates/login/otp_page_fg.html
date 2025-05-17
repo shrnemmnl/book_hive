@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTP Verification</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: white;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 320px;
+      }
+      h1 {
+        margin-top: 0;
+        color: #333;
+        font-size: 24px;
+      }
+      .instruction {
+        color: #555;
+        font-size: 16px;
+        margin-bottom: 20px;
+      }
+      .email-display {
+        font-weight: bold;
+        color: #4285f4;
+        margin-bottom: 20px;
+      }
+      .otp-inputs {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 30px 0;
+      }
+      .otp-inputs input {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+        text-align: center;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .timer {
+        margin: 20px 0;
+        font-size: 18px;
+        color: #555;
+      }
+      button {
+        background-color: #4285f4;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 4px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      button:hover {
+        background-color: #3367d6;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      .resend-button {
+        background-color: #28a745;
+      }
+      .resend-button:hover {
+        background-color: #218838;
+      }
+      .success-message {
+        color: #28a745;
+        font-weight: bold;
+        display: none;
+      }
+      .timeout-message {
+        display: none; 
+        color: #e74c3c; 
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <form method="POST">
+        {% csrf_token %}
+        <!-- OTP Verification Section -->
+        <div class="verification-section" id="verificationSection">
+          <h1>Enter Verification Code</h1>
+          <p class="instruction">
+            Please enter the 6-digit code sent to your email
+          </p>
+          <p class="email-display" id="emailDisplay"></p>
+
+          <div class="otp-inputs">
+            <input type="text" name="digit1" maxlength="1" autofocus />
+            <input type="text" name="digit2" maxlength="1" />
+            <input type="text" name="digit3" maxlength="1" />
+            <input type="text" name="digit4" maxlength="1" />
+            <input type="text" name="digit5" maxlength="1" />
+            <input type="text" name="digit6" maxlength="1" />
+          </div>
+
+          <div class="timer" id="timer">Time remaining: 5:00</div>
+          <p
+            id="timeout-message"
+            class="timeout-message"
+          >
+            Verification code expired. Please request a new code.
+          </p>
+
+          <button id="verifyBtn" name="action" value="verify" type="button">
+            Verify
+          </button>
+          <button
+            id="resendBtn"
+            name="action"
+            value="resend"
+            style="display: none"
+            class="resend-button"
+            type="button"
+          >
+            Resend Code
+          </button>
+        </div>
+      </form>
+      <!-- Success Message -->
+      <div id="successMessage" class="success-message">
+        Email verified successfully!
+      </div>
+    </div>
+
+    <script>
+      // DOM Elements
+      const verificationSection = document.getElementById("verificationSection");
+      const emailDisplay = document.getElementById("emailDisplay");
+      const verifyBtn = document.getElementById("verifyBtn");
+      const resendBtn = document.getElementById("resendBtn");
+      const timerElement = document.getElementById("timer");
+      const timeoutMessage = document.getElementById("timeout-message");
+      const successMessage = document.getElementById("successMessage");
+      const inputs = document.querySelectorAll(".otp-inputs input");
+
+      let timeLeft = 5 * 60; // 5 minutes in seconds
+      let countdownTimer;
+      let userEmail = "";
+      let mockVerificationCode = ""; // In a real app, this would be generated on the server
+
+    //   // Get email from URL parameter if available
+    //   function getEmailFromURL() {
+    //     const urlParams = new URLSearchParams(window.location.search);
+    //     const email = urlParams.get('email');
+    //     if (email) {
+    //       userEmail = email;
+    //       emailDisplay.textContent = email;
+    //     } else {
+    //       emailDisplay.textContent = "(Email address not provided)";
+    //     }
+    //   }
+
+    //   // Setup OTP input fields
+    //   inputs.forEach((input, index) => {
+    //     input.addEventListener("keyup", (e) => {
+    //       if (e.key >= 0 && e.key <= 9) {
+    //         // Move to next input after entering a digit
+    //         if (index < inputs.length - 1) {
+    //           inputs[index + 1].focus();
+    //         }
+    //         // If on last input and a digit is entered, try to submit
+    //         else if (index === inputs.length - 1) {
+    //           const allFilled = Array.from(inputs).every(input => input.value.length === 1);
+    //           if (allFilled) {
+    //             verifyBtn.focus();
+    //           }
+    //         }
+    //       } else if (e.key === "Backspace") {
+    //         // Move to previous input on backspace
+    //         if (index > 0 && input.value === "") {
+    //           inputs[index - 1].focus();
+    //         }
+    //       }
+    //     });
+
+
+        
+        
+    //     // Also handle input event for auto-forwarding when pasting or using browser autofill
+    //     input.addEventListener("input", (e) => {
+    //       if (input.value.length === 1 && index < inputs.length - 1) {
+    //         inputs[index + 1].focus();
+    //       }
+    //     });
+    //   });
+
+      // Setup OTP input fields
+      inputs.forEach((input, index) => {
+        input.addEventListener("keyup", (e) => {
+          if (e.key >= 0 && e.key <= 9) {
+            // Move to next input after entering a digit
+            if (index < inputs.length - 1) {
+              inputs[index + 1].focus();
+            }
+          } else if (e.key === "Backspace") {
+            // Move to previous input on backspace
+            if (index > 0) {
+              inputs[index - 1].focus();
+            }
+          }
+        });
+      });
+
+      // Generate a random 6-digit code (for demo purposes only)
+      function generateVerificationCode() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+      }
+
+      // Start the countdown timer
+      function startTimer() {
+        // Reset timer
+        timeLeft = 5 * 60;
+        clearInterval(countdownTimer);
+
+        countdownTimer = setInterval(() => {
+          if (timeLeft <= 0) {
+            clearInterval(countdownTimer);
+            timerElement.textContent = "Time expired";
+            timerElement.style.color = "#e74c3c";
+            timeoutMessage.style.display = "block";
+            verifyBtn.style.display = "none";
+            resendBtn.style.display = "block";
+
+            inputs.forEach((input) => {
+              input.disabled = true;
+            });
+            return;
+          }
+
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = timeLeft % 60;
+
+          timerElement.textContent = `Time remaining: ${minutes}:${
+            seconds < 10 ? "0" : ""
+          }${seconds}`;
+          timeLeft--;
+        }, 1000);
+      }
+
+      // Verify the entered OTP
+      function verifyOTP() {
+        const enteredOTP = Array.from(inputs)
+          .map((input) => input.value)
+          .join("");
+
+        if (enteredOTP.length === 6 && /^\d+$/.test(enteredOTP)) {
+          // For demo purposes, we'll consider any 6-digit code as valid
+          // In a real application, you would validate against the server-generated code
+          
+          // Demo validation logic (replace with actual server validation)
+          if (mockVerificationCode && enteredOTP === mockVerificationCode) {
+            alert("Verification successful!");
+            clearInterval(countdownTimer);
+            verificationSection.style.display = "none";
+            successMessage.style.display = "block";
+            
+            // In a real app, you might redirect to another page after successful verification
+            // window.location.href = "dashboard.html";
+          } 
+          else {
+            // For demo, assume successful if no mockVerificationCode is set
+            if (!mockVerificationCode) {
+              alert("Demo mode: Verification successful!");
+              clearInterval(countdownTimer);
+              verificationSection.style.display = "none";
+              successMessage.style.display = "block";
+            } else {
+              alert("Invalid verification code. Please try again.");
+            }
+          }
+        } else {
+          alert("Please enter a valid 6-digit code");
+        }
+      }
+
+      // Reset and resend verification code
+      function resendVerificationCode() {
+        inputs.forEach((input) => {
+          input.value = "";
+          input.disabled = false;
+        });
+
+        // Generate a new verification code for demo purposes
+        mockVerificationCode = generateVerificationCode();
+
+        // In a real app, you would make a server request to resend the code
+        console.log(
+          `Resending verification code ${mockVerificationCode} to ${userEmail}`
+        );
+
+        alert(
+          `New verification code sent to ${userEmail || "your email"}\n\nIn a real application, this would be sent via SMTP email.`
+        );
+
+        // Reset and restart the timer
+        timeoutMessage.style.display = "none";
+        timerElement.style.color = "#555";
+        verifyBtn.style.display = "block";
+        resendBtn.style.display = "none";
+
+        startTimer();
+        inputs[0].focus();
+      }
+
+      // Initialize page
+      function init() {
+        getEmailFromURL();
+        
+        // For demo purposes, generate a verification code
+        mockVerificationCode = generateVerificationCode();
+        console.log("Demo verification code:", mockVerificationCode);
+        
+        startTimer();
+        inputs[0].focus();
+      }
+
+      // Event Listeners
+      verifyBtn.addEventListener("click", verifyOTP);
+      resendBtn.addEventListener("click", resendVerificationCode);
+
+      // Initialize when page loads
+      document.addEventListener("DOMContentLoaded", init);
+    </script>
+  </body>
+</html>

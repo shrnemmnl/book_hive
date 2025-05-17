@@ -22,4 +22,7 @@ urlpatterns = [
      path('checkoutpage',views.checkoutpage, name='checkoutpage'),
      path('verification',views.verification, name='verification'),
      path('fg_verification',views.fg_verification, name='fg_verification'),
+     path('otp_page_fg',views.otp_page_fg, name='otp_page_fg'),
+     path('password_change',views.password_change, name='password_change'),
+     
 ]

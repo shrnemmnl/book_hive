@@ -39,10 +39,10 @@
                 </div>
                 <div class="card-body px-auto py-auto">
                     {% if messages %}
-                    <!-- <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
                         Hi {{first_name}} {{last_name}}.Your Account created successfully! You can now log in.
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div> -->
+                    </div>
                     
                         {% for message in messages %}
                             <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">

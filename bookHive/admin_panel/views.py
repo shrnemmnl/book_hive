@@ -44,6 +44,7 @@ def admin_dashboard(request):
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @login_required(login_url='admin_signin')  
 def books(request):
+    
     books = Product.objects.select_related('genre').order_by('-updated_at')
 
     return render(request, 'admin/books.html', {"books":books})
