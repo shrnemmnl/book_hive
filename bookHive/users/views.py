@@ -532,19 +532,26 @@ def fg_verification(request):
 def otp_page_fg(request):
 
     if request.method == 'POST':
+
+        # entered_otp = ''.join([
+        #     request.POST.get('digit1', ''),
+        #     request.POST.get('digit2', ''),
+        #     request.POST.get('digit3', ''),
+        #     request.POST.get('digit4', ''),
+        #     request.POST.get('digit5', ''),
+        #     request.POST.get('digit6', ''),
+        # ])
+        # session_otp=request.session['otp_generate_pls']
+
+
         action = request.POST.get('action')
         print('action',action)
         if action == 'verify':
-            entered_otp = ''.join([
-            request.POST.get('digit1', ''),
-            request.POST.get('digit2', ''),
-            request.POST.get('digit3', ''),
-            request.POST.get('digit4', ''),
-            request.POST.get('digit5', ''),
-            request.POST.get('digit6', ''),
-        ])
+            entered_otp = request.POST.get('digit', '')
+            
+        
             session_otp=request.session['otp_generate_pls']
-            print('hi')
+            print('hirrrrrrrrr')
 
             if entered_otp == session_otp:
                 del request.session['otp_generate_pls']
@@ -558,4 +565,12 @@ def otp_page_fg(request):
 
 def password_change(request):
     print('hi')
+    test=request.session['verification_email']
+    user=CustomUser.objects.filter(email=test)
+    
+
+    if request.method=='POST':
+        
+        password=
+
     return render (request, 'login/password_change.html')

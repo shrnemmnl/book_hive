@@ -43,8 +43,8 @@
         gap: 10px;
         margin: 30px 0;
       }
-      .otp-inputs input {
-        width: 40px;
+      .formControl input {
+        width: 200px;
         height: 40px;
         font-size: 20px;
         text-align: center;
@@ -105,13 +105,9 @@
           </p>
           <p class="email-display" id="emailDisplay"></p>
 
-          <div class="otp-inputs">
-            <input type="text" name="digit1" maxlength="1" autofocus />
-            <input type="text" name="digit2" maxlength="1" />
-            <input type="text" name="digit3" maxlength="1" />
-            <input type="text" name="digit4" maxlength="1" />
-            <input type="text" name="digit5" maxlength="1" />
-            <input type="text" name="digit6" maxlength="1" />
+          <div>
+            <input type="text" autocomplete="off" name="digit"  style="height: 32px; width: 250px; border-radius: 10px; font-size: larger; font-weight: bold;" />
+            
           </div>
 
           <div class="timer" id="timer">Time remaining: 5:00</div>
@@ -121,10 +117,12 @@
           >
             Verification code expired. Please request a new code.
           </p>
+          <input type="hidden" value="verify" name="action">
 
-          <button id="verifyBtn" name="action" value="verify" type="submit">
+          <button id="verifyBtn" type="submit">
             Verify
           </button>
+          </form>
           <button
             id="resendBtn"
             name="action"
@@ -136,7 +134,7 @@
             Resend Code
           </button>
         </div>
-      </form>
+      
       <!-- Success Message -->
       <div id="successMessage" class="success-message">
         Email verified successfully! Redirecting...
@@ -234,23 +232,23 @@
       }
 
       // Ensure all OTP fields are filled before form submission
-      otpForm.addEventListener("submit", function(e) {
-        const enteredOTP = Array.from(inputs)
-          .map((input) => input.value)
-          .join("");
+      // otpForm.addEventListener("submit", function(e) {
+      //   const enteredOTP = Array.from(inputs)
+      //     .map((input) => input.value)
+      //     .join("");
 
-        if (enteredOTP.length !== 6 || !/^\d+$/.test(enteredOTP)) {
-          e.preventDefault();
-          alert("Please enter a valid 6-digit code");
-        } else {
+      //   if (enteredOTP.length !== 6 || !/^\d+$/.test(enteredOTP)) {
+      //     e.preventDefault();
+      //     alert("Please enter a valid 6-digit code");
+      //   } else {
           // Show a loading state or some indication that verification is happening
-          verifyBtn.textContent = "Verifying...";
-          verifyBtn.disabled = true;
+          // verifyBtn.textContent = "Verifying...";
+          // verifyBtn.disabled = true;
           
           // The form will naturally submit to the server
           // No need to prevent default
-        }
-      });
+        // }
+      // });
 
       // Reset and resend verification code
       function handleResend(e) {
