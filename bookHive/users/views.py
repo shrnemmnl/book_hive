@@ -13,10 +13,12 @@ from django.db.models import Min, Max
 import json
 import re
 from .utils import send_verification_email, generate_otp
+from django.core.paginator import Paginator
 
 
 
-
+# def product_special_list():
+#     return Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
 
 
 def signup(request):
@@ -121,6 +123,11 @@ def loading_page(request):
     
     # Start with all active books
     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
+
+    if request.method=='GET':
+        page=request.GET.get('page', 1)
+        book_paging=Paginator(books, 3)
+        books=book_paging.get_page(page)
     
     # Apply genre filter if specified
     if genres:
@@ -210,6 +217,7 @@ def logout_user(request):
 def home_page(request):
     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
     print(books)
+    
     return render(request, 'index.html', {'books': books})
 
 
@@ -533,15 +541,7 @@ def otp_page_fg(request):
 
     if request.method == 'POST':
 
-        # entered_otp = ''.join([
-        #     request.POST.get('digit1', ''),
-        #     request.POST.get('digit2', ''),
-        #     request.POST.get('digit3', ''),
-        #     request.POST.get('digit4', ''),
-        #     request.POST.get('digit5', ''),
-        #     request.POST.get('digit6', ''),
-        # ])
-        # session_otp=request.session['otp_generate_pls']
+        
 
 
         action = request.POST.get('action')
@@ -566,11 +566,25 @@ def otp_page_fg(request):
 def password_change(request):
     print('hi')
     test=request.session['verification_email']
-    user=CustomUser.objects.filter(email=test)
+    user=CustomUser.objects.get(email=test)
     
 
     if request.method=='POST':
         
-        password=
+        new_password=request.POST.get('new_password','')
+        confirm_password=request.POST.get('confirm_password','')
+        print(new_password, confirm_password)
+
+        # Check if passwords match
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match. Please re-enter the password again.")
+        else:
+            user.password=make_password(new_password) #new password saved.
+            user.save()
+            print(user.password)
+            messages.success(request, "Your Password changed sucessfully.")
+            return render(request, 'login/password_change.html', {'redirect_to_login': True, 'redirect_url': 'login'})
+
 
     return render (request, 'login/password_change.html')
+
