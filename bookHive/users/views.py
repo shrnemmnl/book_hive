@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
-from .models import CustomUser ,Address,Cart,CartItem,Order,OrderItem # Import your user model
+from .models import CustomUser ,Address,Cart,CartItem,Order,OrderItem,Review # Import your user model
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache
 from django.db.models import Min
@@ -95,24 +95,6 @@ def signup(request):
 
 
 
-# def loading_page(request):
-#     sort = request.GET.get('sort', 'featured')
-#     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
-
-#     if sort == 'lh':
-#         books = books.order_by('min_price')
-#     elif sort == 'hl':
-#         books = books.order_by('-min_price')
-#     elif sort == 'az':
-#         books = books.order_by('book_title')
-#     elif sort == 'za':
-#         books = books.order_by('-book_title')
-#     # 'featured' case or default remains unchanged
-
-    
-
-#     return render(request, 'index.html',{'books': books})
-
 def loading_page(request):
     # Get filter parameters from request
     sort = request.GET.get('sort', 'featured')
@@ -123,17 +105,11 @@ def loading_page(request):
     
     # Start with all active books
     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
-
-    if request.method=='GET':
-        page=request.GET.get('page', 1)
-        book_paging=Paginator(books, 3)
-        books=book_paging.get_page(page)
     
     # Apply genre filter if specified
     if genres:
         genre_list = genres.split(',')
         print(genre_list)
-        # books = books.filter(genre__genre_name__iregex=r'(' + '|'.join(genre_list) + ')')
         books = books.filter(genre__genre_name__in=genre_list)
     
     # Apply price range filter
@@ -142,14 +118,14 @@ def loading_page(request):
             min_price = float(min_price)
             books = books.filter(min_price__gte=min_price)
         except (ValueError, TypeError):
-            pass  # Invalid min_price, ignore filter
+            pass
     
     if max_price:
         try:
             max_price = float(max_price)
             books = books.filter(min_price__lte=max_price)
         except (ValueError, TypeError):
-            pass  # Invalid max_price, ignore filter
+            pass
     
     # Apply sorting
     if sort == 'lh':
@@ -160,17 +136,22 @@ def loading_page(request):
         books = books.order_by('book_title')
     elif sort == 'za':
         books = books.order_by('-book_title')
-    # 'featured' case or default remains unchanged
-    
-    # Get all available categories for filter options
+    # else: featured, do nothing
+
+    # 🚨 NOW do pagination — after all filters and sorting
+    page = request.GET.get('page', 1)
+    paginator = Paginator(books, 6)
+    books = paginator.get_page(page)
+
+    # Get all available genres
     categories = Product.objects.values_list('genre__genre_name', flat=True).distinct()
-    
-    # Get price range for filter initialization
+
+    # Get price range
     price_range = {
         'min': Product.objects.aggregate(min_price=Min('variant__price'))['min_price'] or 0,
         'max': Product.objects.aggregate(max_price=Max('variant__price'))['max_price'] or 2000
     }
-    
+
     context = {
         'books': books,
         'categories': categories,
@@ -180,8 +161,9 @@ def loading_page(request):
         'selected_min_price': min_price,
         'selected_max_price': max_price if max_price else price_range['max']
     }
-    
+
     return render(request, 'index.html', context)
+
 
 
 
@@ -227,6 +209,23 @@ def home_page(request):
 def product_details(request, id):
     # Fetch the product
     book = get_object_or_404(Product, id=id)
+    # review handling
+    if request.method == "POST" and request.user.is_authenticated:
+        # user_id = request.user.id
+        rating=request.POST.get('overallRating','').strip()
+        comments=request.POST.get('comment', '').strip()
+
+        review=Review.objects.create(
+            user=request.user.id,
+            product=book,
+            rating=int(rating),
+            comments=comments,
+            status='pending',
+        )
+        
+        messages.success(request, "Your Review is successfully submitted.")
+
+        
 
     # Get all variants for the given product
     variants = Variant.objects.filter(product=book).prefetch_related('productimage_set')
@@ -588,3 +587,12 @@ def password_change(request):
 
     return render (request, 'login/password_change.html')
 
+
+def review_writing(request):
+
+    if request.method=="POST":
+        rating=request.POST.get('overallRating','').strip()
+        comment=request.POST.get('comment', '').strip()
+
+
+    return render (request)

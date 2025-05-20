@@ -123,6 +123,9 @@ class OrderItem(models.Model):
     
 
 class Review(models.Model):
-    user=models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='review')
-    product=models.ForeignKey(Product, on_delete=models.CASCADE, related_name='review')
-    rating=models.IntegerField()
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='review')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='review')
+    rating = models.IntegerField()
+    comments = models.CharField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=50, default='pending')
