@@ -14,6 +14,8 @@ import json
 import re
 from .utils import send_verification_email, generate_otp
 from django.core.paginator import Paginator
+from django.db.models import Avg
+
 
 
 
@@ -216,7 +218,7 @@ def product_details(request, id):
         comments=request.POST.get('comment', '').strip()
 
         review=Review.objects.create(
-            user=request.user.id,
+            user=request.user,
             product=book,
             rating=int(rating),
             comments=comments,
@@ -232,12 +234,32 @@ def product_details(request, id):
     
     # Use the first variant as default
     default_variant = variants.first()
-    
+
+    review_content=Review.objects.filter(product=book).select_related('user') #fetches the entire reviews related to the particular book and reviewed user.
+    # for i in review_content:
+    #     print('review content ',i.rating)
+    average_rating = review_content.aggregate(Avg('rating'))['rating__avg']
+    # book_user = CustomUser.objects.filter(review__product=book).distinct() 
+    # review_count=book.review.count()
+    # print(review_count)
+    # try:
+    #     user_rating=Review.objects.get(user=book_user,product=book).anno #review count for a particular book
+    # except Review.DoesNotExist:
+    #     user_rating=None
+    # print(user_rating)
+    # average_rating = Review.objects.filter(product=book).aggregate(Avg('rating'))['rating__avg'] #rounded average rating figure of particular book
+    # print(average_rating)
     context = {
-        'books': book,
-        'variants': variants,
-        'default_variant': default_variant,
+        'books': book, #specific product details which variants included
+        'variants': variants, #all the variant for the specific product
+        'default_variant': default_variant, # Use the first variant as default
+        'review_content':review_content, #fetches the entire reviews
+        'review_count':review_content.count(), #review count for a particular book
+        'average_rating':average_rating,
+        'average_rating_int':int(round(average_rating)) if average_rating is not None else 0,
+        # 'user_rating':user_rating,
     }
+    
     
     return render(request, 'user/product_details.html', context)
 
@@ -588,11 +610,3 @@ def password_change(request):
     return render (request, 'login/password_change.html')
 
 
-def review_writing(request):
-
-    if request.method=="POST":
-        rating=request.POST.get('overallRating','').strip()
-        comment=request.POST.get('comment', '').strip()
-
-
-    return render (request)
