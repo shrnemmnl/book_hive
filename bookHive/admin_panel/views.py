@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from users.models import CustomUser,Order,OrderItem # Import your user model
+from users.models import CustomUser,Order,OrderItem,Review # Import your user model
 from .models import Genre, Product, Variant, ProductImage
 from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.cache import never_cache, cache_control
@@ -9,7 +9,7 @@ from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.urls import reverse
-
+from django.shortcuts import  get_object_or_404
 
 
 
@@ -208,6 +208,10 @@ def book_edit_post(request):
         description = request.POST.get('book_description', "").strip()
         genre_id=request.POST.get('genre_id', "").strip()
         image = request.FILES.get('image')
+        # Offer Fields
+        is_offer = request.POST.get('is_offer') == 'on'
+        offer_title = request.POST.get('offer_title', "").strip()
+        discount_percentage = request.POST.get('discount_percentage', 0)
 
         book = Product.objects.get(id=book_id)
         book.book_title = book_name
@@ -217,6 +221,9 @@ def book_edit_post(request):
         if image:
             book.image = image
         book.description = description
+        book.is_offer = is_offer
+        book.offer_title = offer_title if is_offer else ''
+        book.discount_percentage = int(discount_percentage) if is_offer else 0
        
         book.save()
         messages.success(request, 'Updated successfully!')
@@ -414,3 +421,17 @@ def variant_edit_post(request):
 def admin_order_details(request, order):
 
     return render(request, "admin/admin_order_details.html")
+
+
+def admin_review(request):
+    reviews = Review.objects.select_related('user', 'product').order_by('-created_at')
+    return render(request, "admin/admin_review.html", {'reviews':reviews})
+
+
+def toggle_review_status(request, review_id):
+    review = get_object_or_404(Review, id=review_id)
+    review.is_active = not review.is_active  # Flip True to False or vice versa
+    review.save()
+    status_text = "Activated" if review.is_active else "Deactivated"
+    messages.success(request, f'Review status changed to {status_text}.')
+    return redirect('admin_review')

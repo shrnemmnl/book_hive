@@ -35,8 +35,9 @@
               <p class="card-text mb-1">{{address.state}} {{address.postal_code}}</p>
               <p class="card-text mb-3">{{address.phone}}</p>
               <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary">Edit</button>
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
+                <a href="{% url 'address_edit' address.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                <a href="{% url 'address_delete' address.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                
               </div>
             </div>
           </div>

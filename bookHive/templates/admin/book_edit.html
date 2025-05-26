@@ -1,6 +1,8 @@
-{% extends "admin/admin_base.html" %} {% block heading %}
+{% extends "admin/admin_base.html" %} 
+{% block heading %}
 <h2>Edit Book</h2>
-{% endblock heading %} {% block content %}
+{% endblock heading %} 
+{% block content %}
 <div class="container mt-4">
   <!-- Form for Adding/Editing a Book -->
   <div class="card mt-4">
@@ -42,7 +44,7 @@
             required
           />
         </div>
-        <input type="file" class="form-control" name="image" multiple  /><br />
+        <input type="file" class="form-control" name="image" multiple /><br />
 
         <!-- Genre -->
         <div class="mb-3">
@@ -56,17 +58,56 @@
             {% endfor %}</select
           ><br />
         </div>
-        <!-- Dropdown for Genre -->
+        <!-- offer fields -->
+        <div class="mb-3 form-check">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            id="isOffer"
+            name="is_offer"
+            {%
+            if
+            book.is_offer
+            %}checked{%
+            endif
+            %}
+          />
+          <label class="form-check-label" for="isOffer">Is Offer Active?</label>
+        </div>
+
+        <div class="mb-3">
+          <label for="offerTitle" class="form-label">Offer Title</label>
+          <input
+            type="text"
+            class="form-control"
+            id="offerTitle"
+            name="offer_title"
+            value="{{ book.offer_title }}"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label for="discount" class="form-label">Discount (%)</label>
+          <input
+            type="number"
+            class="form-control"
+            id="discount"
+            name="discount_percentage"
+            value="{{ book.discount_percentage }}"
+          />
+        </div>
+
         <!-- Book description -->
         <div class="mb-3">
           <label for="bookTitle" class="form-label">Book Description</label>
           <textarea
             type="text"
             name="book_description"
-          
             class="form-control"
             required
-          >{{ book.description }}</textarea>
+          >
+{{ book.description }}</textarea
+          >
         </div>
 
         <button type="submit" class="btn btn-success">Save Book</button>
@@ -100,5 +141,4 @@
     </div>
   </div>
 </div>
-
 {% endblock content %}

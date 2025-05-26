@@ -1,0 +1,60 @@
+{% extends "admin/admin_base.html" %}
+
+{% block heading %}
+<h2>Review Details</h2>
+{% endblock heading %}
+
+{% block content %}
+
+
+{% include "message_modal.html" %}
+
+<div class="container mt-4">
+  <table class="table table-striped table-bordered">
+    <thead class="table-dark">
+      <tr>
+        <th>Book</th>
+        <th>User</th>
+        <th>Rating</th>
+        <th>Comment</th>
+        <th>Status</th>
+        <th>Toggle</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for review in reviews %}
+      <tr>
+        <td>{{ review.product.book_title }}</td>
+        <td>{{ review.user.first_name }} {{ review.user.last_name }}</td>
+        <td>{{ review.rating }} ★/5</td>
+        
+        <td>{{ review.comments }}</td>
+        <td>
+          {% if review.is_active %}
+            <span class="badge bg-success">Active</span>
+          {% else %}
+            <span class="badge bg-danger">Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          <form method="post" action="{% url 'toggle_review_status' review.id %}">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-sm {% if review.is_active %}btn-danger{% else %}btn-success{% endif %}">
+    {% if review.is_active %}Deactivate{% else %}Activate{% endif %}
+  </button>
+</form>
+
+
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center">No reviews available.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+{% endblock %}

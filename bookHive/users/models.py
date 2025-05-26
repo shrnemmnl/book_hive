@@ -51,8 +51,8 @@ class Address(models.Model):
     postal_code = models.CharField(max_length=10) 
     phone = models.CharField(max_length=15)  
     is_active=models.BooleanField(default=True)
-    
 
+    
     def __str__(self):
         return f"{self.address_type}, {self.city}"
 
@@ -128,4 +128,4 @@ class Review(models.Model):
     rating = models.IntegerField()
     comments = models.CharField(max_length=500)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=50, default='pending')
+    is_active=models.BooleanField(default=True)

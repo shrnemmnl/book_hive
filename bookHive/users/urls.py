@@ -18,11 +18,14 @@ urlpatterns = [
      path('user_wishlist',views.user_wishlist, name='user_wishlist'),
      path('user_wallet',views.user_wallet, name='user_wallet'),
      path('user_cust_care',views.user_cust_care, name='user_cust_care'),
-     path('add_to_cart',views.add_to_cart, name='add_to_cart'),
+     path('add_to_cart/<int:id>/',views.add_to_cart, name='add_to_cart'),
      path('checkoutpage',views.checkoutpage, name='checkoutpage'),
      path('verification',views.verification, name='verification'),
      path('fg_verification',views.fg_verification, name='fg_verification'),
      path('otp_page_fg',views.otp_page_fg, name='otp_page_fg'),
      path('password_change',views.password_change, name='password_change'),
-     
+     path('address_edit/<int:address_id>/',views.address_edit, name='address_edit'),
+     path('address_delete/<int:address_id>/',views.address_delete, name='address_delete'),
+     path('change_variant/<int:book_id>/',views.change_variant, name='change_variant'),
+    
 ]

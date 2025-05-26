@@ -21,6 +21,8 @@
 
         <th>Book Name</th>
         <th>Genre</th>
+        <th>Offer</th>
+        <th>Discount %</th>
         <th>Variant</th>
 
         <th>Edit</th>
@@ -35,6 +37,21 @@
 
         <td>{{ book.book_title }}</td>
         <td>{{ book.genre.genre_name }}</td>
+        <td>
+  {% if book.is_offer %}
+    <span class="badge bg-success">{{ book.offer_title }}</span>
+  {% else %}
+    <span class="text-muted">No Offer</span>
+  {% endif %}
+</td>
+<td>
+  {% if book.discount_percentage and book.discount_percentage > 0 %}
+    <span class="badge bg-danger">{{ book.discount_percentage }}%</span>
+  {% else %}
+    <span class="text-muted">0%</span>
+  {% endif %}
+</td>
+
         <td><button class="btn btn-success" id="addBook"><a href="{% url 'view_variant' book.id %}"
               style="text-decoration: none;" class="text-light">View</a></button></td>
 

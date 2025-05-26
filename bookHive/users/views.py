@@ -72,8 +72,8 @@ def signup(request):
             #     password=make_password(password)  # Hash password before saving
             # )
             request.session['userdata']={
-                'first_name':firstName,
-                'last_name':lastName,
+                'first_name':firstName.capitalize(),
+                'last_name':lastName.capitalize(),
                 'email':email,
                 'phone_no':mobile,
                 'password':make_password(password),
@@ -210,8 +210,24 @@ def home_page(request):
 
 def product_details(request, id):
     # Fetch the product
-    book = get_object_or_404(Product, id=id)
-    # review handling
+    try:
+        book = get_object_or_404(Product, id=id, is_active=True)
+    except:
+        return redirect('loading_page')
+    
+        
+    #get the possible variants from the respective product
+    product_variants=Variant.objects.filter(product=book)
+    
+    # Check if ALL variants have zero quantity
+    is_sold_out = not product_variants.filter(available_quantity__gt=0).exists()
+
+    # Get related books in the same genre, exclude current one
+    related_books = Product.objects.filter(
+        genre=book.genre,
+        is_active=True
+    ).exclude(id=book.id)[:4]  # Only 4 suggestions
+
     if request.method == "POST" and request.user.is_authenticated:
         # user_id = request.user.id
         rating=request.POST.get('overallRating','').strip()
@@ -235,6 +251,11 @@ def product_details(request, id):
     # Use the first variant as default
     default_variant = variants.first()
 
+    if book.is_offer and default_variant:
+        discount_price = round(default_variant.price - (default_variant.price * book.discount_percentage / 100))
+    else:
+        discount_price = default_variant.price
+
     review_content=Review.objects.filter(product=book).select_related('user') #fetches the entire reviews related to the particular book and reviewed user.
     # for i in review_content:
     #     print('review content ',i.rating)
@@ -250,14 +271,17 @@ def product_details(request, id):
     # average_rating = Review.objects.filter(product=book).aggregate(Avg('rating'))['rating__avg'] #rounded average rating figure of particular book
     # print(average_rating)
     context = {
-        'books': book, #specific product details which variants included
+        'book': book, #specific product details which variants included
+        'discount_price':discount_price,
         'variants': variants, #all the variant for the specific product
         'default_variant': default_variant, # Use the first variant as default
         'review_content':review_content, #fetches the entire reviews
         'review_count':review_content.count(), #review count for a particular book
         'average_rating':average_rating,
         'average_rating_int':int(round(average_rating)) if average_rating is not None else 0,
-        # 'user_rating':user_rating,
+        'is_sold_out':is_sold_out,
+        'related_books':related_books,
+        
     }
     
     
@@ -334,33 +358,8 @@ def user_address(request):
     return render(request, 'user/user_address.html',{'addresss':address})
 
 def user_cart(request):
-    try:
-        # Get or create the cart for the user
-        cart, created = Cart.objects.get_or_create(user=request.user)
-
-        # Get all cart items linked to this cart
-        cart_items = cart.cart_items.all()
-
-        # Calculate subtotal
-        subtotal = sum(item.get_total_price() for item in cart_items)
-
-        shipping = 0  # or calculate based on logic
-        total = subtotal + shipping
-
-        return render(request, 'user/user_cart.html', {
-            'cart_items': cart_items,
-            'subtotal': subtotal,
-            'total': total,
-            'shipping': shipping,
-        })
-
-    except Cart.DoesNotExist:
-        return render(request, 'user/user_cart.html', {
-            'cart_items': [],
-            'subtotal': 0,
-            'total': 0,
-            'shipping': 0,
-        })
+   
+   return render(request, 'user/user_cart.html')
 
 
 def user_order(request):
@@ -443,41 +442,18 @@ def checkoutpage(request):
         'total': total
     })
 
-def add_to_cart(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            variant_id = data.get('variant_id')
-            quantity = int(data.get('quantity', 1))
-
-            if not variant_id or quantity < 1:
-                return JsonResponse({'success': False, 'message': 'Invalid data'})
-
-            variant = Variant.objects.get(id=variant_id)
-
-            # Get or create cart for the user
-            cart, _ = Cart.objects.get_or_create(user=request.user)
-
-            # Check if item already in cart
-            cart_item, created = CartItem.objects.get_or_create(
-                cart=cart,
-                product_variant=variant,
-                defaults={'quantity': quantity}
-            )
-
-            if not created:
-                cart_item.quantity += quantity
-                cart_item.save()
-
-            return JsonResponse({'success': True, 'message': 'Item added to cart'})
-
-        except Variant.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Product variant not found'})
-
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
-
-    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+def add_to_cart(request, id):
+    try:
+        data = json.loads(request.body)
+        print(data)
+        variant_id = data.get('variant_id')
+        quantity = data.get('quantity')
+        print(f"variant_id: {variant_id}, quantity: {quantity}")
+        
+        # You can now process and return success
+        return JsonResponse({'success': True, 'redirect_url': '/user/cart/'})
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Invalid JSON'})
 
 
 def verification(request):
@@ -562,15 +538,11 @@ def otp_page_fg(request):
 
     if request.method == 'POST':
 
-        
-
-
         action = request.POST.get('action')
         print('action',action)
         if action == 'verify':
             entered_otp = request.POST.get('digit', '')
-            
-        
+
             session_otp=request.session['otp_generate_pls']
             print('hirrrrrrrrr')
 
@@ -610,3 +582,34 @@ def password_change(request):
     return render (request, 'login/password_change.html')
 
 
+def address_edit(request, address_id):
+    address = get_object_or_404(Address, id=address_id)
+
+    if request.method == 'POST':
+        address.address_type = request.POST.get('address_type')
+        address.street = request.POST.get('street')
+        address.phone = request.POST.get('phone')
+        address.landmark = request.POST.get('landmark')
+        address.city = request.POST.get('city')
+        address.state = request.POST.get('state')
+        address.postal_code = request.POST.get('postal_code')
+        address.save()
+        return redirect('user_address')  # Or wherever you want to redirect
+    
+    return render(request, 'user/address_edit.html', {'address':address})
+
+def address_delete(request, address_id):
+
+    status = Address.objects.get(id=address_id)
+    status.is_active=not status.is_active
+    status.save()
+    return redirect('user_address')
+
+
+
+        
+def change_variant(request, book_id):
+    
+    
+    return redirect('user_address')
+        

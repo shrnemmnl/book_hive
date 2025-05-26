@@ -16,6 +16,8 @@
   </nav>
   <br>
   <br>
+<!-- Add this after the breadcrumbs -->
+<input type="hidden" id="book-id" data-book-id="{{ book.id }}" value="{{ book.id }}">
 
   <div class="row">
     <!-- Book Cover and Variant Images -->
@@ -50,9 +52,9 @@
 
     <!-- Book Details -->
     <div class="col-md-8">
-      <h1 class="display-5 fw-bold">{{ books.book_title }}</h1>
+      <h1 class="display-5 fw-bold">{{ book.book_title }}</h1>
       <p class="fs-5">
-        By: <a href="#" class="text-primary">{{ books.author }}</a>
+        By: {{ book.author }}
       </p>
       <div class="d-flex align-items-center mb-3">
           <!-- star rating -->
@@ -67,7 +69,7 @@
             
             <div class="text-muted">Based on {{review_count}} reviews</div>
             {% else %}
-            <div class="text-muted">No users attempted the review</div>
+            <div class="text-muted">Not Reviewed Yet</div>
             {% endif %}
             
 
@@ -89,9 +91,21 @@
 
       <!-- Variant Price -->
       <div class="mb-3">
-        <h3>
+        <!-- <h3>
           <span id="variantPrice">₹{{ default_variant.price }}</span>
-        </h3>
+        </h3> -->
+        {% if book.is_offer %}
+  <h2>
+    <span style="text-decoration: line-through;">₹{{ default_variant.price }}</span>
+    <strong style="color: green;">₹{{ discount_price }}</strong>
+    <span style="color: red;">({{ book.discount_percentage }}% OFF)</span>
+  </h2>
+  <!-- {% if product.offer_expiry %}
+    <p style="color: orange;">Offer ends on {{ product.offer_expiry|date:"D d M Y H:i" }}</p>
+  {% endif %}
+{% else %}
+  <p>Price: ₹{{ product.price }}</p> -->
+{% endif %}
         <p id="variantPublisher">Publisher: {{ default_variant.publisher }}</p>
       </div>
 
@@ -107,40 +121,39 @@
         </p>
 
         {% if default_variant.available_quantity > 0 %}
-        <div class="input-group mb-3" style="max-width: 200px;">
-          <button class="btn btn-outline-secondary" type="button" id="decreaseQty">-</button>
-          <input type="number" id="quantity" class="form-control text-center" value="1" min="1">
-          <button class="btn btn-outline-secondary" type="button" id="increaseQty">+</button>
-        </div>
-        {% endif %}
+<div class="input-group mb-3" style="max-width: 200px;">
+  <button class="btn btn-outline-secondary" type="button" id="decreaseQty">-</button>
+  <input type="number" id="quantity" class="form-control text-center" value="1" min="1" max="5" readonly>
+  <button class="btn btn-outline-secondary" type="button" id="increaseQty">+</button>
+</div>
+{% endif %}
 
       </div>
 
       <!-- Action Buttons -->
-      <div class="mb-4">
-        <div class="row">
-          <div class="col-md-6 mb-2">
-            <button class="btn btn-secondary w-100">Add to Wishlist</button>
-          </div>
-        </div>
-        <div class="row mt-2">
-          <div class="col-md-6 mb-2">
-            {% if default_variant.available_quantity == 0 %}
-            <button class="btn btn-warning w-100 text-white" disabled>
-              {% else %}
-              <button class="btn btn-warning w-100 text-white" id="add_to_cart">
-                {% endif %}
-                ADD TO CART
-              </button>
-          </div>
-          <div class="col-md-6 mb-2">
-            <button class="btn btn-danger w-100" {% if default_variant.available_quantity == 0 %} disabled {% endif %}>
-              BUY NOW
-            </button>
+<div class="row mt-2">
+  <div class="col-md-6 mb-2">
+    <button class="btn btn-primary w-100 add-to-cart-btn {% if is_sold_out %}disabled{% endif %}" 
+            data-book-id="{{ book.id }}" 
+            type="button">
+      Add to Cart
+    </button>
+  </div>
+  <div class="col-md-6 mb-2">
+    <button class="btn btn-danger w-100 buy-now-btn {% if is_sold_out %}disabled{% endif %}" 
+            data-book-id="{{ book.id }}" 
+            type="button">
+      BUY NOW
+    </button>
+  </div>
+</div>
 
-          </div>
-        </div>
-      </div>
+<div class="text-center mt-2">
+  <a href="{% url 'user_wishlist' %}" class="btn btn-outline-secondary w-100 {% if is_sold_out %}disabled{% endif %}">
+    ❤️ Add to Wishlist
+  </a>
+</div>
+
 
       <!-- Book Specifications -->
       <div class="row">
@@ -369,6 +382,7 @@
 
     <!-- Individual Reviews -->
      {% for review in  review_content %}
+     {% if review.is_active %}
     <div class="card mb-3">
       <div class="card-body">
         <div class="d-flex justify-content-between mb-2">
@@ -396,6 +410,7 @@
         </div> {% endcomment %}
       </div>
     </div>
+    {% endif %}
     {% endfor %}
 
     
@@ -417,6 +432,24 @@
   </div>
 </div>
 
+
+<h3>More from this Genre 📚</h3>
+<div class="related-books" style="display: flex; flex-wrap: wrap; gap: 20px;">
+  {% for book in related_books %}
+    <div class="book-card" style="width: 200px; border: 1px solid #ccc; padding: 10px;">
+      <a href="{% url 'product_details' book.id %}">
+        <img src="{{ book.image.url }}" alt="{{ book.book_title }}" style="width: 100%; height: 250px; object-fit: cover;">
+        <h4>{{ book.book_title }}</h4>
+        <p>by {{ book.author }}</p>
+        {% if book.discount_percentage > 0 %}
+          <span style="color: red;">{{ book.discount_percentage }}% OFF</span>
+        {% endif %}
+      </a>
+    </div>
+  {% empty %}
+    <p>No similar books found in this genre.</p>
+  {% endfor %}
+</div> 
 <!-- Write Review Modal -->
 <div class="modal fade" id="writeReviewModal" tabindex="-1" aria-labelledby="writeReviewModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
@@ -530,264 +563,535 @@
         <button type="Submit" class="btn btn-primary">Submit Review</button>
       </div>
       </form>
-      <div>
-                {% for message in messages %}
-                <div
-                  class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}"
-                  role="alert"
-                >
-                  {{ message }}
-                </div>
-                {% endfor %}
-              </div>
+       
+
+
     </div>
+    
   </div>
+  
 </div>
 
 <!-- Add Bootstrap Icons CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
 
-<script>
-  // Function to change the main image when clicking on thumbnails
-  function changeImage(imageUrl) {
-    // Update the main image
-    document.getElementById('mainImage').src = imageUrl;
+{% comment %} <script>
 
-    // Update the zoomed image background immediately
-    const zoomedImage = document.getElementById('zoomedImage');
-    zoomedImage.style.backgroundImage = `url('${imageUrl}')`;
 
-    // Highlight the selected thumbnail
-    document.querySelectorAll('.thumbnail').forEach(thumb => {
-      if (thumb.getAttribute('src') === imageUrl) {
-        thumb.classList.add('border', 'border-primary');
-      } else {
-        thumb.classList.remove('border', 'border-primary');
-      }
-    });
+  document.addEventListener('DOMContentLoaded', function () {
+  setupQtyButtons();
+  setupImageZoom();
+  setupAddToCart();
+  highlightDefaultThumbnail();
+});
+
+function setupQtyButtons() {
+  const qtyInput = document.getElementById('quantity');
+  const increaseBtn = document.getElementById('increaseQty');
+  const decreaseBtn = document.getElementById('decreaseQty');
+  const maxQty = 10;
+  const minQty = 1;
+
+  function updateButtons() {
+    const value = parseInt(qtyInput.value);
+    increaseBtn.disabled = value >= maxQty;
+    decreaseBtn.disabled = value <= minQty;
   }
 
-  // Add zoom functionality
-  document.addEventListener('DOMContentLoaded', function () {
-    const container = document.getElementById('imageContainer');
-    const mainImage = document.getElementById('mainImage');
-    const zoomedImage = document.getElementById('zoomedImage');
+  increaseBtn.addEventListener('click', () => {
+    let value = parseInt(qtyInput.value);
+    if (value < maxQty) qtyInput.value = value + 1;
+    updateButtons();
+  });
 
-    // Set initial zoom background image
+  decreaseBtn.addEventListener('click', () => {
+    let value = parseInt(qtyInput.value);
+    if (value > minQty) qtyInput.value = value - 1;
+    updateButtons();
+  });
+
+  updateButtons();
+}
+
+function setupImageZoom() {
+  const container = document.getElementById('imageContainer');
+  const mainImage = document.getElementById('mainImage');
+  const zoomedImage = document.getElementById('zoomedImage');
+
+  container.addEventListener('mousemove', function (e) {
     zoomedImage.style.backgroundImage = `url('${mainImage.src}')`;
-
-    // Add zoom effect on mousemove
-    container.addEventListener('mousemove', function (e) {
-      // Make sure the zoomed image always matches the current main image
-      zoomedImage.style.backgroundImage = `url('${mainImage.src}')`;
-
-      // Get cursor position
-      const rect = container.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      // Calculate position as percentage
-      const xPercent = x / rect.width * 100;
-      const yPercent = y / rect.height * 100;
-
-      // Show the zoomed layer
-      zoomedImage.style.opacity = 1;
-
-      // Set background size to larger value for zoom effect
-      zoomedImage.style.backgroundSize = '200% 200%';
-
-      // Position the background image inversely to mouse movement
-      zoomedImage.style.backgroundPosition = `${xPercent}% ${yPercent}%`;
-    });
-
-    // Hide zoom effect when mouse leaves
-    container.addEventListener('mouseleave', function () {
-      zoomedImage.style.opacity = 0;
-    });
-
-    // Highlight the first thumbnail by default
-    document.querySelector('.thumbnail').classList.add('border', 'border-primary');
+    const rect = container.getBoundingClientRect();
+    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+    zoomedImage.style.opacity = 1;
+    zoomedImage.style.backgroundSize = '200% 200%';
+    zoomedImage.style.backgroundPosition = `${xPercent}% ${yPercent}%`;
   });
 
-  // Update existing changeVariant function to properly handle the zoom
-  function changeVariant(variantId) {
-    // Use fetch to get variant data via AJAX
-    fetch(`/get-variant-details/${variantId}/`)
+  container.addEventListener('mouseleave', function () {
+    zoomedImage.style.opacity = 0;
+  });
+}
+
+function changeImage(imageUrl) {
+  const mainImage = document.getElementById('mainImage');
+  const zoomedImage = document.getElementById('zoomedImage');
+  mainImage.src = imageUrl;
+  zoomedImage.style.backgroundImage = `url('${imageUrl}')`;
+
+  document.querySelectorAll('.thumbnail').forEach(thumb => {
+    thumb.classList.toggle('border', thumb.src === imageUrl);
+    thumb.classList.toggle('border-primary', thumb.src === imageUrl);
+  });
+}
+
+function changeVariant(variantId) {
+  fetch(`/get-variant-details/${variantId}/`)
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('variantPrice').innerText = `₹${data.price}`;
+      document.getElementById('variantPublisher').innerText = `Publisher: ${data.publisher}`;
+      document.getElementById('variantDate').innerText = data.published_date;
+      document.getElementById('variantPublisherLink').innerHTML = `<a href="#" class="text-primary">${data.publisher}</a>`;
+      document.getElementById('variantPages').innerText = data.page;
+      document.getElementById('variantLanguage').innerText = data.language;
+
+      const stockElement = document.getElementById('stockStatus');
+      if (data.available_quantity > 0) {
+        stockElement.className = 'text-success';
+        stockElement.innerText = `✓ In Stock (${data.available_quantity} available)`;
+        document.querySelectorAll('.btn-warning, .btn-danger').forEach(btn => btn.disabled = false);
+      } else {
+        stockElement.className = 'text-danger';
+        stockElement.innerText = 'Out of Stock';
+        document.querySelectorAll('.btn-warning, .btn-danger').forEach(btn => btn.disabled = true);
+      }
+
+      changeImage(data.images.image1);
+
+      const thumbnails = document.querySelectorAll('.thumbnail');
+      thumbnails[0].src = data.images.image1;
+      thumbnails[0].onclick = () => changeImage(data.images.image1);
+
+      thumbnails[1].src = data.images.image2;
+      thumbnails[1].onclick = () => changeImage(data.images.image2);
+
+      thumbnails[2].src = data.images.image3;
+      thumbnails[2].onclick = () => changeImage(data.images.image3);
+    })
+    .catch(error => console.error('Error loading variant data:', error));
+}
+
+function highlightDefaultThumbnail() {
+  const defaultThumb = document.querySelector('.thumbnail');
+  if (defaultThumb) defaultThumb.classList.add('border', 'border-primary');
+}
+
+function setupAddToCart() {
+  const addToCartBtn = document.getElementById('add_to_cart');
+  if (!addToCartBtn) return;
+
+  addToCartBtn.addEventListener('click', function () {
+    const variantId = document.getElementById('variantSelector').value;
+    const quantity = document.getElementById('quantity').value;
+    const csrfToken = document.getElementById('csrf_token').value;
+
+    fetch('/add_to_cart', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ variant_id: variantId, quantity: quantity }),
+    })
       .then(response => response.json())
       .then(data => {
-        // Update variant details
-        document.getElementById('variantPrice').innerText = `₹${data.price}`;
-        document.getElementById('variantPublisher').innerText = `Publisher: ${data.publisher}`;
-        document.getElementById('variantDate').innerText = data.published_date;
-        document.getElementById('variantPublisherLink').innerHTML = `<a href="#" class="text-primary">${data.publisher}</a>`;
-        document.getElementById('variantPages').innerText = data.page;
-        document.getElementById('variantLanguage').innerText = data.language;
-
-        // Update stock status
-        const stockElement = document.getElementById('stockStatus');
-        if (data.available_quantity > 0) {
-          stockElement.className = 'text-success';
-          stockElement.innerText = `✓ In Stock (${data.available_quantity} available)`;
-
-          // Enable buttons
-          document.querySelectorAll('.btn-warning, .btn-danger').forEach(btn => {
-            btn.disabled = false;
-          });
+        if (data.success) {
+          alert('✅ Added to cart!');
         } else {
-          stockElement.className = 'text-danger';
-          stockElement.innerText = 'Out of Stock';
-
-          // Disable buttons
-          document.querySelectorAll('.btn-warning, .btn-danger').forEach(btn => {
-            btn.disabled = true;
-          });
+          alert('❌ ' + (data.message || 'Something went wrong.'));
         }
-
-        // Update images
-        const mainImage = document.getElementById('mainImage');
-        mainImage.src = data.images.image1;
-
-        // Update the zoom background immediately
-        const zoomedImage = document.getElementById('zoomedImage');
-        zoomedImage.style.backgroundImage = `url('${data.images.image1}')`;
-
-        // Update thumbnails with onclick handlers
-        const thumbnails = document.querySelectorAll('.thumbnail');
-        thumbnails[0].src = data.images.image1;
-        thumbnails[0].onclick = function () { changeImage(data.images.image1); };
-        thumbnails[0].classList.add('border', 'border-primary');
-
-        thumbnails[1].src = data.images.image2;
-        thumbnails[1].onclick = function () { changeImage(data.images.image2); };
-        thumbnails[1].classList.remove('border', 'border-primary');
-
-        thumbnails[2].src = data.images.image3;
-        thumbnails[2].onclick = function () { changeImage(data.images.image3); };
-        thumbnails[2].classList.remove('border', 'border-primary');
       })
-      .catch(error => console.error('Error loading variant data:', error));
-  }
-  // JavaScript to handle variant changes
-  function changeVariant(variantId) {
-    // Use fetch to get variant data via AJAX
-    fetch(`/get-variant-details/${variantId}/`)
-      .then(response => response.json())
-      .then(data => {
-        // Update variant details
-        document.getElementById('variantPrice').innerText = `₹${data.price}`;
-        document.getElementById('variantPublisher').innerText = `Publisher: ${data.publisher}`;
-        document.getElementById('variantDate').innerText = data.published_date;
-        document.getElementById('variantPublisherLink').innerHTML = `<a href="#" class="text-primary">${data.publisher}</a>`;
-        document.getElementById('variantPages').innerText = data.page;
-        document.getElementById('variantLanguage').innerText = data.language;
+      .catch(error => {
+        console.error('Error:', error);
+        alert('🚨 Failed to add to cart.');
+      });
+  });
+}
 
-        // Update stock status
-        const stockElement = document.getElementById('stockStatus');
-        if (data.available_quantity > 0) {
-          stockElement.className = 'text-success';
-          stockElement.innerText = `✓ In Stock (${data.available_quantity} available)`;
+</script> {% endcomment %}
 
-          // Enable buttons
-          document.querySelectorAll('.btn-warning, .btn-danger').forEach(btn => {
-            btn.disabled = false;
-          });
-        } else {
-          stockElement.className = 'text-danger';
-          stockElement.innerText = 'Out of Stock';
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  setupQtyButtons();
+  setupImageZoom();
+  setupAddToCartAjax();
+  highlightDefaultThumbnail();
+});
 
-          // Disable buttons
-          document.querySelectorAll('.btn-warning, .btn-danger').forEach(btn => {
-            btn.disabled = true;
-          });
-        }
+function setupQtyButtons() {
+  const qtyInput = document.getElementById('quantity');
+  const increaseBtn = document.getElementById('increaseQty');
+  const decreaseBtn = document.getElementById('decreaseQty');
+  const maxQty = 10;
+  const minQty = 1;
 
-        // Update images
-        document.getElementById('mainImage').src = data.images.image1;
+  if (!qtyInput || !increaseBtn || !decreaseBtn) return;
 
-        // Update thumbnails with onclick handlers
-        const thumbnails = document.querySelectorAll('.thumbnail');
-        thumbnails[0].src = data.images.image1;
-        thumbnails[0].onclick = function () { changeImage(data.images.image1); };
-
-        thumbnails[1].src = data.images.image2;
-        thumbnails[1].onclick = function () { changeImage(data.images.image2); };
-
-        thumbnails[2].src = data.images.image3;
-        thumbnails[2].onclick = function () { changeImage(data.images.image3); };
-      })
-      .catch(error => console.error('Error loading variant data:', error));
+  function updateButtons() {
+    const value = parseInt(qtyInput.value);
+    increaseBtn.disabled = value >= maxQty;
+    decreaseBtn.disabled = value <= minQty;
   }
 
-  // Function to change the main image when clicking on thumbnails
-  function changeImage(imageUrl) {
-    document.getElementById('mainImage').src = imageUrl;
-  }
-
-  //***************************
-  document.addEventListener('DOMContentLoaded', function () {
-    const addToCartBtn = document.getElementById('add_to_cart');
-    const increaseQty = document.getElementById('increaseQty');
-    const decreaseQty = document.getElementById('decreaseQty');
-    const quantityInput = document.getElementById('quantity');
-
-    // Quantity +/- handlers
-    increaseQty?.addEventListener('click', () => {
-      let qty = parseInt(quantityInput.value);
-      quantityInput.value = qty + 1;
-    });
-
-    decreaseQty?.addEventListener('click', () => {
-      let qty = parseInt(quantityInput.value);
-      if (qty > 1) quantityInput.value = qty - 1;
-    });
-
-    // Add to cart AJAX
-    addToCartBtn?.addEventListener('click', function () {
-      const variantId = document.getElementById('variantSelector').value;
-      const quantity = document.getElementById('quantity').value;
-      const csrfToken = document.getElementById('csrf_token').value;
-
-      fetch('/add_to_cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrfToken,
-        },
-        body: JSON.stringify({
-          variant_id: variantId,
-          quantity: quantity,
-        }),
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            alert('✅ Added to cart!');
-            // You can trigger a toast or update cart badge here
-          } else {
-            alert('❌ ' + (data.message || 'Something went wrong.'));
-          }
-        })
-        .catch(error => {
-          console.error('Error:', error);
-          alert('🚨 Failed to add to cart.');
-        });
-    });
+  increaseBtn.addEventListener('click', () => {
+    let value = parseInt(qtyInput.value);
+    if (value < maxQty) qtyInput.value = value + 1;
+    updateButtons();
   });
 
-  //***********
-  document.getElementById('decreaseQty').addEventListener('click', function () {
-    const qtyInput = document.getElementById('quantity');
-    let currentQty = parseInt(qtyInput.value);
-    if (currentQty > 1) {
-      qtyInput.value = currentQty - 1;
+  decreaseBtn.addEventListener('click', () => {
+    let value = parseInt(qtyInput.value);
+    if (value > minQty) qtyInput.value = value - 1;
+    updateButtons();
+  });
+
+  updateButtons();
+}
+
+function setupImageZoom() {
+  const container = document.getElementById('imageContainer');
+  const mainImage = document.getElementById('mainImage');
+  const zoomedImage = document.getElementById('zoomedImage');
+
+  if (!container || !mainImage || !zoomedImage) return;
+
+  container.addEventListener('mousemove', function (e) {
+    zoomedImage.style.backgroundImage = `url('${mainImage.src}')`;
+    const rect = container.getBoundingClientRect();
+    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+    zoomedImage.style.opacity = 1;
+    zoomedImage.style.backgroundSize = '200% 200%';
+    zoomedImage.style.backgroundPosition = `${xPercent}% ${yPercent}%`;
+  });
+
+  container.addEventListener('mouseleave', function () {
+    zoomedImage.style.opacity = 0;
+  });
+}
+
+function changeImage(imageUrl) {
+  const mainImage = document.getElementById('mainImage');
+  const zoomedImage = document.getElementById('zoomedImage');
+  
+  if (!mainImage || !zoomedImage) return;
+  
+  mainImage.src = imageUrl;
+  zoomedImage.style.backgroundImage = `url('${imageUrl}')`;
+
+  document.querySelectorAll('.thumbnail').forEach(thumb => {
+    thumb.classList.remove('border', 'border-primary');
+    if (thumb.src === imageUrl) {
+      thumb.classList.add('border', 'border-primary');
     }
   });
+}
 
-  document.getElementById('increaseQty').addEventListener('click', function () {
-    const qtyInput = document.getElementById('quantity');
-    qtyInput.value = parseInt(qtyInput.value) + 1;
+function changeVariant(variantId) {
+  const bookId = document.getElementById('book-id')?.value;
+  
+  if (!bookId) {
+    console.error('Book ID not found');
+    return;
+  }
+
+  const variantSelector = document.getElementById('variantSelector');
+  if (variantSelector) {
+    variantSelector.disabled = true;
+  }
+
+  fetch(`/change_variant/${bookId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken(),
+    },
+    body: JSON.stringify({ 
+      variant_id: variantId 
+    }),
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.success) {
+      updateVariantDetails(data.variant);
+      showSuccessMessage('Variant updated successfully!');
+    } else {
+      showErrorMessage(data.message || 'Failed to update variant');
+    }
+  })
+  .catch(error => {
+    console.error('Error changing variant:', error);
+    showErrorMessage('Failed to update variant. Please try again.');
+  })
+  .finally(() => {
+    if (variantSelector) {
+      variantSelector.disabled = false;
+    }
+  });
+}
+
+function updateVariantDetails(variant) {
+  // Update price
+  const priceElement = document.querySelector('h2 strong[style*="color: green"]');
+  if (priceElement) {
+    priceElement.innerText = `₹${variant.price}`;
+  }
+
+  // Update publisher
+  const publisherElement = document.getElementById('variantPublisher');
+  if (publisherElement) {
+    publisherElement.innerText = `Publisher: ${variant.publisher}`;
+  }
+
+  // Update published date
+  const dateElement = document.getElementById('variantDate');
+  if (dateElement) {
+    dateElement.innerText = variant.published_date;
+  }
+
+  // Update publisher link
+  const publisherLinkElement = document.getElementById('variantPublisherLink');
+  if (publisherLinkElement) {
+    publisherLinkElement.innerHTML = `<a href="#" class="text-primary">${variant.publisher}</a>`;
+  }
+
+  // Update pages
+  const pagesElement = document.getElementById('variantPages');
+  if (pagesElement) {
+    pagesElement.innerText = variant.page;
+  }
+
+  // Update language
+  const languageElement = document.getElementById('variantLanguage');
+  if (languageElement) {
+    languageElement.innerText = variant.language;
+  }
+
+  // Update stock status
+  updateStockStatus(variant.available_quantity);
+
+  // Update images if provided
+  if (variant.images) {
+    updateVariantImages(variant.images);
+  }
+}
+
+function updateStockStatus(availableQuantity) {
+  const stockElement = document.getElementById('stockStatus');
+  const actionButtons = document.querySelectorAll('.add-to-cart-btn, .buy-now-btn');
+  
+  if (stockElement) {
+    if (availableQuantity > 0) {
+      stockElement.className = 'text-success';
+      stockElement.innerText = `✓ In Stock (${availableQuantity} available)`;
+      
+      actionButtons.forEach(btn => {
+        btn.classList.remove('disabled');
+        btn.removeAttribute('disabled');
+      });
+    } else {
+      stockElement.className = 'text-danger';
+      stockElement.innerText = 'Out of Stock';
+      
+      actionButtons.forEach(btn => {
+        btn.classList.add('disabled');
+        btn.setAttribute('disabled', 'true');
+      });
+    }
+  }
+}
+
+function updateVariantImages(images) {
+  if (images.image1) {
+    changeImage(images.image1);
+  }
+
+  const thumbnails = document.querySelectorAll('.thumbnail');
+  if (thumbnails.length >= 3) {
+    if (images.image1) {
+      thumbnails[0].src = images.image1;
+      thumbnails[0].onclick = () => changeImage(images.image1);
+    }
+    if (images.image2) {
+      thumbnails[1].src = images.image2;
+      thumbnails[1].onclick = () => changeImage(images.image2);
+    }
+    if (images.image3) {
+      thumbnails[2].src = images.image3;
+      thumbnails[2].onclick = () => changeImage(images.image3);
+    }
+  }
+}
+
+function setupAddToCartAjax() {
+  // Handle "Add to Cart" button click
+  const addToCartBtn = document.querySelector('.add-to-cart-btn');
+  if (addToCartBtn) {
+    addToCartBtn.addEventListener('click', function() {
+      const bookId = this.dataset.bookId;
+      const variantId = document.getElementById('variantSelector')?.value;
+      const quantity = document.getElementById('quantity')?.value || 1;
+      
+      addToCartAjax(bookId, variantId, quantity, false);
+    });
+  }
+
+  // Handle "BUY NOW" button click
+  //const buyNowBtn = document.querySelector('.buy-now-btn');
+  //if (buyNowBtn) {
+   // buyNowBtn.addEventListener('click', function() {
+   //   const bookId = this.dataset.bookId;
+   //   const variantId = document.getElementById('variantSelector')?.value;
+   //   const quantity = document.getElementById('quantity')?.value || 1;
+      
+   //   addToCartAjax(bookId, variantId, quantity, true);
+   // });
+  //}
+}
+
+function addToCartAjax(bookId, variantId, quantity, isBuyNow = false) {
+  const buttons = document.querySelectorAll('.add-to-cart-btn');
+  const originalTexts = [];
+  
+  buttons.forEach((btn, index) => {
+    originalTexts[index] = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = 'Processing...';
   });
 
+  const requestData = {
+    variant_id: variantId,
+    quantity: parseInt(quantity),
+    buy_now: isBuyNow
+  };
+
+  fetch(`/add_to_cart/${bookId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken(),
+    },
+    body: JSON.stringify(requestData),
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.success) {
+      if (isBuyNow) {
+        showSuccessMessage('Added to cart! Redirecting...');
+        if (data.redirect_url) {
+          setTimeout(() => {
+            window.location.href = data.redirect_url;
+          }, 1000);
+        }
+      } else {
+        showSuccessMessage('✅ Added to cart successfully!');
+      }
+    } else {
+      showErrorMessage(data.message || 'Failed to add to cart');
+    }
+  })
+  .catch(error => {
+    console.error('Error adding to cart:', error);
+    showErrorMessage('Failed to add to cart. Please try again.');
+  })
+  .finally(() => {
+    buttons.forEach((btn, index) => {
+      btn.disabled = false;
+      btn.innerText = originalTexts[index];
+    });
+  });
+}
+
+function getCsrfToken() {
+  const csrfInput = document.getElementById('csrf_token');
+  if (csrfInput) {
+    return csrfInput.value;
+  }
+  
+  const csrfMeta = document.querySelector('[name=csrfmiddlewaretoken]');
+  if (csrfMeta) {
+    return csrfMeta.value;
+  }
+  
+  return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+}
+
+function showSuccessMessage(message) {
+  showToast(message, 'success');
+}
+
+function showErrorMessage(message) {
+  showToast(message, 'error');
+}
+
+function showToast(message, type = 'info') {
+  const existingToasts = document.querySelectorAll('.custom-toast');
+  existingToasts.forEach(toast => toast.remove());
+
+  const toast = document.createElement('div');
+  toast.className = `custom-toast alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+    animation: slideIn 0.3s ease-out;
+  `;
+  
+  toast.innerHTML = `
+    ${message}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  `;
+
+  if (!document.querySelector('#toast-styles')) {
+    const style = document.createElement('style');
+    style.id = 'toast-styles';
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.remove();
+    }
+  }, 5000);
+}
+
+function highlightDefaultThumbnail() {
+  const defaultThumb = document.querySelector('.thumbnail');
+  if (defaultThumb) {
+    defaultThumb.classList.add('border', 'border-primary');
+  }
+}
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

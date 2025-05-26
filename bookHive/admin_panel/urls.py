@@ -26,4 +26,6 @@ urlpatterns = [
     path('admin_order',views.admin_order,name='admin_order'),
     path('update_order_item_status/<int:order_item_id>',views.update_order_item_status,name='update_order_item_status'),
     path('admin_order_details/<int:order>/',views.admin_order_details, name='admin_order_details'),
+    path('admin_review',views.admin_review, name='admin_review'),
+    path('toggle_review_status/<int:review_id>/',views.toggle_review_status, name='toggle_review_status'),
 ]

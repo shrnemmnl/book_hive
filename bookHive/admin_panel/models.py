@@ -21,8 +21,11 @@ class Product(models.Model):
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)  # Foreign Key to Category
     author = models.CharField(max_length=255)
     description = models.CharField(max_length=500)
-    image = models.ImageField(upload_to='product_images/',null=True) 
+    image = models.ImageField(upload_to='product_images/', blank=True, null=True) 
     is_active = models.BooleanField()
+    discount_percentage = models.PositiveIntegerField(default=0, help_text="Enter % discount (e.g., 10 for 10%)")
+    is_offer = models.BooleanField(default=False, help_text="Is there an active offer?")
+    offer_title = models.CharField(max_length=100, blank=True, null=True, help_text="Offer name like 'Summer Sale'")
     created_at = models.DateTimeField(default=now)  # Auto timestamp
     updated_at = models.DateTimeField(auto_now=True)  # Auto-updated on modification
 
@@ -47,6 +50,7 @@ class ProductImage(models.Model):
     image1 = models.ImageField(upload_to='product_images/', null=True, blank=True)
     image2 = models.ImageField(upload_to='product_images/', null=True, blank=True)
     image3 = models.ImageField(upload_to='product_images/', null=True, blank=True) 
+   
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     
