@@ -32,6 +32,12 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)  # Make email unique
     phone_no = models.BigIntegerField(unique=True, null=True, blank=True)  
     is_verified = models.BooleanField(default=False)
+    profile_pic = models.ImageField(
+        upload_to='profile_pics/',  # where it stores in media/
+        default='profile_pics/default.jpg',  # this should exist in your media folder!
+        null=True,
+        blank=True
+    )
     username = None  # Remove username field
     USERNAME_FIELD = 'email'  # Set email as the username field
     REQUIRED_FIELDS = []

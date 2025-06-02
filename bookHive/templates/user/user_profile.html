@@ -9,17 +9,33 @@
     <div class="col-lg-9 py-5">
       <div class="content-wrapper bg-white p-4 shadow-sm rounded">
         <h4 class="mb-4">Personal Information</h4>
-        <form method="POST" >
+        <form method="POST" enctype="multipart/form-data">
           {% csrf_token %}
           <div class="row mb-3">
             <div class="col-md-6 mb-3 mb-md-0">
+              <div class="user-avatar mb-4 text-center">
+                <label for="profilePicInput" style="cursor: pointer">
+                  <img src="{{ user.profile_pic.url }}" alt="User Avatar"
+                  class="rounded-circle shadow" width="100" height="100"
+                  style="object-fit: cover;" />
+                </label>
+                <input
+                  type="file"
+                  id="profilePicInput"
+                  name="profile_pic"
+                  accept="image/*"
+                  class="d-none"
+                />
+                <p class="small text-muted mt-1">Click image to change</p>
+              </div>
+
               <label for="firstName" class="form-label">First Name</label>
               <input
                 type="text"
                 class="form-control"
                 id="firstName"
                 name="firstName"
-                value={{user.first_name}}
+                value="{{user.first_name}}"
               />
             </div>
             <div class="col-md-6">
@@ -29,7 +45,7 @@
                 class="form-control"
                 id="lastName"
                 name="lastName"
-                value={{user.last_name}}
+                value="{{user.last_name}}"
               />
             </div>
           </div>
@@ -41,7 +57,7 @@
               class="form-control"
               id="email"
               name="email"
-              value={{user.email}}
+              value="{{user.email}}"
             />
           </div>
 
@@ -52,16 +68,16 @@
               class="form-control"
               id="phone"
               name="phone_no"
-              value={{user.phone_no}}
+              value="{{user.phone_no}}"
             />
           </div>
           <div>
             <button type="submit" class="btn btn-success">Save Changes</button>
           </div>
-          
-        </form>     
-         {% comment %}********************************************  {% endcomment %}
-         {% comment %} <form>
+        </form>
+        {% comment %}******************************************** {% endcomment
+        %} {% comment %}
+        <form>
           <hr class="my-4" />
 
           <h4 class="mb-4">Change Password</h4>
@@ -90,9 +106,12 @@
           </div>
 
           <div class="mt-4">
-            <button type="submit" class="btn btn-primary">Change Password</button>
+            <button type="submit" class="btn btn-primary">
+              Change Password
+            </button>
           </div>
-        </form> {% endcomment %}
+        </form>
+        {% endcomment %}
       </div>
     </div>
   </div>

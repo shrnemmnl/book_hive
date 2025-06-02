@@ -15,6 +15,7 @@ import re
 from .utils import send_verification_email, generate_otp
 from django.core.paginator import Paginator
 from django.db.models import Avg
+from django.http import HttpResponse
 
 
 
@@ -323,21 +324,41 @@ def search_book(request):
     
 
 def user_profile(request):
+
+    errors={}
     user=CustomUser.objects.get(id=request.user.id)
     if request.method=='POST':
+        profile_pic = request.FILES.get('profile_pic')
         fname=request.POST.get('firstName', '').strip()
         lname=request.POST.get('lastName', '').strip()
         email=request.POST.get('email', '').strip()
         phone_no=request.POST.get('phone_no', '').strip()
 
-        user.first_name=fname
-        user.last_name=lname
-        user.email=email
-        user.phone_no=phone_no
-        user.save()
-        redirect('user_profile')
+        # Validation patterns
+        
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        mobile_pattern = r'^\d{10}$'  # Assuming 10-digit mobile number
 
-    return render(request, 'user/user_profile.html',{'user':user})
+         # Validate email
+        if not re.match(email_pattern, email):
+            errors['email'] = "Invalid email format."
+
+        # Validate mobile number
+        if not re.match(mobile_pattern, phone_no):
+            errors['mobile'] = "Mobile number must be 10 digits."
+        
+        if not errors:
+
+            CustomUser.objects.filter(id=user.id).update(
+    first_name=fname,
+    last_name=lname,
+    email=email,
+    phone_no=phone_no
+)
+            messages.success(request, "Profile details are updated.")
+            redirect('user_profile')
+
+    return render(request, 'user/user_profile.html',{'user':user, 'errors':errors})
 
 def user_address(request):
     address=Address.objects.filter(user=request.user,is_active=True)
@@ -612,4 +633,15 @@ def change_variant(request, book_id):
     
     
     return redirect('user_address')
+
+
+def sample(request):
+    print('hi')
+    if request.method=="POST":
+        biscuits=request.COOKIES
+        print(biscuits)
+        print('hi2')
+        return render(request, 'sample.html',{'biscuits':biscuits})
+    
+    return render(request, 'sample.html')
         

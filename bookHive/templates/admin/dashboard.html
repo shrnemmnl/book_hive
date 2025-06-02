@@ -4,15 +4,7 @@
 {% endblock heading %}
 {% block content %}
             <div class="row my-4">
-                {% if messages %}
-    <div class="container mt-3">
-        {% for message in messages %}
-            <div class="alert alert-success text-center" role="alert">
-                {{ message }}
-            </div>
-        {% endfor %}
-    </div>
-{% endif %}
+                {% include 'message.html' %}
 
                 <div class="col-md-4">
                     <div class="card text-center">
@@ -59,4 +51,7 @@
                 </div>
             </div>
         </div>
+
+        
+
 {% endblock  %}

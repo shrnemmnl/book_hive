@@ -11,7 +11,7 @@ urlpatterns = [
          views.product_details, name='product_details'),
     path('search_book',
          views.search_book, name='search_book'),
-     path('user_profile',views.user_profile, name='user_profile'),
+     path('user-profile',views.user_profile, name='user_profile'),
      path('user_address',views.user_address, name='user_address'),
      path('user_cart',views.user_cart, name='user_cart'),
      path('user_order',views.user_order, name='user_order'),
@@ -27,5 +27,6 @@ urlpatterns = [
      path('address_edit/<int:address_id>/',views.address_edit, name='address_edit'),
      path('address_delete/<int:address_id>/',views.address_delete, name='address_delete'),
      path('change_variant/<int:book_id>/',views.change_variant, name='change_variant'),
+     path('sample',views.sample, name='sample'),
     
 ]
