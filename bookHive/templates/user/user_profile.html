@@ -7,12 +7,16 @@
 
     <!-- Main Content Column -->
     <div class="col-lg-9 py-5">
+      <div>
+        {% include "message.html" %}
+      </div>
       <div class="content-wrapper bg-white p-4 shadow-sm rounded">
         <h4 class="mb-4">Personal Information</h4>
         <form method="POST" enctype="multipart/form-data">
           {% csrf_token %}
+          <input type="hidden" name="form_type" value="personal_info">
           <div class="row mb-3">
-            <div class="col-md-6 mb-3 mb-md-0">
+            <div class="mb-3 mb-md-0">
               <div class="user-avatar mb-4 text-center">
                 <label for="profilePicInput" style="cursor: pointer">
                   <img src="{{ user.profile_pic.url }}" alt="User Avatar"
@@ -29,6 +33,11 @@
                 <p class="small text-muted mt-1">Click image to change</p>
               </div>
 
+              
+            </div>
+            
+          </div>
+<div class="mb-3">
               <label for="firstName" class="form-label">First Name</label>
               <input
                 type="text"
@@ -37,8 +46,6 @@
                 name="firstName"
                 value="{{user.first_name}}"
               />
-            </div>
-            <div class="col-md-6">
               <label for="lastName" class="form-label">Last Name</label>
               <input
                 type="text"
@@ -48,8 +55,6 @@
                 value="{{user.last_name}}"
               />
             </div>
-          </div>
-
           <div class="mb-3">
             <label for="email" class="form-label">Email Address</label>
             <input
@@ -57,6 +62,7 @@
               class="form-control"
               id="email"
               name="email"
+              readonly
               value="{{user.email}}"
             />
           </div>
@@ -75,9 +81,10 @@
             <button type="submit" class="btn btn-success">Save Changes</button>
           </div>
         </form>
-        {% comment %}******************************************** {% endcomment
-        %} {% comment %}
-        <form>
+        
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="password_change">
           <hr class="my-4" />
 
           <h4 class="mb-4">Change Password</h4>
@@ -85,22 +92,23 @@
             <label for="currentPassword" class="form-label"
               >Current Password</label
             >
-            <input type="password" class="form-control" id="currentPassword" />
+            <input type="password" class="form-control" id="currentPassword" name="current_password"/>
           </div>
 
           <div class="row mb-3">
             <div class="col-md-6 mb-3 mb-md-0">
               <label for="newPassword" class="form-label">New Password</label>
-              <input type="password" class="form-control" id="newPassword" />
+              <input type="password" class="form-control" id="newPassword" name="new_password"/>
             </div>
             <div class="col-md-6">
-              <label for="confirmPassword" class="form-label"
+              <label for="confirmPassword" class="form-label" 
                 >Confirm New Password</label
               >
               <input
                 type="password"
                 class="form-control"
                 id="confirmPassword"
+                name="confirm_password"
               />
             </div>
           </div>
@@ -111,7 +119,6 @@
             </button>
           </div>
         </form>
-        {% endcomment %}
       </div>
     </div>
   </div>
