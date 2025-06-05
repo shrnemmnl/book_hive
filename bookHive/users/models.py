@@ -75,6 +75,7 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
+    
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_items')
     product_variant = models.ForeignKey(Variant, on_delete=models.CASCADE, related_name='cart_items')
     quantity = models.PositiveIntegerField(default=1)

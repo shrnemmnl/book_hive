@@ -2,8 +2,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
-# Import your user model
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review  # Import your user model
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache
 from django.db.models import Min
@@ -19,12 +18,13 @@ from django.db.models import Avg
 from django.http import HttpResponse
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
 
 
 
-# def product_special_list():
-#     return Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
+
 
 
 def signup(request):
@@ -406,9 +406,17 @@ def user_address(request):
     return render(request, 'user/user_address.html', {'addresss': address})
 
 
+
+
+
 def user_cart(request):
 
     return render(request, 'user/user_cart.html')
+
+    
+
+    
+    
 
 
 def user_order(request):
@@ -498,7 +506,7 @@ def checkoutpage(request):
         'total': total
     })
 
-
+@require_POST
 def add_to_cart(request, id):
     try:
         data = json.loads(request.body)
@@ -640,6 +648,7 @@ def password_change(request):
 
 def address_edit(request, address_id):
     address = get_object_or_404(Address, id=address_id)
+    has_error = False
 
     if request.method == 'POST':
         address.address_type = request.POST.get('address_type')
@@ -649,8 +658,22 @@ def address_edit(request, address_id):
         address.city = request.POST.get('city')
         address.state = request.POST.get('state')
         address.postal_code = request.POST.get('postal_code')
-        address.save()
-        return redirect('user_address')  # Or wherever you want to redirect
+
+        mobile_pattern = r'^\d{10}$'  # Assuming 10-digit mobile number
+        pincode_pattern = r'^[1-9][0-9]{5}$' 
+
+        if not re.match(mobile_pattern, address.phone):
+                messages.error(request, "Please enter a valid mobile number.")
+                has_error = True
+
+        if not re.match(pincode_pattern, address.postal_code):
+                messages.error(request, "Please enter a valid 6-digit postal code.")
+                has_error = True
+
+        if not has_error:       
+            address.save()
+            messages.success(request, "Your new delivery address has been Edited successfully.")
+            return redirect('user_address')  # Or wherever you want to redirect
 
     return render(request, 'user/address_edit.html', {'address': address})
 

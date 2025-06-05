@@ -16,11 +16,14 @@
             data-bs-toggle="modal"
             data-bs-target="#addAddressModal"
           >
-            <i class="bi bi-plus-lg me-1"></i> Add New Address
+            <i class="bi bi-plus-lg me-1"></i>Add New Address
           </button>
         </div>
 
         <div class="address-list">
+          <div>
+                {% include "message.html" %}
+            </div>
           <!-- Address Card -->
            {% for address in addresss%}
            
