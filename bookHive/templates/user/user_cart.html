@@ -14,7 +14,8 @@
         <h4 class="mb-4">My Cart</h4>
 
         <div class="cart-items">
-          {% for item in cart_items %}
+        
+          {% for item in cart_item %}
   <div class="card mb-3">
     <div class="card-body">
       <div class="row align-items-center">
@@ -31,18 +32,14 @@
         </div>
         <div class="col-md-2">
           <div class="quantity-selector d-flex align-items-center">
-            <button class="btn btn-sm btn-outline-secondary">-</button>
-            <input
-              type="text"
-              class="form-control form-control-sm mx-2 text-center"
-              value="{{ item.quantity }}"
-              style="width: 40px"
-            />
-            <button class="btn btn-sm btn-outline-secondary">+</button>
+            <button class="btn btn-sm btn-outline-secondary btn-decrease" data-id="{{ item.id }}">-</button>
+<input type="text" class="form-control form-control-sm mx-2 text-center quantity" value="{{ item.quantity }}" style="width: 40px" data-id="{{ item.id }}" readonly/>
+<button class="btn btn-sm btn-outline-secondary btn-increase" data-id="{{ item.id }}">+</button>
+
           </div>
         </div>
         <div class="col-md-2 text-center">
-          <p class="fw-bold mb-0">₹{{ item.product_variant.price }}</p>
+          <p class="fw-bold mb-0" id="item-total-{{ item.id }}">₹{{ item.get_total_price }}</p>
         </div>
         <div class="col-md-2 text-end">
           <button class="btn btn-sm btn-outline-danger">
@@ -56,6 +53,7 @@
   <p>Your cart is empty.</p>
 {% endfor %}
 
+
         </div>
 
         <!-- Cart Summary -->
@@ -63,14 +61,14 @@
           <div class="card-body">
             <div class="row">
             <div>
-              {% comment %}  {% endcomment %}
+              
             </div >
               
               <div class="col-md-4">
                 <div class="cart-summary">
                   <div class="d-flex justify-content-between mb-2">
                     <span>Subtotal:</span>
-                    <span>₹{{ subtotal }}</span>
+                    <span id="cart-total">₹{{ subtotal }}</span>
                   </div>
                   <div class="d-flex justify-content-between mb-2">
                     <span>Shipping:</span>
@@ -78,7 +76,7 @@
                   </div>
                   <div class="d-flex justify-content-between fw-bold">
                     <span>Total:</span>
-                    <span>₹{{ total }}</span>
+                    {% comment %} <span id="cart-total">₹{{ subtotal }}</span> {% endcomment %}
                   </div>
                   <a href='{% url 'checkoutpage' %}'  class="btn btn-primary w-100 mt-3 text-decoration-none">
                     Proceed to Checkout
@@ -92,5 +90,47 @@
     </div>
   </div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+  $(".btn-increase, .btn-decrease").click(function () {
+    const itemId = $(this).data("id");
+    const action = $(this).hasClass("btn-increase") ? "increase" : "decrease";
+    const input = $('input.quantity[data-id="' + itemId + '"]');
+    let currentQty = parseInt(input.val());
+
+    // 👇 Client-side limit
+    if (action === "increase" && currentQty >= 5) {
+      alert("Maximum quantity is 5");
+      return;
+    }
+
+    $.ajax({
+      url: "update-quantity",
+      type: "POST",
+      data: {
+        item_id: itemId,
+        action: action,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+      },
+      success: function (response) {
+        if (response.success) {
+          input.val(response.new_quantity);
+          $('#cart-subtotal').text('₹' + response.subtotal);
+          $('#cart-nettotal').text('₹' + response.nettotal);
+        } else {
+          alert("Error: " + response.error);
+        }
+      },
+      error: function () {
+        alert("Something went wrong!");
+      }
+    });
+  });
+});
+
+
+</script>
 
 {% include 'includes/footer.html' %}

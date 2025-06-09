@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review  # Import your user model
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist # Import your user model
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache
 from django.db.models import Min
@@ -14,12 +14,13 @@ import json
 import re
 from .utils import send_verification_email, generate_otp
 from django.core.paginator import Paginator
-from django.db.models import Avg
+from django.db.models import Avg,Sum,F, ExpressionWrapper, DecimalField
 from django.http import HttpResponse
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 
 
 
@@ -411,7 +412,13 @@ def user_address(request):
 
 def user_cart(request):
 
-    return render(request, 'user/user_cart.html')
+    cart = Cart.objects.get(user=request.user)
+    cart_item = CartItem.objects.filter(cart=cart,product_variant__is_active=True)
+
+    subtotal = sum(item.get_total_price() for item in cart_item)
+    
+
+    return render(request, 'user/user_cart.html',{ 'cart_item':cart_item, "subtotal":subtotal })
 
     
 
@@ -427,9 +434,28 @@ def user_order(request):
 
 
 def user_wishlist(request):
-    # wishlist_details=Product.objects.get(id=id)
+    wishlist_items = Wishlist.objects.filter(user=request.user)
 
-    return render(request, 'user/user_wishlist.html')
+
+    return render(request, 'user/user_wishlist.html', {'wishlist_items':wishlist_items })
+
+
+
+def wishlist_toggle(request):
+    if request.method == "POST":
+        variant_id = request.POST.get("product_id")  # this is Variant ID
+        print(variant_id)
+        variant = get_object_or_404(Variant, id=variant_id)
+
+        wishlist_item, created = Wishlist.objects.get_or_create(user=request.user, variant=variant)
+
+        if not created:
+            wishlist_item.delete()
+            return JsonResponse({"removed": True})
+        else:
+            return JsonResponse({"added": True})
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
 
 
 def user_wallet(request):
@@ -500,7 +526,7 @@ def checkoutpage(request):
     address = Address.objects.filter(user=request.user, is_active=True)
 
     return render(request, 'user/checkoutpage.html', {
-        'addresss': address,
+        'addresses': address,
         'cart_items': cart_items,
         'subtotal': subtotal,
         'total': total
@@ -510,16 +536,79 @@ def checkoutpage(request):
 def add_to_cart(request, id):
     try:
         data = json.loads(request.body)
-        print(data)
         variant_id = data.get('variant_id')
         quantity = data.get('quantity')
-        print(f"variant_id: {variant_id}, quantity: {quantity}")
+        print(f"data:{data}, vaiant id:{variant_id}, quantity: {quantity}  {type(quantity)}")
 
+        # variant = get_object_or_404(Variant, id=variant_id)
+        # print(variant)
+        # Try to find an existing cart for the current user.
+        try:
+            cart = Cart.objects.get(user=request.user)
+            created = False
+        except Cart.DoesNotExist:
+            cart = Cart.objects.create(user=request.user)
+            created = True
+        print(cart)
+
+        # get the actual Variant object
+        variant = get_object_or_404(Variant, id=variant_id)
+        # Try to find an existing cart item
+        try:
+            cart_item = CartItem.objects.get(cart=cart, product_variant=variant)
+            cart_item.quantity += quantity  # if you want to update quantity
+            cart_item.save()
+            created = False
+
+        except CartItem.DoesNotExist:
+            # If not found, create a new one
+            cart_item = CartItem.objects.create(
+                cart=cart,
+                product_variant=variant,
+                quantity=quantity,
+            )
+            created = True
+        print(cart_item)
+        
         # You can now process and return success
         return JsonResponse({'success': True, 'redirect_url': '/user/cart/'})
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'message': 'Invalid JSON'})
 
+
+@require_POST
+@csrf_exempt  # NOT safe in production unless token is handled
+def update_cart_quantity(request):
+    item_id = request.POST.get('item_id')
+    action = request.POST.get('action')  # 'increase' or 'decrease'
+
+    try:
+        cart_item = CartItem.objects.get(id=item_id)
+
+        if action == 'increase':
+            cart_item.quantity += 1
+        elif action == 'decrease' and cart_item.quantity > 1:
+            cart_item.quantity -= 1
+
+        cart_item.save()
+
+        # Total price for this item
+        item_total_price = cart_item.get_total_price()
+
+        # Optional: Cart total for all items of this user
+        cart_total = CartItem.objects.filter(cart=cart_item.cart).annotate(total_price=ExpressionWrapper(
+            F('quantity') * F('product_variant__price'),output_field=DecimalField())).aggregate(
+                total=Sum('total_price'))['total']
+        # subtotal = sum(item.get_total_price() for item in cart_item)
+        return JsonResponse({
+            'success': True,
+            'new_quantity': cart_item.quantity,
+            'item_total_price': item_total_price,
+            'cart_total': cart_total
+        })
+
+    except CartItem.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Item not found'})
 
 def verification(request):
 
@@ -687,8 +776,51 @@ def address_delete(request, address_id):
 
 
 def change_variant(request, book_id):
+    try:
+        book = get_object_or_404(Product, id=book_id, is_active=True)
+        data = json.loads(request.body)
+        variant_id = data.get('variant_id')
 
-    return redirect('user_address')
+        variant = Variant.objects.prefetch_related('productimage_set').get(id=variant_id)
+
+        # Get images from related model
+        images = []
+        for img in variant.productimage_set.all():
+            if img.image1:
+                images.append(img.image1.url)
+            if img.image2:
+                images.append(img.image2.url)
+            if img.image3:
+                images.append(img.image3.url)
+        print(images)
+        if book.is_offer and variant:
+            discount_price = round(
+            variant.price - (variant.price * book.discount_percentage / 100))
+            is_offer=True
+        else:
+            discount_price = variant.price
+            is_offer=False
+        # Format the variant data
+        variant_data = {
+            'id': variant.id,
+            'language': variant.language,
+            'publisher': variant.publisher,
+            'published_date': variant.published_date.strftime('%d %b %Y') if variant.published_date else '',
+            'page': variant.page,
+            'price': discount_price,
+            'original_price': variant.price,
+            'discount_percentage': book.discount_percentage or None,
+            'available_quantity': variant.available_quantity,
+            'images': images,
+            'is_offer':  is_offer,
+        }
+        print(variant_data)
+        return JsonResponse({'success': True, 'variant': variant_data})
+
+    except Variant.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Variant not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 
 def sample(request):
@@ -700,3 +832,9 @@ def sample(request):
         return render(request, 'sample.html', {'biscuits': biscuits})
 
     return render(request, 'sample.html')
+
+
+
+
+
+

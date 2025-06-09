@@ -1,5 +1,6 @@
 
 {% extends "base.html" %}
+
 {% load custom_filters %}
 {% load static %}
 
@@ -91,21 +92,21 @@
 
       <!-- Variant Price -->
       <div class="mb-3">
-        <!-- <h3>
-          <span id="variantPrice">₹{{ default_variant.price }}</span>
-        </h3> -->
-        {% if book.is_offer %}
-  <h2>
+        <h3  id="variantPriceBlock">
+  {% if book.is_offer %}
     <span style="text-decoration: line-through;">₹{{ default_variant.price }}</span>
     <strong style="color: green;">₹{{ discount_price }}</strong>
     <span style="color: red;">({{ book.discount_percentage }}% OFF)</span>
-  </h2>
+  {% else %}
+    <span>₹{{ default_variant.price }}</span>
+  {% endif %}
+</h3>
+
   <!-- {% if product.offer_expiry %}
     <p style="color: orange;">Offer ends on {{ product.offer_expiry|date:"D d M Y H:i" }}</p>
   {% endif %}
-{% else %}
+
   <p>Price: ₹{{ product.price }}</p> -->
-{% endif %}
         <p id="variantPublisher">Publisher: {{ default_variant.publisher }}</p>
       </div>
 
@@ -149,11 +150,18 @@
 </div>
 
 <div class="text-center mt-2">
-  <a href="{% url 'user_wishlist' %}" class="btn btn-outline-secondary w-100 {% if is_sold_out %}disabled{% endif %}">
+  <button class="wishlist-toggle-btn" data-product-id="{{ book.id }}">
+  {% if variant in user_wishlist_variants %}
+    💔 Remove from Wishlist
+  {% else %}
     ❤️ Add to Wishlist
-  </a>
+  {% endif %}
+</button>
+
 </div>
 
+<!-- Toast Message Area -->
+<div id="wishlist-toast" class="alert d-none mt-2" role="alert"></div>
 
       <!-- Book Specifications -->
       <div class="row">
@@ -162,15 +170,15 @@
             <tbody>
               <tr>
                 <th scope="row">Book:</th>
-                <td>{{ books.book_title }}</td>
+                <td>{{ book.book_title }}</td>
               </tr>
               <tr>
                 <th scope="row">Author:</th>
-                <td><a href="#" class="text-primary">{{ books.author }}</a></td>
+                <td><p href="#" class="text-primary">{{ book.author }}</p></td>
               </tr>
               <tr>
                 <th scope="row">Category:</th>
-                <td>{{ books.genre.genre_name }}</td>
+                <td>{{ book.genre.genre_name }}</td>
               </tr>
             </tbody>
           </table>
@@ -575,154 +583,12 @@
 <!-- Add Bootstrap Icons CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
 
-{% comment %} <script>
 
-
-  document.addEventListener('DOMContentLoaded', function () {
-  setupQtyButtons();
-  setupImageZoom();
-  setupAddToCart();
-  highlightDefaultThumbnail();
-});
-
-function setupQtyButtons() {
-  const qtyInput = document.getElementById('quantity');
-  const increaseBtn = document.getElementById('increaseQty');
-  const decreaseBtn = document.getElementById('decreaseQty');
-  const maxQty = 10;
-  const minQty = 1;
-
-  function updateButtons() {
-    const value = parseInt(qtyInput.value);
-    increaseBtn.disabled = value >= maxQty;
-    decreaseBtn.disabled = value <= minQty;
-  }
-
-  increaseBtn.addEventListener('click', () => {
-    let value = parseInt(qtyInput.value);
-    if (value < maxQty) qtyInput.value = value + 1;
-    updateButtons();
-  });
-
-  decreaseBtn.addEventListener('click', () => {
-    let value = parseInt(qtyInput.value);
-    if (value > minQty) qtyInput.value = value - 1;
-    updateButtons();
-  });
-
-  updateButtons();
-}
-
-function setupImageZoom() {
-  const container = document.getElementById('imageContainer');
-  const mainImage = document.getElementById('mainImage');
-  const zoomedImage = document.getElementById('zoomedImage');
-
-  container.addEventListener('mousemove', function (e) {
-    zoomedImage.style.backgroundImage = `url('${mainImage.src}')`;
-    const rect = container.getBoundingClientRect();
-    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
-    zoomedImage.style.opacity = 1;
-    zoomedImage.style.backgroundSize = '200% 200%';
-    zoomedImage.style.backgroundPosition = `${xPercent}% ${yPercent}%`;
-  });
-
-  container.addEventListener('mouseleave', function () {
-    zoomedImage.style.opacity = 0;
-  });
-}
-
-function changeImage(imageUrl) {
-  const mainImage = document.getElementById('mainImage');
-  const zoomedImage = document.getElementById('zoomedImage');
-  mainImage.src = imageUrl;
-  zoomedImage.style.backgroundImage = `url('${imageUrl}')`;
-
-  document.querySelectorAll('.thumbnail').forEach(thumb => {
-    thumb.classList.toggle('border', thumb.src === imageUrl);
-    thumb.classList.toggle('border-primary', thumb.src === imageUrl);
-  });
-}
-
-function changeVariant(variantId) {
-  fetch(`/get-variant-details/${variantId}/`)
-    .then(response => response.json())
-    .then(data => {
-      document.getElementById('variantPrice').innerText = `₹${data.price}`;
-      document.getElementById('variantPublisher').innerText = `Publisher: ${data.publisher}`;
-      document.getElementById('variantDate').innerText = data.published_date;
-      document.getElementById('variantPublisherLink').innerHTML = `<a href="#" class="text-primary">${data.publisher}</a>`;
-      document.getElementById('variantPages').innerText = data.page;
-      document.getElementById('variantLanguage').innerText = data.language;
-
-      const stockElement = document.getElementById('stockStatus');
-      if (data.available_quantity > 0) {
-        stockElement.className = 'text-success';
-        stockElement.innerText = `✓ In Stock (${data.available_quantity} available)`;
-        document.querySelectorAll('.btn-warning, .btn-danger').forEach(btn => btn.disabled = false);
-      } else {
-        stockElement.className = 'text-danger';
-        stockElement.innerText = 'Out of Stock';
-        document.querySelectorAll('.btn-warning, .btn-danger').forEach(btn => btn.disabled = true);
-      }
-
-      changeImage(data.images.image1);
-
-      const thumbnails = document.querySelectorAll('.thumbnail');
-      thumbnails[0].src = data.images.image1;
-      thumbnails[0].onclick = () => changeImage(data.images.image1);
-
-      thumbnails[1].src = data.images.image2;
-      thumbnails[1].onclick = () => changeImage(data.images.image2);
-
-      thumbnails[2].src = data.images.image3;
-      thumbnails[2].onclick = () => changeImage(data.images.image3);
-    })
-    .catch(error => console.error('Error loading variant data:', error));
-}
-
-function highlightDefaultThumbnail() {
-  const defaultThumb = document.querySelector('.thumbnail');
-  if (defaultThumb) defaultThumb.classList.add('border', 'border-primary');
-}
-
-function setupAddToCart() {
-  const addToCartBtn = document.getElementById('add_to_cart');
-  if (!addToCartBtn) return;
-
-  addToCartBtn.addEventListener('click', function () {
-    const variantId = document.getElementById('variantSelector').value;
-    const quantity = document.getElementById('quantity').value;
-    const csrfToken = document.getElementById('csrf_token').value;
-
-    fetch('/add_to_cart', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken,
-      },
-      body: JSON.stringify({ variant_id: variantId, quantity: quantity }),
-    })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          alert('✅ Added to cart!');
-        } else {
-          alert('❌ ' + (data.message || 'Something went wrong.'));
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('🚨 Failed to add to cart.');
-      });
-  });
-}
-
-</script> {% endcomment %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+
+  document.addEventListener('DOMContentLoaded', function () {
   setupQtyButtons();
   setupImageZoom();
   setupAddToCartAjax();
@@ -758,6 +624,89 @@ function setupQtyButtons() {
 
   updateButtons();
 }
+
+function changeVariant(variantId) {
+  const bookId = document.getElementById('book-id')?.value;
+  const variantSelector = document.getElementById('variantSelector');
+
+  if (!bookId) {
+    console.error('Book ID not found');
+    return;
+  }
+
+  // Disable the selector while loading
+  variantSelector.disabled = true;
+
+  // Prepare request data
+  const payload = JSON.stringify({ variant_id: variantId });
+
+  // Send AJAX request
+  fetch(`/change_variant/${bookId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCsrfToken(),  // You must have this function to fetch CSRF token
+    },
+    body: payload,
+  })
+  .then((res) => res.json())
+  .then((data) => {
+
+    if (data.success) {
+      updateVariantDetails(data.variant); // You need to define this
+      // showSuccessMessage('✅ Variant updated!');
+      // showErrorMessage(data.message || '⚠️ Update failed!');
+    }
+  })
+  .catch((err) => {
+    console.error('Variant update failed:', err);
+    showErrorMessage('🚨 Could not update variant. Try again.');
+  })
+  .finally(() => {
+    variantSelector.disabled = false;
+  });
+}
+
+// Handles wishlist add/remove toggle via AJAX and updates button text and toast message
+$(document).ready(function () {
+  $(".wishlist-toggle-btn").click(function () {
+    const button = $(this);
+    const variantId = document.getElementById('variantSelector')?.value;
+
+
+    $.ajax({
+      url: "/wishlist/toggle/",
+      type: "POST",
+      data: {
+        product_id: variantId,
+        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+      },
+      success: function (response) {
+        const toast = $("#wishlist-toast");
+        toast.removeClass("d-none alert-success alert-danger");
+
+        if (response.added) {
+          button.html("💔 Remove from Wishlist");
+          toast.addClass("alert-success").text("✅ Added to wishlist!");
+        } else if (response.removed) {
+          button.html("❤️ Add to Wishlist");
+          toast.addClass("alert-danger").text("❌ Removed from wishlist!");
+        }
+      },
+      error: function () {
+        const toast = $("#wishlist-toast");
+        toast.removeClass("d-none alert-success").addClass("alert-danger");
+        toast.text("❌ Something went wrong while updating your wishlist.");
+      }
+    });
+  });
+});
+
+
+
+
+
+
 
 function setupImageZoom() {
   const container = document.getElementById('imageContainer');
@@ -798,59 +747,21 @@ function changeImage(imageUrl) {
   });
 }
 
-function changeVariant(variantId) {
-  const bookId = document.getElementById('book-id')?.value;
-  
-  if (!bookId) {
-    console.error('Book ID not found');
-    return;
-  }
 
-  const variantSelector = document.getElementById('variantSelector');
-  if (variantSelector) {
-    variantSelector.disabled = true;
-  }
-
-  fetch(`/change_variant/${bookId}/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCsrfToken(),
-    },
-    body: JSON.stringify({ 
-      variant_id: variantId 
-    }),
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  })
-  .then(data => {
-    if (data.success) {
-      updateVariantDetails(data.variant);
-      showSuccessMessage('Variant updated successfully!');
-    } else {
-      showErrorMessage(data.message || 'Failed to update variant');
-    }
-  })
-  .catch(error => {
-    console.error('Error changing variant:', error);
-    showErrorMessage('Failed to update variant. Please try again.');
-  })
-  .finally(() => {
-    if (variantSelector) {
-      variantSelector.disabled = false;
-    }
-  });
-}
 
 function updateVariantDetails(variant) {
   // Update price
-  const priceElement = document.querySelector('h2 strong[style*="color: green"]');
-  if (priceElement) {
-    priceElement.innerText = `₹${variant.price}`;
+  const priceBlock = document.getElementById('variantPriceBlock');
+  if (priceBlock) {
+    if (variant.is_offer) {
+      priceBlock.innerHTML = `
+        <span style="text-decoration: line-through;">₹${variant.original_price}</span>
+        <strong style="color: green;">₹${variant.price}</strong>
+        <span style="color: red;">(${variant.discount_percentage}% OFF)</span>
+      `;
+    } else {
+      priceBlock.innerHTML = `<span>₹${variant.price}</span>`;
+    }
   }
 
   // Update publisher
@@ -918,26 +829,18 @@ function updateStockStatus(availableQuantity) {
 }
 
 function updateVariantImages(images) {
-  if (images.image1) {
-    changeImage(images.image1);
+  if (images.length > 0) {
+    changeImage(images[0]); // Set the main image to the first one
   }
 
   const thumbnails = document.querySelectorAll('.thumbnail');
-  if (thumbnails.length >= 3) {
-    if (images.image1) {
-      thumbnails[0].src = images.image1;
-      thumbnails[0].onclick = () => changeImage(images.image1);
-    }
-    if (images.image2) {
-      thumbnails[1].src = images.image2;
-      thumbnails[1].onclick = () => changeImage(images.image2);
-    }
-    if (images.image3) {
-      thumbnails[2].src = images.image3;
-      thumbnails[2].onclick = () => changeImage(images.image3);
-    }
+  
+  for (let i = 0; i < thumbnails.length && i < images.length; i++) {
+    thumbnails[i].src = images[i];
+    thumbnails[i].onclick = () => changeImage(images[i]);
   }
 }
+
 
 function setupAddToCartAjax() {
   // Handle "Add to Cart" button click
@@ -952,17 +855,7 @@ function setupAddToCartAjax() {
     });
   }
 
-  // Handle "BUY NOW" button click
-  //const buyNowBtn = document.querySelector('.buy-now-btn');
-  //if (buyNowBtn) {
-   // buyNowBtn.addEventListener('click', function() {
-   //   const bookId = this.dataset.bookId;
-   //   const variantId = document.getElementById('variantSelector')?.value;
-   //   const quantity = document.getElementById('quantity')?.value || 1;
-      
-   //   addToCartAjax(bookId, variantId, quantity, true);
-   // });
-  //}
+  
 }
 
 function addToCartAjax(bookId, variantId, quantity, isBuyNow = false) {

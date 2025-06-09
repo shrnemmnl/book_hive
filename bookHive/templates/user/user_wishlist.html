@@ -6,33 +6,24 @@
     <div class="col-lg-3">{% include 'user/UserProfile/sidebar.html' %}</div>
 
     <!-- Main Content Column -->
-    <div class="col-lg-9 py-5">
-      <div class="tab-pane fade show active" id="wallet">
-        <h4 class="mb-4">My Wishlist</h4>
-              
-              <div class="row g-4">
-                <!-- Wishlist Item -->
-                {% for book in books %}
-                <div class="col-md-4">
-                  <div class="card h-100">
-                    <img src="{% static 'placeholder_book.jpg' %}" class="card-img-top" alt="Book Cover">
-                    <div class="card-body">
-                      <h5 class="card-title">The Alchemist</h5>
-                      <p class="card-text">by Paulo Coelho</p>
-                      <p class="fw-bold mb-3">₹399</p>
-                      <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-primary">Add to Cart</button>
-                        <button class="btn btn-sm btn-outline-danger">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-               {% endfor %}
-              </div>
-      </div>
+      <div class="col-lg-9 py-5">
+    {% for item in wishlist_items %}
+  <div class="card">
+    <div class="col-md-2">
+          <img
+            src="{{ item.variant.product.image.url }}"
+            alt="Book Cover"
+            class="img-fluid"
+          />
+    <div class="card-body">
+      <h5>{{ item.variant.product.book_title }}</h5>
+      <p>Variant: {{ item.variant.language   }} | ₹{{ item.variant.price }}</p>
+      <a href="{% url 'product_details' item.variant.product.id %}" class="btn btn-sm btn-primary">View Product</a>
     </div>
+  </div>
+{% endfor %}
+
+  </div>
   </div>
 </div>
 {% include 'includes/footer.html' %}

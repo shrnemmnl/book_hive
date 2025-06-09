@@ -59,28 +59,30 @@
                 {% csrf_token %}
                 <div class="row">
                   <div class="col-md-6 mb-3">
-                    {% for address in addresss %}
-                    <div class="address-card border rounded p-3 mb-3 {% if forloop.first %}active{% endif %}"
-                      style="min-height: 140px; display: flex; flex-direction: column; justify-content: space-between;">
-                      <div class="form-check mb-3">
-                        <input class="form-check-input me-2" type="radio" name="shippingAddress"
-                          id="address{{ forloop.counter }}" value="{{ address.id }}" {% if forloop.first %}checked{%
-                          endif %}>
-                        <label class="form-check-label fw-bold fs-5" for="address{{ forloop.counter }}">
-                          {{ address.address_type|title }}
-                        </label>
-                      </div>
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                  
+                   {% for address in addresses %}
+          <div class="address-card border rounded p-3 mb-3 {% if forloop.first %}active{% endif %}" style=" display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="form-check mb-3">
+              <input class="form-check-input me-2" type="radio" name="shippingAddress"
+                id="address{{ forloop.counter }}" value="{{ address.id }}" {% if forloop.first %}checked{% endif %}>
+              <label class="form-check-label fw-bold fs-5" for="address{{ forloop.counter }}">
+                {{ address.address_type|title }}
+              </label>
+            </div>
+            <p class="address-details mb-2" style="font-size: 0.875rem; color: #555;">
+              {{ address.name }}<br>
+              {{ address.street }}<br>
+              {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
+              Phone: {{ address.phone }}
+            </p>
+          </div>
+        {% empty %}
+          <div class="alert alert-warning text-center">No saved addresses found.</div>
+        {% endfor %}
 
-                      <p class="address-details mb-2" style="font-size: 0.875rem; color: #555;">
-                        {{ address.name }}<br>
-                        {{ address.street }}<br>
-                        {{ address.city }}, {{ address.state }} {{ address.postal_code }}<br>
-                        Phone: {{ address.phone }}
-                      </p>
-                    </div>
-                    {% empty %}
-                    <p>No saved addresses found.</p>
-                    {% endfor %}
+                    
+                  </div>
                   </div>
                 </div>
 

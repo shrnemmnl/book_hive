@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.urls import reverse
 from django.shortcuts import  get_object_or_404
-
+from datetime import datetime
 
 
 # Create your views here.
@@ -383,39 +383,69 @@ def user_search(request):
 
 def variant_edit(request):
     if request.method == 'POST':
-        variant_id=request.POST.get('variant_id', "").strip()
-        variant = Variant.objects.get(id=variant_id)
+        variant_id = request.POST.get('variant_id', "").strip()
+        variant = get_object_or_404(Variant, id=variant_id)
         
-        
-    return render(request, 'admin/variant_edit.html', {'variants':variant})
+        images = variant.productimage_set.first()  # set of 3 images per variant
+
+        return render(request, 'admin/variant_edit.html', {
+            'variant': variant,
+            'images': images
+        })
+
+    return render(request, 'admin/variant_edit.html')  
 
 
 
 def variant_edit_post(request):
     if request.method == 'POST':
-        variant_id=request.POST.get('variant_id', "").strip()
+        variant_id = request.POST.get('variant_id', "").strip()
         publisher = request.POST.get('publisher', "").strip()
-        publish_date = request.POST.get('publish_date', "").strip()
+        published_date = request.POST.get('published_date', "").strip()
         price = request.POST.get('price', "").strip()
-        available_quantity=request.POST.get('available_quantity', "").strip()
-        language=request.POST.get('language', "").strip()
-        image = request.FILES.get('image')
+        page = request.POST.get('page', "").strip()
+        available_quantity = request.POST.get('stock', "").strip()
+        language = request.POST.get('language', "").strip()
 
-        variant = Variant.objects.get(id=variant_id)
+        image1 = request.FILES.get('image1')
+        image2 = request.FILES.get('image2')
+        image3 = request.FILES.get('image3')
+
+        # Get Variant
+        variant = get_object_or_404(Variant, id=variant_id)
         variant.publisher = publisher
-        
-        # print(genre_id)
-        # variant.publisher = publisher
-        # if image:
-        #     variant.image = image
-        # variant.description = description
-       
+
+        # Convert and assign date
+        try:
+            variant.published_date = datetime.strptime(published_date, "%Y-%m-%d").date()
+        except ValueError:
+            messages.error(request, "⚠ Invalid date format.")
+            return render(request, 'admin/variant_edit.html', {'variant': variant})
+
+        # Other fields
+        variant.price = int(price)
+        variant.page = int(page)
+        variant.available_quantity = int(available_quantity)
+        variant.language = language
         variant.save()
-        messages.success(request, 'Updated successfully!')
 
-        return render(request, 'admin/variant_edit.html', {'redirect': True, 'redirect_url': 'view_variant'})  # Send flag to template
+        # Handle ProductImage
+        product_image, created = ProductImage.objects.get_or_create(variant=variant)
 
-    return render(request, 'admin/variant_edit.html',{'variants':variant})
+        if image1:
+            product_image.image1 = image1
+        if image2:
+            product_image.image2 = image2
+        if image3:
+            product_image.image3 = image3
+
+        product_image.save()
+
+        # messages.success(request, '✅ Variant and images updated successfully!')
+
+        return redirect('books')
+
+    return render(request, 'admin/variant_edit.html')
 
 
 def admin_order_details(request, order):
