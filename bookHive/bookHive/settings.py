@@ -55,7 +55,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware'
+    'allauth.account.middleware.AccountMiddleware',
+    'users.middleware.SampleLogMiddleware',
 ]
 
 ROOT_URLCONF = 'bookHive.urls'
@@ -170,18 +171,37 @@ EMAIL_HOST_PASSWORD = 'vykb qmzd tmtj nmkw'  # not your Gmail password!
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
-# Authentication settings
-# ACCOUNT_LOGIN_METHODS = ["email"]
-# ACCOUNT_SIGNUP_FIELDS = ["email"]  # Add "phone_no" if required
-# ACCOUNT_EMAIL_VERIFICATION = "optional"
-# ACCOUNT_ADAPTER = "users.adapters.MyAccountAdapter"
-# SOCIALACCOUNT_ADAPTER = "users.adapters.MySocialAccountAdapter"
-# ACCOUNT_FORMS = {'signup': 'users.forms.MyCustomSignupForm'}
 
+# settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
 
-# django-allauth settings
-# ACCOUNT_AUTHENTICATION_METHOD = 'email'
-# ACCOUNT_EMAIL_REQUIRED = True
-# ACCOUNT_UNIQUE_EMAIL = True
-# ACCOUNT_USERNAME_REQUIRED = False
-# ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',  # or 'DEBUG'
+            'propagate': True,
+        },
+        '__main__': {  # if you're using __name__ == "__main__"
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'yourappname': {  # replace with your Django app's name
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

@@ -9,84 +9,103 @@
     <div class="col-lg-9 py-5">
       <div class="tab-pane fade show active" id="wallet">
         <h4 class="mb-4">My Orders</h4>
-              
-              {% comment %} <ul class="nav nav-tabs mb-4">
-                <li class="nav-item">
-                  <a class="nav-link active" href="#">All Orders</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#">Processing</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#">Shipped</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#">Delivered</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#">Cancelled</a>
-                </li>
-              </ul> {% endcomment %}
-              
-              <div class="order-list">
-                <!-- Order Item -->
-                {% for order in order_details %}
 
-                <div class="card mb-3">
-                  <div class="card-header bg-white">
-                    <div class="row align-items-center">
-                      <div class="col-md-3">
-                        <p class="small mb-0"><strong>Order ID:</strong>{{order.id}}</p>
-                      </div>
-                      <div class="col-md-3">
-                        <p class="small mb-0"><strong>Date:</strong>{{order.created_at}}</p>
-                      </div>
-                      <div class="col-md-3">
-                        <p class="small mb-0"><strong>Total:</strong>{{order.net_amount}}</p>
-                      </div>
-                      <!-- <div class="col-md-3">
-                        <span class="badge bg-success">Delivered</span>
-                      </div> -->
-                    </div>
-                  </div>
-                  {% for item in order.order_items.all %}
-                  <div class="card-body">
-                    <div class="row align-items-center">
-                      <div class="col-md-2">
-                        <img src="{{ item.product_variant.product.image.url }}" alt="Book Cover" class="img-fluid">
-                      </div>
-                      <div class="col-md-6">
-                        <h5 class="card-title mb-1">{{item.product_variant.product.book_title}}</h5>
-                        <p class="text-muted mb-1">{{item.product_variant.product.author}}</p>
-                        <p class="small mb-0">{{item.product_variant.product.quantity}}</p>
-                      </div>
-                      <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <a href="#" class="btn btn-sm btn-outline-primary me-2">View Details</a>
-                        <a href="#" class="btn btn-sm btn-outline-secondary">Track</a>
-                      </div>
-                    </div>
-                  </div>
-                    {% endfor %}
+        {% comment %} <ul class="nav nav-tabs mb-4">
+          <li class="nav-item">
+            <a class="nav-link active" href="#">All Orders</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Processing</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Shipped</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Delivered</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Cancelled</a>
+          </li>
+        </ul> {% endcomment %}
+
+        <div class="order-list">
+          <!-- Order Item -->
+          {% for order in order_details %}
+
+          <div class="card mb-3">
+            <div class="card-header bg-white">
+              <div class="row align-items-center">
+                <div class="col-md-3">
+                  <p class="small mb-0"><strong>Order ID:</strong>{{order.id}}</p>
                 </div>
-                {% endfor %}
+                <div class="col-md-3">
+                  <p class="small mb-0"><strong>Date:</strong>{{order.created_at}}</p>
+                </div>
+                <div class="col-md-3">
+                  <p class="small mb-0"><strong>Total:</strong>{{order.net_amount}}</p>
+                </div>
+                <div class="col-md-2">
+                  <span class="badge bg-success">{{order.status}}</span>
+                </div>
+                <div class="text-end my-3">
+                  <a type="button" class="btn btn-danger" data-bs-toggle="modal"
+                    data-bs-target="#cancelOrderModal">
+                    Cancel Order
+                </a>
+                </div>
                 
               </div>
+            </div>
+            {% for item in order.order_items.all %}
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col-md-2">
+                  <img src="{{ item.product_variant.product.image.url }}" alt="Book Cover" class="img-fluid">
+                </div>
+                <div class="col-md-6">
+                  <h5 class="card-title mb-1">{{item.product_variant.product.book_title}}</h5>
+                  <p class="text-muted mb-1">{{item.product_variant.product.author}}</p>
+                  <p class="small mb-0">{{item.product_variant.product.quantity}}</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                  <a href="#" class="btn btn-sm btn-outline-primary me-2">View Details</a>
+                  <a href="#" class="btn btn-sm btn-outline-secondary">Track</a>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+
+        </div>
       </div>
     </div>
   </div>
 </div>
+<!-- Modal -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{% url 'cancel_order' order_details.0.id %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cancelOrderModalLabel">Cancel Order</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="cancelReason" class="form-label">Reason for cancellation:</label>
+            <textarea class="form-control" id="cancelReason" name="reason" rows="3" required></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Submit</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
 {% include 'includes/footer.html' %}
-
-
-
-
-
-
-
-
-
-
-
-
-
-

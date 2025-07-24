@@ -18,6 +18,7 @@ urlpatterns = [
      path('update-quantity', views.update_cart_quantity, name='update_cart_quantity'),
 
      path('user_order',views.user_order, name='user_order'),
+     path('cancel_order/<int:order_id>/',views.cancel_order, name='cancel_order'),
      path('user-wishlist',views.user_wishlist, name='user_wishlist'),
      path('wishlist/toggle/', views.wishlist_toggle, name='wishlist-toggle'),
      path('user_wallet',views.user_wallet, name='user_wallet'),
@@ -30,7 +31,6 @@ urlpatterns = [
      path('address_edit/<int:address_id>/',views.address_edit, name='address_edit'),
      path('address_delete/<int:address_id>/',views.address_delete, name='address_delete'),
      path('change_variant/<int:book_id>/',views.change_variant, name='change_variant'),
-     path('sample',views.sample, name='sample'),
     
     
 ]

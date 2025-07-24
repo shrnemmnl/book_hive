@@ -25,5 +25,8 @@ urlpatterns = [
     path('', include('admin_panel.urls')),
     path('accounts/', include('allauth.urls')),
 ]
+
+# 🔧 Serve media files (like user uploads) only in development mode.
+# In production, media is handled by the web server (e.g., Nginx).
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

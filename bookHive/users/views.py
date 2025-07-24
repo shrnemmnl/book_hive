@@ -21,10 +21,11 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+import logging
 
 
 
-
+logger = logging.getLogger(__name__)  # Create logger
 
 
 
@@ -68,14 +69,7 @@ def signup(request):
         if CustomUser.objects.filter(email=email).exists():
             errors['email'] = "Email is already registered."
 
-        if not errors:  # If no errors, proceed with user creation
-            # user = CustomUser.objects.create(
-            #     first_name=firstName,
-            #     last_name=lastName,
-            #     email=email,
-            #     phone_no=mobile,
-            #     password=make_password(password)  # Hash password before saving
-            # )
+        if not errors: 
             request.session['userdata'] = {
                 'first_name': firstName.capitalize(),
                 'last_name': lastName.capitalize(),
@@ -209,6 +203,11 @@ def home_page(request):
 
 
 def product_details(request, id):
+    print(type(request.method))
+    print('path- ', request.path)
+    print("user - ", request.user)
+    print("user - ", request.user.first_name)
+    print(request.META)
     # Fetch the product
     try:
         book = get_object_or_404(Product, id=id, is_active=True)
@@ -390,19 +389,57 @@ def user_profile(request):
 
 def user_address(request):
     address = Address.objects.filter(user=request.user, is_active=True)
+    logger.info(f"New address is created: {address}")
+    has_error = False
 
     if request.method == 'POST':
-        Address.objects.create(
-            user=request.user,
-            address_type=request.POST['address_type'],
-            street=request.POST['street'],
-            phone=request.POST['phone'],
-            landmark=request.POST['landmark'],
-            city=request.POST['city'],
-            state=request.POST['state'],
-            postal_code=request.POST['pincode'],
-        )
-        return redirect('user_address')
+
+        # Address.objects.create(
+        #     user=request.user,
+        #     address_type=request.POST.get('address_type', '').strip().capitalize(),
+        #     street=request.POST.get('street', '').strip().capitalize(),
+        #     phone=request.POST.get('phone', '').strip(),
+        #     landmark=request.POST.get('landmark', '').strip().capitalize(),
+        #     city=request.POST.get('city', '').strip().capitalize(),
+        #     state=request.POST.get('state', '').strip().capitalize(),
+        #     postal_code=request.POST.get('pincode', '').strip(),
+        # )
+
+        # phone_pattern = r'^\d{10}$'
+        # pincode_pattern = r'^\d{6}$'  
+        address_type = request.POST.get('address_type', '').strip().capitalize()
+        street = request.POST.get('street', '').strip().capitalize()
+        phone = request.POST.get('phone', '').strip()
+        landmark = request.POST.get('landmark', '').strip().capitalize()
+        city = request.POST.get('city', '').strip().capitalize()
+        state = request.POST.get('state', '').strip().capitalize()
+        postal_code = request.POST.get('pincode', '').strip()
+
+        phone_pattern = r'^\d{10}$'
+        pincode_pattern = r'^\d{6}$' 
+
+        if not re.match(phone_pattern, phone):
+                messages.error(request, "Please enter a valid mobile number.")
+                has_error = True
+
+        if not re.match(pincode_pattern, postal_code):
+                messages.error(request, "Please enter a valid 6-digit postal code.")
+                has_error = True
+
+        if not has_error:       
+            Address.objects.create(
+                user=request.user,
+                address_type = address_type,
+                street = street,
+                phone = phone,
+                landmark = landmark,
+                city = city,
+                state = state,
+                postal_code = postal_code,
+            )
+            messages.success(request, "Your new delivery address has been added successfully.")
+            return redirect('user_address')  # Or wherever you want to redirect
+
 
     return render(request, 'user/user_address.html', {'addresss': address})
 
@@ -411,26 +448,41 @@ def user_address(request):
 
 
 def user_cart(request):
+    # Get or create the cart for the user
+    cart, created = Cart.objects.get_or_create(user=request.user)
 
-    cart = Cart.objects.get(user=request.user)
-    cart_item = CartItem.objects.filter(cart=cart,product_variant__is_active=True)
+    # Get all active cart items linked to this cart
+    cart_item = CartItem.objects.filter(cart=cart, product_variant__is_active=True)
 
+    # Calculate subtotal
     subtotal = sum(item.get_total_price() for item in cart_item)
-    
 
-    return render(request, 'user/user_cart.html',{ 'cart_item':cart_item, "subtotal":subtotal })
-
-    
-
-    
-    
-
+    # Render the cart page
+    return render(request, 'user/user_cart.html', {
+        'cart_item': cart_item,
+        'subtotal': subtotal
+    })
 
 def user_order(request):
     order_details = Order.objects.prefetch_related(
         'order_items').filter(user=request.user)
 
     return render(request, 'user/user_order.html', {'order_details': order_details})
+
+
+def cancel_order(request, order_id):
+
+    if request.method == 'POST':
+        reason=request.POST.get('reason')
+        order = Order.objects.get(id=order_id)
+        order.status = 'pending'
+        order.cancel_reason = reason
+        order.save()
+
+        return redirect('user_order' )
+        
+
+    
 
 
 def user_wishlist(request):
@@ -823,15 +875,7 @@ def change_variant(request, book_id):
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 
-def sample(request):
-    print('hi')
-    if request.method == "POST":
-        biscuits = request.COOKIES
-        print(biscuits)
-        print('hi2')
-        return render(request, 'sample.html', {'biscuits': biscuits})
 
-    return render(request, 'sample.html')
 
 
 
