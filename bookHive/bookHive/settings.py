@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from decouple import config
+from django.contrib.messages import constants as messages
+
+
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -172,36 +177,49 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 
-# settings.py
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    
+
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s - %(levelname)s - %(name)s - %(message)s'
+        },
+    },
+
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
     },
 
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'DEBUG',
     },
 
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',  # or 'DEBUG'
-            'propagate': True,
-        },
-        '__main__': {  # if you're using __name__ == "__main__"
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-        'yourappname': {  # replace with your Django app's name
-            'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'INFO',  # You can set this to DEBUG if you want even more logs
             'propagate': False,
         },
-    },
+        '__main__': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # Or if your file is views.py inside an app called "store":
+        'store.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        }
+    }
+}
+
+
+MESSAGE_TAGS = {
+    messages.ERROR: 'danger',
 }

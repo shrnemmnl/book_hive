@@ -20,11 +20,19 @@
     <div class="card-body">
       <div class="row align-items-center">
         <div class="col-md-2">
-          <img
-            src="{{ item.product_variant.product.image.url }}"
+          <!-- <img
+            src="{{ item.product_variant.productimage.image1.url }}"
             alt="Book Cover"
             class="img-fluid"
-          />
+          /> -->
+          {% with item.product_variant.productimage_set.first as image %}
+  {% if image %}
+    <img src="{{ image.image1.url }}" alt="Book Cover" class="img-fluid" />
+  {% else %}
+    <img src="{% static 'default_image.jpg' %}" alt="No Image" class="img-fluid" />
+  {% endif %}
+{% endwith %}
+
         </div>
         <div class="col-md-4">
           <h5 class="card-title mb-1">{{ item.product_variant.product.book_title }}</h5>  
@@ -39,11 +47,11 @@
           </div>
         </div>
         <div class="col-md-2 text-center">
-          <p class="fw-bold mb-0" id="item-total-{{ item.id }}">₹{{ item.get_total_price }}</p>
+          <p class="fw-bold mb-0" id="item-total-{{ item.id }}">₹ {{ item.get_total_price }}</p>
         </div>
         <div class="col-md-2 text-end">
           <button class="btn btn-sm btn-outline-danger">
-            <i class="bi bi-trash"></i>
+            <i class="bi bi-trash" data-id="{{ item.id }}"></i>
           </button>
         </div>
       </div>
@@ -68,7 +76,7 @@
                 <div class="cart-summary">
                   <div class="d-flex justify-content-between mb-2">
                     <span>Subtotal:</span>
-                    <span id="cart-total">₹{{ subtotal }}</span>
+                    <span id="cart-subtotal" >₹{{ subtotal }}</span>
                   </div>
                   <div class="d-flex justify-content-between mb-2">
                     <span>Shipping:</span>
@@ -76,11 +84,16 @@
                   </div>
                   <div class="d-flex justify-content-between fw-bold">
                     <span>Total:</span>
-                    {% comment %} <span id="cart-total">₹{{ subtotal }}</span> {% endcomment %}
+                    <span id="cart-nettotal" >₹{{ subtotal }}</span> 
                   </div>
-                  <a href='{% url 'checkoutpage' %}'  class="btn btn-primary w-100 mt-3 text-decoration-none">
+                  {% if count > 0 %}
+                  <a href="{% url 'checkoutpage' %}" class="btn btn-primary w-100 mt-3 text-decoration-none" id="checkout-button" >
                     Proceed to Checkout
                   </a>
+                  {% else %}
+                  <a href="#" class="btn  w-100 mt-3 disabled text-decoration-none" id="checkout-button" >Proceed to Checkout</a>
+
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -117,8 +130,11 @@
       success: function (response) {
         if (response.success) {
           input.val(response.new_quantity);
-          $('#cart-subtotal').text('₹' + response.subtotal);
-          $('#cart-nettotal').text('₹' + response.nettotal);
+          $('#cart-subtotal').text('₹' + response.cart_total);
+          $('#cart-nettotal').text('₹' + response.cart_total);
+          $('#item-total-' + itemId).text('₹' + response.item_total_price);
+
+
         } else {
           alert("Error: " + response.error);
         }
@@ -132,5 +148,54 @@
 
 
 </script>
+
+<!-- delete cart-items -->
+<script>
+  $(document).ready(function () {
+    $(".bi-trash").click(function () {
+      const itemId = $(this).data("id");
+
+      $.ajax({
+        url: "delete-cart-item",
+        type: "POST",
+        data: {
+          item_id: itemId,
+          csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function (response) {
+          if (response.success) {
+            // Remove item card from DOM
+            $(`.btn-outline-danger:has([data-id="${itemId}"])`).closest(".card").remove();
+
+            // Update cart total
+            $('#cart-subtotal').text('₹' + response.cart_total);
+            $('#cart-nettotal').text('₹' + response.cart_total);
+
+            // 🧠 Update checkout button based on item count
+            if (response.count > 0) {
+              $('#checkout-button')
+                .removeClass('disabled')
+                .addClass('btn-primary')
+                .attr('href', '{% url "checkoutpage" %}');
+            } else {
+              $('#checkout-button')
+                .addClass('disabled')
+                .removeClass('btn-primary')
+                .attr('href', '#');
+            
+          } 
+          }
+          else {
+            alert("Error: " + response.error);
+          }
+        },
+        error: function () {
+          alert("Something went wrong!");
+        }
+      });
+    });
+  });
+</script>
+
 
 {% include 'includes/footer.html' %}

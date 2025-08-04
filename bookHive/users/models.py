@@ -5,6 +5,9 @@ from admin_panel.models import Variant
 from django.contrib.auth.models import BaseUserManager
 from django.utils import timezone
 from admin_panel.models import Product
+import datetime
+import random
+
 # import uuid
 # import random
 # import string
@@ -56,6 +59,7 @@ class Address(models.Model):
     state = models.CharField(max_length=100) 
     postal_code = models.CharField(max_length=10) 
     phone = models.CharField(max_length=15)  
+    is_default = models.BooleanField(default=False)
     is_active=models.BooleanField(default=True)
 
     
@@ -89,8 +93,8 @@ class CartItem(models.Model):
     
  
 class Order(models.Model):
+    
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='orders')
-    # payment = models.ForeignKey('Payment', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     address = models.ForeignKey('Address', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     discount_percentage = models.IntegerField(default=0)
     order_date = models.DateField(default=timezone.now)
@@ -101,14 +105,41 @@ class Order(models.Model):
     cancel_reason = models.CharField(max_length=500, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    order_id = models.CharField(max_length=20, unique=True, blank=False, editable=False)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"Order #{self.id} - {self.user.username}"
+        return f"Order #{self.order_id} - {self.user.username}"
+
+    def generate_order_id(self):
+        """Generate a unique order_id in the format BKDDMMYYYYHHMM."""
+        prefix = "BK"
+        timestamp = datetime.datetime.now()
+        base_id = f"{prefix}{timestamp.strftime('%d%m%Y%H%M')}"
+        order_id = base_id
+        # Check for uniqueness and append a random digit if collision occurs
+        counter = 0
+        while Order.objects.filter(order_id=order_id).exists():
+            counter += 1
+            suffix = str(random.randint(0, 9))
+            order_id = f"{base_id}{suffix}"
+            if counter > 10:  # Prevent infinite loop
+                raise ValueError("Unable to generate a unique order_id after multiple attempts.")
+        return order_id
+
+    def save(self, *args, **kwargs):
+        """Override save to set order_id and net_amount on creation."""
+        if not self.order_id:  # Only generate if order_id is not set
+            self.order_id = self.generate_order_id()
+        if not self.net_amount:  # Update net_amount if not set
+            self.net_amount = self.calculate_total()
+        super().save(*args, **kwargs)
 
     def calculate_total(self):
+        """Calculate the total order amount including discount and shipping."""
         total = sum(item.total_amount for item in self.order_items.all())
-        discount = (self.discount_percentage / 100) * total
-        return total - discount + self.shipping_charge
+        discount = (float(self.discount_percentage) / 100) * float(total)
+        return float(total) - float(discount) + float(self.shipping_charge)
 
 
 

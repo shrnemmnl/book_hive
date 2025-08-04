@@ -2,25 +2,25 @@
 <!-- HERO BANNER COMPONENT -->
 <section id="home" class="hero-section position-relative">
   <!-- Main Banner -->
-  <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+  <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
     <div class="carousel-indicators">
-      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
-      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
-      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
     </div>
     
     <div class="carousel-inner">
       <!-- Slide 1 -->
       <div class="carousel-item active">
-        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('{% static 'images/main-banner1.jpg' %}') center/cover no-repeat; height: 500px;">
+        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{% static 'images/main-banner1.jpg' %}') center/cover no-repeat; height: 600px;">
           <div class="container h-100">
             <div class="row h-100 align-items-center">
               <div class="col-lg-6">
                 <div class="hero-content text-white">
-                  <h1 class="display-4 fw-bold mb-4 animated fadeInDown">Discover Your Next Favorite Book</h1>
-                  <p class="lead mb-4 animated fadeInUp">Explore our curated collection of bestsellers, classics, and new releases at unbeatable prices.</p>
-                  <div class="animated fadeInUp delay-1">
-                    <a href="#library" class="btn btn-primary btn-lg me-2">Explore Now</a>
+                  <h1 class="display-3 fw-bold mb-3" data-aos="fade-down">Discover Your Next Favorite Book</h1>
+                  <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">Explore our curated collection of bestsellers, classics, and new releases at unbeatable prices.</p>
+                  <div class="d-flex gap-2" data-aos="fade-up" data-aos-delay="200">
+                    <a href="#library" class="btn btn-primary btn-lg">Explore Now</a>
                     <a href="#special-offer" class="btn btn-outline-light btn-lg">Special Offers</a>
                   </div>
                 </div>
@@ -32,14 +32,14 @@
       
       <!-- Slide 2 -->
       <div class="carousel-item">
-        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('{% static 'images/main-banner2.jpg' %}') center/cover no-repeat; height: 500px;">
+        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{% static 'images/main-banner2.jpg' %}') center/cover no-repeat; height: 600px;">
           <div class="container h-100">
             <div class="row h-100 align-items-center">
               <div class="col-lg-6 offset-lg-6">
                 <div class="hero-content text-white text-lg-end">
-                  <h1 class="display-4 fw-bold mb-4 animated fadeInDown">Summer Reading Collection</h1>
-                  <p class="lead mb-4 animated fadeInUp">Dive into our selection of beach reads and summer adventures.</p>
-                  <div class="animated fadeInUp delay-1">
+                  <h1 class="display-3 fw-bold mb-3" data-aos="fade-down">Summer Reading Collection</h1>
+                  <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">Dive into our selection of beach reads and summer adventures.</p>
+                  <div data-aos="fade-up" data-aos-delay="200">
                     <a href="#" class="btn btn-primary btn-lg">Shop Collection</a>
                   </div>
                 </div>
@@ -51,14 +51,14 @@
       
       <!-- Slide 3 -->
       <div class="carousel-item">
-        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('{% static 'images/main-banner3.jpg' %}') center/cover no-repeat; height: 500px;">
+        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{% static 'images/main-banner3.jpg' %}') center/cover no-repeat; height: 600px;">
           <div class="container h-100">
             <div class="row h-100 align-items-center">
               <div class="col-lg-6">
                 <div class="hero-content text-white">
-                  <h1 class="display-4 fw-bold mb-4 animated fadeInDown">Books For Every Age</h1>
-                  <p class="lead mb-4 animated fadeInUp">From children's picture books to adult fiction, find the perfect read for everyone.</p>
-                  <div class="animated fadeInUp delay-1">
+                  <h1 class="display-3 fw-bold mb-3" data-aos="fade-down">Books For Every Age</h1>
+                  <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">From children's picture books to adult fiction, find the perfect read for everyone.</p>
+                  <div data-aos="fade-up" data-aos-delay="200">
                     <a href="#" class="btn btn-primary btn-lg">Browse Categories</a>
                   </div>
                 </div>
@@ -70,107 +70,150 @@
     </div>
     
     <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-      <span class="carousel-control-prev-icon"></span>
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
       <span class="visually-hidden">Previous</span>
     </button>
     <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-      <span class="carousel-control-next-icon"></span>
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
       <span class="visually-hidden">Next</span>
     </button>
   </div>
   
   <!-- Category Pills -->
-  <div class="category-pills py-3 bg-white border-bottom">
+  <!-- <div class="category-pills py-3 bg-light">
     <div class="container">
       <div class="row">
         <div class="col-12">
-          <div class="category-scroll d-flex overflow-auto pb-2">
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Fiction</a>
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Non-Fiction</a>
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Mystery</a>
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Science Fiction</a>
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Romance</a>
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Children's</a>
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Biography</a>
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">History</a>
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Self-Help</a>
-            <a href="#" class="btn btn-sm btn-outline-secondary rounded-pill me-2">Cooking</a>
+          <div class="category-scroll d-flex flex-wrap gap-2 justify-content-center">
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">Fiction</a>
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">Non-Fiction</a>
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">Mystery</a>
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">Science Fiction</a>
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">Romance</a>
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">Children's</a>
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">Biography</a>
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">History</a>
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">Self-Help</a>
+            <a href="#" class="btn btn-outline-primary rounded-pill px-3 py-1">Cooking</a>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </div> -->
 </section>
 
 <style>
-/* Add some custom styles for the hero section */
+/* Hero Section Styles */
 .hero-section {
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
 }
 
 .hero-slide {
   position: relative;
+  transition: opacity 0.5s ease-in-out;
 }
 
 .hero-content {
-  padding: 20px;
-  border-radius: 10px;
+  padding: 2rem;
+  border-radius: 12px;
 }
 
-/* Animations for the hero content */
-.animated {
-  animation-duration: 1s;
+.hero-content h1 {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-.fadeInDown {
-  animation-name: fadeInDown;
+.hero-content p {
+  font-size: 1.1rem;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-.fadeInUp {
-  animation-name: fadeInUp;
+.hero-content .btn-primary {
+  background-color: #e67e22;
+  border-color: #e67e22;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
-.delay-1 {
-  animation-delay: 0.3s;
+.hero-content .btn-primary:hover {
+  background-color: #d35400;
+  border-color: #d35400;
+  transform: translateY(-2px);
 }
 
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
+.hero-content .btn-outline-light {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  transition: background-color 0.3s, color 0.3s, transform 0.2s;
+}
+
+.hero-content .btn-outline-light:hover {
+  background-color: #e67e22;
+  border-color: #e67e22;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.carousel-control-prev,
+.carousel-control-next {
+  width: 5%;
+  background: rgba(0,0,0,0.3);
+  transition: background 0.3s;
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+  background: rgba(0,0,0,0.5);
+}
+
+.carousel-indicators button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #fff;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.carousel-indicators .active {
+  opacity: 1;
+  background-color: #e67e22;
+}
+
+/* Category Pills Styles */
+.category-pills {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.category-scroll .btn-outline-primary {
+  color: #2c3e50;
+  border-color: #2c3e50;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+}
+
+.category-scroll .btn-outline-primary:hover {
+  background-color: #e67e22;
+  border-color: #e67e22;
+  color: #fff;
+}
+
+@media (max-width: 767px) {
+  .hero-slide {
+    height: 400px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .hero-content h1 {
+    font-size: 2rem;
   }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+  .hero-content p {
+    font-size: 1rem;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .hero-content .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
   }
-}
-
-/* Style for category pills */
-.category-scroll::-webkit-scrollbar {
-  height: 5px;
-}
-
-.category-scroll::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.category-scroll::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 5px;
-}
-
-.category-scroll::-webkit-scrollbar-thumb:hover {
-  background: #555;
 }
 </style>

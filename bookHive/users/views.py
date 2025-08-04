@@ -1,4 +1,5 @@
 
+from datetime import datetime, timedelta
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
@@ -15,16 +16,23 @@ import re
 from .utils import send_verification_email, generate_otp
 from django.core.paginator import Paginator
 from django.db.models import Avg,Sum,F, ExpressionWrapper, DecimalField
-from django.http import HttpResponse
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import logging
+from django.db import transaction
+from django.utils import timezone
+import tempfile
+import subprocess
+import os
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from django.http import HttpResponse
 
 
-
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 logger = logging.getLogger(__name__)  # Create logger
 
 
@@ -69,6 +77,10 @@ def signup(request):
         if CustomUser.objects.filter(email=email).exists():
             errors['email'] = "Email is already registered."
 
+        # Check if Mobile number is already registered
+        if CustomUser.objects.filter(phone_no=mobile).exists():
+            errors['mobile'] = "Phone is already registered. Plaese enter another contact number."
+
         if not errors: 
             request.session['userdata'] = {
                 'first_name': firstName.capitalize(),
@@ -96,10 +108,10 @@ def signup(request):
 
 
 def loading_page(request):
+    
     # Get filter parameters from request
     sort = request.GET.get('sort', 'featured')
     genres = request.GET.get('genres', '')
-    print(genres)
     min_price = request.GET.get('min_price', 0)
     max_price = request.GET.get('max_price', None)
 
@@ -203,11 +215,8 @@ def home_page(request):
 
 
 def product_details(request, id):
-    print(type(request.method))
-    print('path- ', request.path)
-    print("user - ", request.user)
-    print("user - ", request.user.first_name)
-    print(request.META)
+    
+
     # Fetch the product
     try:
         book = get_object_or_404(Product, id=id, is_active=True)
@@ -388,25 +397,13 @@ def user_profile(request):
 
 
 def user_address(request):
-    address = Address.objects.filter(user=request.user, is_active=True)
+    address = Address.objects.filter(user=request.user, is_active=True).order_by('-is_default')
     logger.info(f"New address is created: {address}")
     has_error = False
 
     if request.method == 'POST':
 
-        # Address.objects.create(
-        #     user=request.user,
-        #     address_type=request.POST.get('address_type', '').strip().capitalize(),
-        #     street=request.POST.get('street', '').strip().capitalize(),
-        #     phone=request.POST.get('phone', '').strip(),
-        #     landmark=request.POST.get('landmark', '').strip().capitalize(),
-        #     city=request.POST.get('city', '').strip().capitalize(),
-        #     state=request.POST.get('state', '').strip().capitalize(),
-        #     postal_code=request.POST.get('pincode', '').strip(),
-        # )
-
-        # phone_pattern = r'^\d{10}$'
-        # pincode_pattern = r'^\d{6}$'  
+        
         address_type = request.POST.get('address_type', '').strip().capitalize()
         street = request.POST.get('street', '').strip().capitalize()
         phone = request.POST.get('phone', '').strip()
@@ -426,6 +423,11 @@ def user_address(request):
                 messages.error(request, "Please enter a valid 6-digit postal code.")
                 has_error = True
 
+        if Address.objects.filter(user=request.user, is_active=True).exists():
+            default = False
+        else:
+            default = True
+
         if not has_error:       
             Address.objects.create(
                 user=request.user,
@@ -436,6 +438,7 @@ def user_address(request):
                 city = city,
                 state = state,
                 postal_code = postal_code,
+                is_default = default,
             )
             messages.success(request, "Your new delivery address has been added successfully.")
             return redirect('user_address')  # Or wherever you want to redirect
@@ -443,43 +446,137 @@ def user_address(request):
 
     return render(request, 'user/user_address.html', {'addresss': address})
 
+def default_address(request, address_id):
+    try:
+        with transaction.atomic():
+            
+            current_default = Address.objects.get(is_default=True, user=request.user)
+            current_default.is_default = False
+            current_default.save()
 
+            d_address = Address.objects.get(id=address_id, user=request.user)
+            d_address.is_default = True
+            d_address.save()
+
+        messages.success(request, f'{d_address.address_type} is now set as your default address.')
+    except Address.DoesNotExist:
+        messages.error(request, "Address not found or already unset.")
+    except Exception as e:
+        messages.error(request, f"Something went wrong: {str(e)}")
+
+    return redirect('user_address')
 
 
 
 def user_cart(request):
     # Get or create the cart for the user
     cart, created = Cart.objects.get_or_create(user=request.user)
+    # logger.debug(f"this is the cart created- {cart}")
+    
 
     # Get all active cart items linked to this cart
     cart_item = CartItem.objects.filter(cart=cart, product_variant__is_active=True)
 
+    count = cart_item.count()
+    print("count -",count)
+    logger.debug(f"This is the cart created- {cart_item}")
     # Calculate subtotal
     subtotal = sum(item.get_total_price() for item in cart_item)
 
     # Render the cart page
     return render(request, 'user/user_cart.html', {
         'cart_item': cart_item,
-        'subtotal': subtotal
+        'subtotal': subtotal,
+        'count' : count,
     })
 
+
+
+
 def user_order(request):
-    order_details = Order.objects.prefetch_related(
-        'order_items').filter(user=request.user)
+
+    order_details = Order.objects.prefetch_related('order_items').filter(user=request.user).order_by('-created_at')
+    
 
     return render(request, 'user/user_order.html', {'order_details': order_details})
+
+
+
+
+@login_required
+def order_search(request):
+
+    # Get search parameters
+    search_query = request.GET.get('search', '')
+    period_filter = request.GET.get('period', 'all')
+    status_filter = request.GET.get('status', '')
+
+    # Start with all orders for the current user
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+
+    # Apply time period filter
+    if period_filter != 'all':
+        if period_filter == '30days':
+            start_date = timezone.now().date() - timedelta(days=30)
+            orders = orders.filter(created_at__date__gte=start_date)
+        elif period_filter == '3months':
+            start_date = timezone.now().date() - timedelta(days=90)
+            orders = orders.filter(created_at__date__gte=start_date)
+        elif period_filter == '6months':
+            start_date = timezone.now().date() - timedelta(days=180)
+            orders = orders.filter(created_at__date__gte=start_date)
+        elif period_filter == '2025':
+            start_date = datetime(2025, 1, 1).date()
+            end_date = datetime(2025, 12, 31).date()
+            orders = orders.filter(created_at__date__range=(start_date, end_date))
+        elif period_filter == '2024':
+            start_date = datetime(2024, 1, 1).date()
+            end_date = datetime(2024, 12, 31).date()
+            orders = orders.filter(created_at__date__range=(start_date, end_date))
+
+    # Apply search filter for order_id
+    if search_query:
+        orders = orders.filter(order_id__icontains=search_query)
+
+    # Apply status filter
+    if status_filter:
+        orders = orders.filter(status=status_filter)
+
+    # Count the number of orders
+    order_count = orders.count()
+
+    context = {
+        'order_details': orders,
+        'order_count': order_count
+    }
+
+
+    return render(request, 'user/user_order.html', context)
 
 
 def cancel_order(request, order_id):
 
     if request.method == 'POST':
-        reason=request.POST.get('reason')
-        order = Order.objects.get(id=order_id)
-        order.status = 'pending'
-        order.cancel_reason = reason
-        order.save()
 
-        return redirect('user_order' )
+        reason=request.POST.get('reason')
+
+        try:
+
+            order = Order.objects.get(id=order_id)
+            order.status = 'request to cancel'
+            order.is_active = False
+            order.cancel_reason = reason
+            order.save()
+            
+            messages.info(request, f"Your order id - {order.order_id} is requested to cancel." )
+            return redirect('user_order')
+
+        except Exception as e:
+
+            messages.error(request, f"Error - {e}")
+
+
+    return render(request, 'user/user_order.html',)
         
 
     
@@ -524,68 +621,116 @@ def calculate_total(cart_items):
     return sum(item.product_variant.price * item.quantity for item in cart_items)
 
 
-def checkoutpage(request):
-    if request.method == 'POST':
-        print(request.POST)
-        address_id = request.POST.get('shippingAddress')
-        payment_method = request.POST.get('payment_method')
 
-        # Get user's active/latest cart
+@csrf_exempt  # Use only if you don't have {% csrf_token %}, otherwise REMOVE this
+def checkoutpage(request):
+    
+
+    if request.method == 'POST':
+        
+        address_id = request.POST.get('shippingAddress')
+        payment_method = request.POST.get('payment_method')  # Use if needed later
+
+        print('address_id -', address_id)
+        print('payment_method -', payment_method)
+
+        # ✅ Check for valid address
+        try:
+            address = Address.objects.get(id=address_id, user=request.user)
+        except Address.DoesNotExist:
+            messages.error(request, "Invalid address selected.")
+            return redirect('checkoutpage')
+
+        # ✅ Get latest active cart
         try:
             cart = Cart.objects.filter(user=request.user).latest('created_at')
         except Cart.DoesNotExist:
-            return redirect('cart')  # no cart found
+            messages.error(request, "No cart found.")
+            return redirect('cart')
 
         cart_items = cart.cart_items.all()
-
         if not cart_items.exists():
-            return redirect('cart')  # handle empty cart
+            messages.error(request, "Your cart is empty.")
+            return redirect('cart')
 
-        # Create order
-        order = Order.objects.create(
+        # ✅ Calculate net amount
+        net_amount = calculate_total(cart_items)
+
+        try:
+
+            with transaction.atomic():
+                # ✅ Create Order
+                order = Order.objects.create(
             user=request.user,
-            address=Address.objects.get(id=address_id),
-            net_amount=calculate_total(cart_items),
-            status='Pending'
+            address=address,
+            net_amount=net_amount,
+            status='pending',
+            order_date=timezone.now()
         )
-
-        # Add order items
-        for item in cart_items:
-            order.order_items.create(
-                product_variant=item.product_variant,  # reference the product_variant field
+            print('order -', order)
+        # ✅ Add items to order
+            for item in cart_items:
+                OrderItem.objects.create(
+                order=order,
+                product_variant=item.product_variant,
                 quantity=item.quantity,
-                # calculate total amount based on quantity and price
-                total_amount=item.product_variant.price * item.quantity
+                total_amount=item.product_variant.price * item.quantity,
+                image_url=item.product_variant.image_url if hasattr(item.product_variant, 'image_url') else None,
+                
             )
 
-        # Delete the cart after checkout
-        cart.delete()
+        # ✅ Clear cart
+            cart.delete()
 
-        # return redirect('user_order', order_id=order.id)
-        return redirect('user_order')
+        # ✅ Redirect to order confirmation page with order_id
+            return redirect('order_confirm', id=order.id)
 
-    # GET Request
+        except Exception as e:
+
+            messages.error(request, f"Something went wrong: {str(e)}")
+    
+    # 🟡 Handle GET request
     try:
         cart = Cart.objects.filter(user=request.user).latest('created_at')
         cart_items = cart.cart_items.all()
+
     except Cart.DoesNotExist:
+
         cart_items = []
 
     subtotal = calculate_total(cart_items)
-    shipping = 0  # Optional logic
+    shipping = 0  # You can make this dynamic later
     total = subtotal + shipping
 
-    address = Address.objects.filter(user=request.user, is_active=True)
+    addresses = Address.objects.filter(user=request.user, is_active=True).order_by('-is_default')
 
     return render(request, 'user/checkoutpage.html', {
-        'addresses': address,
+        'addresses': addresses,
         'cart_items': cart_items,
         'subtotal': subtotal,
         'total': total
     })
 
+
+
+def order_confirm(request, id):
+
+    try:
+
+        order = Order.objects.get(id = id)
+        order_items = OrderItem.objects.filter(order = order)
+
+    except Exception as e:
+
+        messages.error(request, f"Something went wrong: {str(e)}")
+
+    return render(request, 'user/order_confirm.html', {'order' : order, 'order_items' : order_items})
+
+
+
 @require_POST
 def add_to_cart(request, id):
+
     try:
         data = json.loads(request.body)
         variant_id = data.get('variant_id')
@@ -601,7 +746,7 @@ def add_to_cart(request, id):
         except Cart.DoesNotExist:
             cart = Cart.objects.create(user=request.user)
             created = True
-        print(cart)
+            
 
         # get the actual Variant object
         variant = get_object_or_404(Variant, id=variant_id)
@@ -641,7 +786,7 @@ def update_cart_quantity(request):
             cart_item.quantity += 1
         elif action == 'decrease' and cart_item.quantity > 1:
             cart_item.quantity -= 1
-
+        
         cart_item.save()
 
         # Total price for this item
@@ -651,17 +796,50 @@ def update_cart_quantity(request):
         cart_total = CartItem.objects.filter(cart=cart_item.cart).annotate(total_price=ExpressionWrapper(
             F('quantity') * F('product_variant__price'),output_field=DecimalField())).aggregate(
                 total=Sum('total_price'))['total']
-        # subtotal = sum(item.get_total_price() for item in cart_item)
+        
+        # logger.debug(f"This is the cart item cart - {cart_item.cart}")
+
+        cart_items = CartItem.objects.filter(cart=cart_item.cart)
+        subtotal = sum(item.get_total_price() for item in cart_items)
+
         return JsonResponse({
             'success': True,
             'new_quantity': cart_item.quantity,
             'item_total_price': item_total_price,
-            'cart_total': cart_total
+            'cart_total': cart_total,
+            'subtotal' : subtotal,
         })
 
     except CartItem.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Item not found'})
 
+
+@require_POST
+@csrf_exempt
+def delete_cart_item(request):
+    item_id = request.POST.get('item_id')
+
+    try:
+        cart_item = CartItem.objects.get(id=item_id)
+        cart = cart_item.cart
+        cart_item.delete()
+
+        cart_items = CartItem.objects.filter(cart=cart)  # fetching the remaining cart_items
+        count = cart_items.count()
+        print("count -",count)
+        cart_total = sum(item.get_total_price() for item in cart_items)
+        
+        return JsonResponse({
+            'success': True,
+            'cart_total': cart_total,
+            'count' : count,
+        })
+
+    except CartItem.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Item not found'})
+
+@never_cache
+@require_POST
 def verification(request):
 
     if request.method == 'POST':
@@ -683,7 +861,8 @@ def verification(request):
             if entered_otp == session_otp:
                 # You can mark user as verified here (maybe add `is_verified` field to model)
                 user_session_data = request.session.get('userdata')
-                user = CustomUser.objects.create(
+                try:
+                        user = CustomUser.objects.create(
                     first_name=user_session_data['first_name'],
                     last_name=user_session_data['last_name'],
                     email=user_session_data['email'],
@@ -691,6 +870,10 @@ def verification(request):
                     password=user_session_data['password']
 
                 )
+                        
+                except Exception as e:
+                    messages.error(request, f'Error - {e}')
+                    return redirect('signup')
 
                 # Clear session after creating
                 del request.session['userdata']
@@ -702,6 +885,7 @@ def verification(request):
                 return redirect('login')  # or home page
             else:
                 messages.error(request, "Invalid OTP. Try again.")
+                return redirect('signup')
 
         elif action == 'resend':
             new_otp = generate_otp()
@@ -715,6 +899,7 @@ def verification(request):
             else:
                 messages.error(
                     request, "Something went wrong. Email not found in session.")
+                
 
     return render(request, 'login/verification.html')
 
@@ -874,6 +1059,28 @@ def change_variant(request, book_id):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
+
+
+def download_invoice(request, id):
+    order = Order.objects.get(id=id)
+    order_items = order.order_items.all()  
+    template_path = 'invoices/invoice_template.html'
+    context = {
+        'order': order,
+        'order_items': order_items,
+    }
+
+    template = get_template(template_path)
+    html = template.render(context)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="invoice_{order.order_id}.pdf"'
+
+    pisa_status = pisa.CreatePDF(html, dest=response)
+
+    if pisa_status.err:
+        return HttpResponse('We had some errors with PDF generation <pre>' + html + '</pre>')
+    return response
 
 
 

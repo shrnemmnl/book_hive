@@ -1,51 +1,49 @@
-
 {% extends "base.html" %}
 
 {% load custom_filters %}
 {% load static %}
 
 {% block page_content %}
-<div class="container py-5">
+<div class="container-fluid px-3 py-3">
   <!-- Breadcrumbs -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
+  <nav aria-label="breadcrumb" class="mb-2">
+    <ol class="breadcrumb" style="font-size: 0.85rem;">
       <li class="breadcrumb-item">
         <a href="{% url 'loading_page' %}">Home</a>
       </li>
       <li class="breadcrumb-item active" aria-current="page">Product Details</li>
     </ol>
   </nav>
-  <br>
-  <br>
-<!-- Add this after the breadcrumbs -->
-<input type="hidden" id="book-id" data-book-id="{{ book.id }}" value="{{ book.id }}">
 
-  <div class="row">
+  <!-- Hidden input for book ID -->
+  <input type="hidden" id="book-id" data-book-id="{{ book.id }}" value="{{ book.id }}">
+
+  <div class="row g-3">
     <!-- Book Cover and Variant Images -->
-    <div class="col-md-4 mb-4">
+    <div class="col-md-4 mb-3">
       <!-- Main large image with zoom container -->
-      <div class="position-relative mb-3" id="imageContainer" style="overflow: hidden;">
-        <img id="mainImage" src="{{ default_variant.productimage_set.first.image1.url }}" alt="{{ books.book_title }}"
-          class="img-fluid rounded w-100">
+      <div class="position-relative mb-3 rounded shadow-sm" id="imageContainer" style="overflow: hidden;">
+        <img id="mainImage" src="{{ default_variant.productimage_set.first.image1.url }}" alt="{{ book.book_title }}"
+          class="img-fluid rounded w-100" style="max-height: 400px; object-fit: contain;">
         <div id="zoomedImage"
           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-repeat: no-repeat; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;">
         </div>
       </div>
 
       <!-- Thumbnail images row -->
-      <div class="row">
+      <div class="row g-2">
         {% with images=default_variant.productimage_set.first %}
         <div class="col-4">
           <img src="{{ images.image1.url }}" alt="Image 1" class="img-fluid rounded thumbnail border"
-            onclick="changeImage('{{ images.image1.url }}')" style="cursor: pointer;">
+            onclick="changeImage('{{ images.image1.url }}')" style="cursor: pointer; max-height: 80px;">
         </div>
         <div class="col-4">
           <img src="{{ images.image2.url }}" alt="Image 2" class="img-fluid rounded thumbnail"
-            onclick="changeImage('{{ images.image2.url }}')" style="cursor: pointer;">
+            onclick="changeImage('{{ images.image2.url }}')" style="cursor: pointer; max-height: 80px;">
         </div>
         <div class="col-4">
           <img src="{{ images.image3.url }}" alt="Image 3" class="img-fluid rounded thumbnail"
-            onclick="changeImage('{{ images.image3.url }}')" style="cursor: pointer;">
+            onclick="changeImage('{{ images.image3.url }}')" style="cursor: pointer; max-height: 80px;">
         </div>
         {% endwith %}
       </div>
@@ -53,67 +51,51 @@
 
     <!-- Book Details -->
     <div class="col-md-8">
-      <h1 class="display-5 fw-bold">{{ book.book_title }}</h1>
-      <p class="fs-5">
-        By: {{ book.author }}
-      </p>
+      <h1 class="fw-bold mb-2" style="font-size: 1.75rem;">{{ book.book_title }}</h1>
+      <p class="text-muted mb-2" style="font-size: 0.9rem;">By: {{ book.author }}</p>
       <div class="d-flex align-items-center mb-3">
-          <!-- star rating -->
-          {% if  average_rating_int %}
-          
-          <div>
-            
-
-            {% for i in '12345' %}
-  <i class="bi {% if forloop.counter <= average_rating_int %}bi-star-fill{% else %}bi-star{% endif %}"></i>
-{% endfor %}
-            
-            <div class="text-muted">Based on {{review_count}} reviews</div>
-            {% else %}
-            <div class="text-muted">Not Reviewed Yet</div>
-            {% endif %}
-            
-
-          </div>
+        <!-- Star rating -->
+        {% if average_rating_int %}
+        <div class="d-flex align-items-center">
+          {% for i in '12345' %}
+          <i class="bi {% if forloop.counter <= average_rating_int %}bi-star-fill{% else %}bi-star{% endif %} text-warning me-1" style="font-size: 0.9rem;"></i>
+          {% endfor %}
+          <span class="text-muted ms-2" style="font-size: 0.85rem;">Based on {{ review_count }} reviews</span>
         </div>
+        {% else %}
+        <div class="text-muted" style="font-size: 0.85rem;">Not Reviewed Yet</div>
+        {% endif %}
+      </div>
 
       <!-- Variant Selector -->
       <div class="mb-3">
-        <label for="variantSelector" class="form-label">Select Language:</label>
-        <select id="variantSelector" class="form-select" onchange="changeVariant(this.value)">
+        <label for="variantSelector" class="form-label fw-bold" style="font-size: 0.9rem;">Select Language:</label>
+        <select id="variantSelector" class="form-select" onchange="changeVariant(this.value)" style="font-size: 0.85rem;">
           {% for variant in variants %}
           <option value="{{ variant.id }}" {% if variant.id == default_variant.id %} selected {% endif %}>
             {{ variant.publisher }} Edition - {{ variant.language }}
           </option>
           {% endfor %}
-
         </select>
       </div>
 
       <!-- Variant Price -->
       <div class="mb-3">
-        <h3  id="variantPriceBlock">
-  {% if book.is_offer %}
-    <span style="text-decoration: line-through;">₹{{ default_variant.price }}</span>
-    <strong style="color: green;">₹{{ discount_price }}</strong>
-    <span style="color: red;">({{ book.discount_percentage }}% OFF)</span>
-  {% else %}
-    <span>₹{{ default_variant.price }}</span>
-  {% endif %}
-</h3>
-
-  <!-- {% if product.offer_expiry %}
-    <p style="color: orange;">Offer ends on {{ product.offer_expiry|date:"D d M Y H:i" }}</p>
-  {% endif %}
-
-  <p>Price: ₹{{ product.price }}</p> -->
-        <p id="variantPublisher">Publisher: {{ default_variant.publisher }}</p>
+        <h3 id="variantPriceBlock" class="fw-bold" style="font-size: 1.25rem;">
+          {% if book.is_offer %}
+          <span style="text-decoration: line-through;">₹{{ default_variant.price }}</span>
+          <strong style="color: green;">₹{{ discount_price }}</strong>
+          <span style="color: red;">({{ book.discount_percentage }}% OFF)</span>
+          {% else %}
+          <span>₹{{ default_variant.price }}</span>
+          {% endif %}
+        </h3>
+        <p id="variantPublisher" class="text-muted" style="font-size: 0.85rem;">Publisher: {{ default_variant.publisher }}</p>
       </div>
 
       <!-- Stock Status -->
       <div class="mb-3">
-        <p id="stockStatus"
-          class="{% if default_variant.available_quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+        <p id="stockStatus" class="{% if default_variant.available_quantity > 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: 0.9rem;">
           {% if default_variant.available_quantity > 0 %}
           ✓ In Stock ({{ default_variant.available_quantity }} available)
           {% else %}
@@ -122,88 +104,77 @@
         </p>
 
         {% if default_variant.available_quantity > 0 %}
-<div class="input-group mb-3" style="max-width: 200px;">
-  <button class="btn btn-outline-secondary" type="button" id="decreaseQty">-</button>
-  <input type="number" id="quantity" class="form-control text-center" value="1" min="1" max="5" readonly>
-  <button class="btn btn-outline-secondary" type="button" id="increaseQty">+</button>
-</div>
-{% endif %}
-
+        <div class="input-group mb-3" style="max-width: 150px;">
+          <button class="btn btn-outline-secondary" type="button" id="decreaseQty" style="font-size: 0.85rem;">-</button>
+          <input type="number" id="quantity" class="form-control text-center" value="1" min="1" max="5" readonly style="font-size: 0.85rem;">
+          <button class="btn btn-outline-secondary" type="button" id="increaseQty" style="font-size: 0.85rem;">+</button>
+        </div>
+        {% endif %}
       </div>
 
       <!-- Action Buttons -->
-<div class="row mt-2">
-  <div class="col-md-6 mb-2">
-    <button class="btn btn-primary w-100 add-to-cart-btn {% if is_sold_out %}disabled{% endif %}" 
-            data-book-id="{{ book.id }}" 
-            type="button">
-      Add to Cart
-    </button>
-  </div>
-  <div class="col-md-6 mb-2">
-    <button class="btn btn-danger w-100 buy-now-btn {% if is_sold_out %}disabled{% endif %}" 
-            data-book-id="{{ book.id }}" 
-            type="button">
-      BUY NOW
-    </button>
-  </div>
-</div>
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-primary flex-fill add-to-cart-btn {% if is_sold_out %}disabled{% endif %}" 
+                data-book-id="{{ book.id }}" type="button" style="font-size: 0.9rem;">
+          Add to Cart
+        </button>
+        <button class="btn btn-danger flex-fill buy-now-btn {% if is_sold_out %}disabled{% endif %}" 
+                data-book-id="{{ book.id }}" type="button" style="font-size: 0.9rem;">
+          Buy Now
+        </button>
+        <button class="btn btn-outline-secondary wishlist-toggle-btn" data-product-id="{{ book.id }}" style="font-size: 0.9rem;">
+          {% if variant in user_wishlist_variants %}
+          💔
+          {% else %}
+          ❤️
+          {% endif %}
+        </button>
+      </div>
 
-<div class="text-center mt-2">
-  <button class="wishlist-toggle-btn" data-product-id="{{ book.id }}">
-  {% if variant in user_wishlist_variants %}
-    💔 Remove from Wishlist
-  {% else %}
-    ❤️ Add to Wishlist
-  {% endif %}
-</button>
-
-</div>
-
-<!-- Toast Message Area -->
-<div id="wishlist-toast" class="alert d-none mt-2" role="alert"></div>
+      <!-- Toast Message Area -->
+      <div id="wishlist-toast" class="alert d-none mt-2" role="alert" style="font-size: 0.85rem;"></div>
 
       <!-- Book Specifications -->
-      <div class="row">
+      <div class="row g-3 mt-2">
         <div class="col-md-6">
-          <table class="table">
+          <table class="table table-borderless" style="font-size: 0.85rem;">
             <tbody>
               <tr>
-                <th scope="row">Book:</th>
+                <th scope="row" class="fw-bold">Book:</th>
                 <td>{{ book.book_title }}</td>
               </tr>
               <tr>
-                <th scope="row">Author:</th>
-                <td><p href="#" class="text-primary">{{ book.author }}</p></td>
+                <th scope="row" class="fw-bold">Author:</th>
+                <td><a href="#" class="text-primary">{{ book.author }}</a></td>
               </tr>
               <tr>
-                <th scope="row">Category:</th>
+                <th scope="row" class="fw-bold">Category:</th>
                 <td>{{ book.genre.genre_name }}</td>
               </tr>
             </tbody>
           </table>
         </div>
         <div class="col-md-6">
-          <table class="table">
+          <table class="table table-borderless" style="font-size: 0.85rem;">
             <tbody>
               <tr>
-                <th scope="row">Publishing Date:</th>
+                <th scope="row" class="fw-bold">Publishing Date:</th>
                 <td id="variantDate">{{ default_variant.published_date }}</td>
               </tr>
               <tr>
-                <th scope="row">Publisher:</th>
+                <th scope="row" class="fw-bold">Publisher:</th>
                 <td id="variantPublisherLink"><a href="#" class="text-primary">{{ default_variant.publisher }}</a></td>
               </tr>
               <tr>
-                <th scope="row">Edition:</th>
+                <th scope="row" class="fw-bold">Edition:</th>
                 <td>1</td>
               </tr>
               <tr>
-                <th scope="row">Number of pages:</th>
+                <th scope="row" class="fw-bold">Number of pages:</th>
                 <td id="variantPages">{{ default_variant.page }}</td>
               </tr>
               <tr>
-                <th scope="row">Language:</th>
+                <th scope="row" class="fw-bold">Language:</th>
                 <td id="variantLanguage">{{ default_variant.language }}</td>
               </tr>
             </tbody>
@@ -214,381 +185,155 @@
   </div>
 
   <!-- Book Summary -->
-  <div class="row mt-5">
+  <div class="row mt-4">
     <div class="col-12">
-      <h2 class="border-bottom pb-2 mb-4">BOOK SUMMARY</h2>
-      <p class="lead">
-        {{ books.description }}
-      </p>
+      <h2 class="fw-bold border-bottom pb-2 mb-3" style="font-size: 1.5rem;">BOOK SUMMARY</h2>
+      <p class="lead" style="font-size: 0.9rem;">{{ book.description }}</p>
     </div>
   </div>
+
+  <!-- Hidden CSRF token -->
   <input type="hidden" id="csrf_token" value="{{ csrf_token }}">
 
-</div>
-<!-- Book Reviews Section -->
-<div class="row mt-5">
-  <div class="col-12">
-    <h2 class="border-bottom pb-2 mb-4">CUSTOMER REVIEWS</h2>
+  <!-- Book Reviews Section -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <h2 class="fw-bold border-bottom pb-2 mb-3" style="font-size: 1.5rem;">CUSTOMER REVIEWS</h2>
+    </div>
   </div>
-</div>
 
-<div class="row">
-  <!-- Overall Rating Panel (Left Side) -->
-  <div class="col-md-4 mb-4">
-    <div class="card">
-      <div class="card-body">
-        <h3 class="card-title">Overall Rating</h3>
-        <div class="d-flex align-items-center mb-3">
-          <!-- star rating -->
-          {% if  average_rating_int %}
-          <div class="display-4 me-3">{{average_rating|floatformat:1}}</div>
-          <div>
-            
-
-            {% for i in '12345' %}
-  <i class="bi {% if forloop.counter <= average_rating_int %}bi-star-fill{% else %}bi-star{% endif %}"></i>
-{% endfor %}
-            
-            <div class="text-muted">Based on {{review_count}} reviews</div>
+  <div class="row g-3">
+    <!-- Overall Rating Panel (Left Side) -->
+    <div class="col-md-4 mb-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title fw-bold" style="font-size: 1.25rem;">Overall Rating</h3>
+          <div class="d-flex align-items-center mb-3">
+            {% if average_rating_int %}
+            <div class="display-4 me-3" style="font-size: 2rem;">{{ average_rating|floatformat:1 }}</div>
+            <div>
+              {% for i in '12345' %}
+              <i class="bi {% if forloop.counter <= average_rating_int %}bi-star-fill{% else %}bi-star{% endif %} text-warning me-1" style="font-size: 0.9rem;"></i>
+              {% endfor %}
+              <div class="text-muted" style="font-size: 0.85rem;">Based on {{ review_count }} reviews</div>
+            </div>
             {% else %}
-            <div class="text-muted">No users attempted the review</div>
+            <div class="text-muted" style="font-size: 0.85rem;">No users attempted the review</div>
             {% endif %}
-            
-
           </div>
+
+          <!-- Write Review Button -->
+          {% if user.is_authenticated %}
+          <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#writeReviewModal" style="font-size: 0.9rem;">
+            Write a Review
+          </button>
+          {% else %}
+          <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary w-100" style="font-size: 0.9rem;">
+            Write a Review
+          </a>
+          {% endif %}
         </div>
-
-        <!-- Rating Distribution -->
-        {% comment %} <div class="mb-4">
-          <div class="d-flex align-items-center mb-1">
-            <div class="text-nowrap me-2">5 stars</div>
-            <div class="progress flex-grow-1" style="height: 8px;">
-              <div class="progress-bar bg-success" role="progressbar" style="width: 74%;" aria-valuenow="74" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <div class="ms-2 text-muted small">74%</div>
-          </div>
-          <div class="d-flex align-items-center mb-1">
-            <div class="text-nowrap me-2">4 stars</div>
-            <div class="progress flex-grow-1" style="height: 8px;">
-              <div class="progress-bar bg-success" role="progressbar" style="width: 14%;" aria-valuenow="14" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <div class="ms-2 text-muted small">14%</div>
-          </div>
-          <div class="d-flex align-items-center mb-1">
-            <div class="text-nowrap me-2">3 stars</div>
-            <div class="progress flex-grow-1" style="height: 8px;">
-              <div class="progress-bar bg-warning" role="progressbar" style="width: 4%;" aria-valuenow="4" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <div class="ms-2 text-muted small">4%</div>
-          </div>
-          <div class="d-flex align-items-center mb-1">
-            <div class="text-nowrap me-2">2 stars</div>
-            <div class="progress flex-grow-1" style="height: 8px;">
-              <div class="progress-bar bg-warning" role="progressbar" style="width: 1%;" aria-valuenow="1" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <div class="ms-2 text-muted small">1%</div>
-          </div>
-          <div class="d-flex align-items-center mb-1">
-            <div class="text-nowrap me-2">1 star</div>
-            <div class="progress flex-grow-1" style="height: 8px;">
-              <div class="progress-bar bg-danger" role="progressbar" style="width: 7%;" aria-valuenow="7" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-            <div class="ms-2 text-muted small">7%</div>
-          </div>
-        </div> {% endcomment %}
-
-        {% comment %} <!-- Feature Ratings -->
-        <h5>Rating Categories</h5>
-        <div class="mb-2">
-          <div class="d-flex justify-content-between">
-            <div>Story & Plot</div>
-            <div class="text-warning">
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star"></i>
-            </div>
-          </div>
-        </div>
-        <div class="mb-2">
-          <div class="d-flex justify-content-between">
-            <div>Writing Style</div>
-            <div class="text-warning">
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-half"></i>
-            </div>
-          </div>
-        </div>
-        <div class="mb-2">
-          <div class="d-flex justify-content-between">
-            <div>Character Development</div>
-            <div class="text-warning">
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star"></i>
-            </div>
-          </div>
-        </div>
-        <div class="mb-4">
-          <div class="d-flex justify-content-between">
-            <div>Value for Money</div>
-            <div class="text-warning">
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star-fill"></i>
-              <i class="bi bi-star"></i>
-            </div>
-          </div>
-        </div> {% endcomment %}
-
-        <!-- Write Review Button -->
-        {% if user.is_authenticated %}
-  <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#writeReviewModal">
-    Write a Review
-  </button>
-{% else %}
-  <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary w-100">
-    Write a Review
-  </a>
-{% endif %}
-
       </div>
+    </div>
+
+    <!-- Customer Reviews List (Right Side) -->
+    <div class="col-md-8">
+      <!-- Individual Reviews -->
+      {% for review in review_content %}
+      {% if review.is_active %}
+      <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <div class="text-warning">
+              {% for s in 5|times %}
+              <i class="bi {% if s <= review.rating %}bi-star-fill{% else %}bi-star{% endif %} me-1" style="font-size: 0.9rem;"></i>
+              {% endfor %}
+            </div>
+            <div class="text-muted" style="font-size: 0.8rem;">{{ review.created_at }}</div>
+          </div>
+          <h6 class="card-subtitle mb-2 text-muted" style="font-size: 0.85rem;">User: {{ review.user.first_name }}</h6>
+          <p class="card-text" style="font-size: 0.85rem;">{{ review.comments }}</p>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
     </div>
   </div>
 
-  <!-- Customer Reviews List (Right Side) -->
-  <div class="col-md-8">
-    <!-- Filter Controls -->
-    <!-- <div class="d-flex justify-content-between align-items-center mb-3">
-      <div>
-        <label for="reviewSort" class="form-label me-2">Sort by:</label>
-        <select class="form-select form-select-sm d-inline-block w-auto">
-          <option selected>Most Recent</option>
-          <option>Highest Rated</option>
-          <option>Lowest Rated</option>
-        </select>
+  <!-- Related Books -->
+  <div class="mt-4">
+    <h3 class="fw-bold mb-3" style="font-size: 1.25rem;">More from this Genre 📚</h3>
+    <div class="related-books d-flex flex-wrap gap-3">
+      {% for book in related_books %}
+      <div class="book-card bg-white rounded shadow-sm p-2" style="width: 180px;">
+        <a href="{% url 'product_details' book.id %}">
+          <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid rounded" style="width: 100%; height: 200px; object-fit: cover;">
+          <h4 class="fw-bold mt-2" style="font-size: 0.9rem;">{{ book.book_title }}</h4>
+          <p class="text-muted" style="font-size: 0.8rem;">by {{ book.author }}</p>
+          {% if book.discount_percentage > 0 %}
+          <span class="text-danger" style="font-size: 0.8rem;">{{ book.discount_percentage }}% OFF</span>
+          {% endif %}
+        </a>
       </div>
-      <div>
-        <label class="form-label me-2">Filter:</label>
-        <div class="btn-group btn-group-sm" role="group">
-          <button type="button" class="btn btn-outline-secondary active">All</button>
-          <button type="button" class="btn btn-outline-secondary">5★</button>
-          <button type="button" class="btn btn-outline-secondary">4★</button>
-          <button type="button" class="btn btn-outline-secondary">3★</button>
-          <button type="button" class="btn btn-outline-secondary">2★</button>
-          <button type="button" class="btn btn-outline-secondary">1★</button>
-        </div>
-      </div>
-    </div> -->
-
-    <!-- Individual Reviews -->
-     {% for review in  review_content %}
-     {% if review.is_active %}
-    <div class="card mb-3">
-      <div class="card-body">
-        <div class="d-flex justify-content-between mb-2">
-          <div class="text-warning">
-            <!-- star ratings implementation -->
-            {% for s in 5|times %}
-  <i class="bi {% if s <= review.rating %}bi-star-fill{% else %}bi-star{% endif %}"></i>
-{% endfor %}
-          </div>
-          <div class="text-muted small">{{review.created_at}}</div>
-        </div>
-        {% comment %} <h5 class="card-title">Captivating read from start to finish!</h5> {% endcomment %}
-        <h6 class="card-subtitle mb-2 text-muted">User: {{review.user.first_name}}</h6>
-        <p class="card-text">{{review.comments}}</p>
-        {% comment %} <div class="d-flex justify-content-between align-items-center mt-3">
-          <div class="text-muted small">Verified Purchase</div>
-          <div>
-            <button class="btn btn-sm btn-outline-secondary me-2">
-              <i class="bi bi-hand-thumbs-up"></i> Helpful (24)
-            </button>
-            <button class="btn btn-sm btn-outline-secondary">
-              <i class="bi bi-flag"></i> Report
-            </button>
-          </div>
-        </div> {% endcomment %}
-      </div>
+      {% empty %}
+      <p class="text-muted" style="font-size: 0.85rem;">No similar books found in this genre.</p>
+      {% endfor %}
     </div>
-    {% endif %}
-    {% endfor %}
-
-    
-
-    <!-- Pagination -->
-    <!-- <nav aria-label="Review pagination">
-      <ul class="pagination justify-content-center">
-        <li class="page-item disabled">
-          <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-        </li>
-        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-        <li class="page-item"><a class="page-link" href="#">2</a></li>
-        <li class="page-item"><a class="page-link" href="#">3</a></li>
-        <li class="page-item">
-          <a class="page-link" href="#">Next</a>
-        </li>
-      </ul>
-    </nav> -->
   </div>
-</div>
 
-
-<h3>More from this Genre 📚</h3>
-<div class="related-books" style="display: flex; flex-wrap: wrap; gap: 20px;">
-  {% for book in related_books %}
-    <div class="book-card" style="width: 200px; border: 1px solid #ccc; padding: 10px;">
-      <a href="{% url 'product_details' book.id %}">
-        <img src="{{ book.image.url }}" alt="{{ book.book_title }}" style="width: 100%; height: 250px; object-fit: cover;">
-        <h4>{{ book.book_title }}</h4>
-        <p>by {{ book.author }}</p>
-        {% if book.discount_percentage > 0 %}
-          <span style="color: red;">{{ book.discount_percentage }}% OFF</span>
-        {% endif %}
-      </a>
-    </div>
-  {% empty %}
-    <p>No similar books found in this genre.</p>
-  {% endfor %}
-</div> 
-<!-- Write Review Modal -->
-<div class="modal fade" id="writeReviewModal" tabindex="-1" aria-labelledby="writeReviewModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="writeReviewModalLabel">Write a Review</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-
-        <form method='POST'>
-          {% csrf_token %}
-          <div class="mb-3">
-          <h6 class="card-subtitle mb-2 text-muted">User: {{request.user.first_name}}</h6>
-          </div>
-          {% comment %} <div class="mb-3">
-            <label for="reviewTitle" class="form-label">Review Title</label>
-            <input type="text" class="form-control" id="reviewTitle" placeholder="Summarize your experience">
-          </div> {% endcomment %}
-          
-          <div class="mb-3">
-            <label class="form-label">Overall Rating</label>
-            <div class="rating-stars mb-2">
-              <div class="btn-group" role="group">
-                <input type="radio" class="btn-check" name="overallRating" id="rating1" value="1" autocomplete="off">
-                <label class="btn btn-outline-warning" for="rating1">1★</label>
-                
-                <input type="radio" class="btn-check" name="overallRating" id="rating2" value="2" autocomplete="off">
-                <label class="btn btn-outline-warning" for="rating2">2★</label>
-                
-                <input type="radio" class="btn-check" name="overallRating" id="rating3" value="3" autocomplete="off">
-                <label class="btn btn-outline-warning" for="rating3">3★</label>
-                
-                <input type="radio" class="btn-check" name="overallRating" id="rating4" value="4" autocomplete="off">
-                <label class="btn btn-outline-warning" for="rating4">4★</label>
-                
-                <input type="radio" class="btn-check" name="overallRating" id="rating5" value="5" autocomplete="off" checked>
-                <label class="btn btn-outline-warning" for="rating5">5★</label>
+  <!-- Write Review Modal -->
+  <div class="modal fade" id="writeReviewModal" tabindex="-1" aria-labelledby="writeReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="writeReviewModalLabel" style="font-size: 1.25rem;">Write a Review</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+              <h6 class="card-subtitle mb-2 text-muted" style="font-size: 0.85rem;">User: {{ request.user.first_name }}</h6>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-bold" style="font-size: 0.9rem;">Overall Rating</label>
+              <div class="rating-stars mb-2">
+                <div class="btn-group" role="group">
+                  <input type="radio" class="btn-check" name="overallRating" id="rating1" value="1" autocomplete="off">
+                  <label class="btn btn-outline-warning" for="rating1" style="font-size: 0.85rem;">1★</label>
+                  <input type="radio" class="btn-check" name="overallRating" id="rating2" value="2" autocomplete="off">
+                  <label class="btn btn-outline-warning" for="rating2" style="font-size: 0.85rem;">2★</label>
+                  <input type="radio" class="btn-check" name="overallRating" id="rating3" value="3" autocomplete="off">
+                  <label class="btn btn-outline-warning" for="rating3" style="font-size: 0.85rem;">3★</label>
+                  <input type="radio" class="btn-check" name="overallRating" id="rating4" value="4" autocomplete="off">
+                  <label class="btn btn-outline-warning" for="rating4" style="font-size: 0.85rem;">4★</label>
+                  <input type="radio" class="btn-check" name="overallRating" id="rating5" value="5" autocomplete="off" checked>
+                  <label class="btn btn-outline-warning" for="rating5" style="font-size: 0.85rem;">5★</label>
+                </div>
               </div>
             </div>
-          </div>
-          
-          {% comment %} <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label">Story & Plot</label>
-              <select class="form-select">
-                <option>5 stars</option>
-                <option>4 stars</option>
-                <option>3 stars</option>
-                <option>2 stars</option>
-                <option>1 star</option>
-              </select>
+            <div class="mb-3">
+              <label for="reviewText" class="form-label fw-bold" style="font-size: 0.9rem;">Your Review</label>
+              <textarea class="form-control" name="comment" id="reviewText" rows="5" placeholder="What did you like or dislike?" style="font-size: 0.85rem;"></textarea>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Writing Style</label>
-              <select class="form-select">
-                <option>5 stars</option>
-                <option>4 stars</option>
-                <option>3 stars</option>
-                <option>2 stars</option>
-                <option>1 star</option>
-              </select>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size: 0.9rem;">Cancel</button>
+              <button type="submit" class="btn btn-primary" style="font-size: 0.9rem;">Submit Review</button>
             </div>
-          </div> {% endcomment %}
-          
-          {% comment %} <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label">Character Development</label>
-              <select class="form-select">
-                <option>5 stars</option>
-                <option>4 stars</option>
-                <option>3 stars</option>
-                <option>2 stars</option>
-                <option>1 star</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Value for Money</label>
-              <select class="form-select">
-                <option>5 stars</option>
-                <option>4 stars</option>
-                <option>3 stars</option>
-                <option>2 stars</option>
-                <option>1 star</option>
-              </select>
-            </div>
-          </div> {% endcomment %}
-          
-          <div class="mb-3">
-            <label for="reviewText" class="form-label">Your Review</label>
-            <textarea class="form-control" name="comment" id="reviewText" rows="5" placeholder="What did you like or dislike?"></textarea>
-          </div>
-          
-          {% comment %} <div class="mb-3">
-            <label for="reviewerName" class="form-label">Your Name</label>
-            <input type="text" class="form-control" id="reviewerName" placeholder="Enter your name (or nickname)">
-          </div> {% endcomment %}
-          
-          {% comment %} <div class="mb-3">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="verifiedPurchase" checked disabled>
-              <label class="form-check-label" for="verifiedPurchase">
-                Verified Purchase
-              </label>
-            </div>
-          </div> {% endcomment %}
-        
+          </form>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="Submit" class="btn btn-primary">Submit Review</button>
-      </div>
-      </form>
-       
-
-
     </div>
-    
   </div>
-  
 </div>
 
 <!-- Add Bootstrap Icons CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
 
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-
-  document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
   setupQtyButtons();
   setupImageZoom();
   setupAddToCartAjax();
@@ -634,28 +379,22 @@ function changeVariant(variantId) {
     return;
   }
 
-  // Disable the selector while loading
   variantSelector.disabled = true;
 
-  // Prepare request data
   const payload = JSON.stringify({ variant_id: variantId });
 
-  // Send AJAX request
   fetch(`/change_variant/${bookId}/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-CSRFToken': getCsrfToken(),  // You must have this function to fetch CSRF token
+      'X-CSRFToken': getCsrfToken(),
     },
     body: payload,
   })
   .then((res) => res.json())
   .then((data) => {
-
     if (data.success) {
-      updateVariantDetails(data.variant); // You need to define this
-      // showSuccessMessage('✅ Variant updated!');
-      // showErrorMessage(data.message || '⚠️ Update failed!');
+      updateVariantDetails(data.variant);
     }
   })
   .catch((err) => {
@@ -667,12 +406,10 @@ function changeVariant(variantId) {
   });
 }
 
-// Handles wishlist add/remove toggle via AJAX and updates button text and toast message
 $(document).ready(function () {
   $(".wishlist-toggle-btn").click(function () {
     const button = $(this);
     const variantId = document.getElementById('variantSelector')?.value;
-
 
     $.ajax({
       url: "/wishlist/toggle/",
@@ -686,10 +423,10 @@ $(document).ready(function () {
         toast.removeClass("d-none alert-success alert-danger");
 
         if (response.added) {
-          button.html("💔 Remove from Wishlist");
+          button.html("💔");
           toast.addClass("alert-success").text("✅ Added to wishlist!");
         } else if (response.removed) {
-          button.html("❤️ Add to Wishlist");
+          button.html("❤️");
           toast.addClass("alert-danger").text("❌ Removed from wishlist!");
         }
       },
@@ -701,12 +438,6 @@ $(document).ready(function () {
     });
   });
 });
-
-
-
-
-
-
 
 function setupImageZoom() {
   const container = document.getElementById('imageContainer');
@@ -747,10 +478,7 @@ function changeImage(imageUrl) {
   });
 }
 
-
-
 function updateVariantDetails(variant) {
-  // Update price
   const priceBlock = document.getElementById('variantPriceBlock');
   if (priceBlock) {
     if (variant.is_offer) {
@@ -764,40 +492,33 @@ function updateVariantDetails(variant) {
     }
   }
 
-  // Update publisher
   const publisherElement = document.getElementById('variantPublisher');
   if (publisherElement) {
     publisherElement.innerText = `Publisher: ${variant.publisher}`;
   }
 
-  // Update published date
   const dateElement = document.getElementById('variantDate');
   if (dateElement) {
     dateElement.innerText = variant.published_date;
   }
 
-  // Update publisher link
   const publisherLinkElement = document.getElementById('variantPublisherLink');
   if (publisherLinkElement) {
     publisherLinkElement.innerHTML = `<a href="#" class="text-primary">${variant.publisher}</a>`;
   }
 
-  // Update pages
   const pagesElement = document.getElementById('variantPages');
   if (pagesElement) {
     pagesElement.innerText = variant.page;
   }
 
-  // Update language
   const languageElement = document.getElementById('variantLanguage');
   if (languageElement) {
     languageElement.innerText = variant.language;
   }
 
-  // Update stock status
   updateStockStatus(variant.available_quantity);
 
-  // Update images if provided
   if (variant.images) {
     updateVariantImages(variant.images);
   }
@@ -830,7 +551,7 @@ function updateStockStatus(availableQuantity) {
 
 function updateVariantImages(images) {
   if (images.length > 0) {
-    changeImage(images[0]); // Set the main image to the first one
+    changeImage(images[0]);
   }
 
   const thumbnails = document.querySelectorAll('.thumbnail');
@@ -841,9 +562,7 @@ function updateVariantImages(images) {
   }
 }
 
-
 function setupAddToCartAjax() {
-  // Handle "Add to Cart" button click
   const addToCartBtn = document.querySelector('.add-to-cart-btn');
   if (addToCartBtn) {
     addToCartBtn.addEventListener('click', function() {
@@ -854,8 +573,6 @@ function setupAddToCartAjax() {
       addToCartAjax(bookId, variantId, quantity, false);
     });
   }
-
-  
 }
 
 function addToCartAjax(bookId, variantId, quantity, isBuyNow = false) {
@@ -987,6 +704,6 @@ function highlightDefaultThumbnail() {
 }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 
 {% endblock %}

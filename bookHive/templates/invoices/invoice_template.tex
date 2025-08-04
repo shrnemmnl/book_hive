@@ -1,0 +1,40 @@
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{verbatim}
+\geometry{a4paper, margin=1in}
+
+\begin{document}
+
+\begin{center}
+    \textbf{\Large Book Hive Invoice} \\
+    \vspace{0.5cm}
+    Invoice Number: \verb|{{ order.order_id }}| \\
+    Date: {{ order.created_at|date:"Y-m-d" }}
+\end{center}
+
+\section*{Customer Details}
+\begin{tabular}{ll}
+    Name: & {{ order.user.first_name }} {{ order.user.last_name }} \\
+    Email: & \verb|{{ order.user.email }}| \\
+    Address: & {{ order.address|default:"Not provided" }}
+\end{tabular}
+
+\section*{Order Details}
+\begin{tabular}{llr}
+    \toprule
+    Item & Description & Price (\$) \\
+    \midrule
+    {% for item in items %}
+    {{ item.product_variant.product.book_title|escape }} & {{ item.product_variant.product.description|truncatewords:10|escape }} & \SI{{ item.total_amount }}{} \\
+    {% endfor %}
+    \bottomrule
+\end{tabular}
+
+\begin{center}
+    \textbf{Total: \SI{{ order.total_amount }}{}}
+\end{center}
+
+\end{document}

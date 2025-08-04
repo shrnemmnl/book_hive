@@ -6,11 +6,11 @@ class SampleLogMiddleware:
         print("Middleware initialized...")
 
     def __call__(self, request):
-        print(f"[LOG] {request.method} request to {request.path}")
+        print(f"[LOG]-mb- {request.method} request to {request.path}")
 
         # Before view
         response = self.get_response(request)
 
         # After view
-        print(f"[LOG] Response status: {response.status_code}")
+        print(f"[LOG]-ma- Response status: {response.status_code}")
         return response

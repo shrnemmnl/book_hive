@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice</title>
+    <style>
+        body {
+            font-family: "Helvetica", sans-serif;
+            font-size: 14px;
+            margin: 30px;
+        }
+
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .invoice-details, .user-details {
+            margin-bottom: 20px;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .items-table th,
+        .items-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .items-table th {
+            background-color: #f8f8f8;
+        }
+
+        .total {
+            text-align: right;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+        }
+
+        img {
+            max-height: 80px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>INVOICE</h1>
+    <p><strong>Book Hive</strong></p>
+</div>
+
+<div class="user-details">
+    <p><strong>Customer:</strong> {{ order.user.first_name }} {{ order.user.last_name }}</p>
+    <p><strong>Order ID:</strong> {{ order.order_id }}</p>
+    <p><strong>Order Date:</strong> {{ order.order_date }}</p>
+</div>
+
+<div class="invoice-details">
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Book Title</th>
+                <th>Author</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for item in order_items %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.product_variant.product.book_title }}</td>
+                <td>{{ item.product_variant.product.author }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.product_variant.price }}</td>
+                <td>{{ item.total_amount }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="total">
+    <p>Total Amount: Rs:{{ order.calculate_total }}</p>
+</div>
+
+<div class="footer">
+    <p>Thank you for shopping with Book Hive!</p>
+</div>
+
+</body>
+</html>

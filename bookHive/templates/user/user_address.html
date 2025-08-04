@@ -1,126 +1,152 @@
 {% load static %}
 {% include 'includes/header.html' %}
 
-<div class="container-fluid">
-  <div class="row">
-    <!-- Include sidebar -->
-    <div class="col-lg-3">{% include 'user/UserProfile/sidebar.html' %}</div>
+{% block address_css %}
+  <link rel="stylesheet" href="{% static 'css/address_style.css' %}">
+{% endblock address_css %}
 
-    <!-- Main Content Column -->
-    <div class="col-lg-9 py-5">
-      <div class="content-wrapper bg-white p-4 shadow-sm rounded">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="mb-0">My Addresses</h4>
-          <button
-            class="btn btn-sm btn-outline-primary"
-            data-bs-toggle="modal"
-            data-bs-target="#addAddressModal"
-          >
-            <i class="bi bi-plus-lg me-1"></i>Add New Address
-          </button>
-        </div>
 
-        <div class="address-list">
-          <div>
-                {% include "message.html" %}
+<div class="page-container">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Include sidebar -->
+            <div class="col-lg-3">{% include 'user/UserProfile/sidebar.html' %}</div>
+
+            <!-- Main Content Column -->
+            <div class="col-lg-9">
+                <div class="content-wrapper">
+                    <div class="page-header">
+                        <h1 class="page-title">Your Addresses</h1>
+                        <p class="page-subtitle">Manage your delivery addresses</p>
+                    </div>
+                    <div>
+                      {% include "message.html" %}
+                    </div>
+                    <div class="addresses-grid">
+                        <!-- Add Address Card -->
+                        <div class="add-address-card" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                            <div class="add-text">Add New Address</div>
+                        </div>
+
+                        <!-- Address Cards -->
+                        {% for address in addresss %}
+                        <div class="address-card">
+                          {% if address.is_default %}
+                            <span class="default-badge">DEFAULT</span>
+                          {% endif %}
+                            <div class="address-header">
+                                <div>
+                                    <div class="address-type">{{address.address_type}}</div>
+                                    <div class="address-title">{{request.user.first_name}} {{request.user.last_name}}</div>
+                                </div>
+                            </div>
+
+                            <div class="address-details">
+                                <div class="address-line">{{address.street}}</div>
+                                <div class="address-line">{{address.city}}, {{address.landmark}}</div>
+                                <div class="address-line">{{address.state}}, {{address.postal_code}}</div>
+                                <div class="phone-number">{{address.phone}}</div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <a href="{% url 'address_edit' address.id %}" class="btn-edit">Edit</a>
+                                <a href="{% url 'address_delete' address.id %}" class="btn-remove">Remove</a>
+                                {% if not address.is_default %} <a href="{% url 'default_address' address.id %}" class="btn-remove">Set as Default</a> {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
-          <!-- Address Card -->
-           {% for address in addresss%}
-           
-          <div class="card mb-3 border-primary">
-            <div class="card-body">
-              <div class="d-flex justify-content-between mb-2">
-                <h5 class="card-title mb-0">{{address.address_type}}</h5>
-                
-              </div>
-              <p class="card-text mb-1">{{address.street}}</p>
-              <p class="card-text mb-1">{{address.city}} {{address.landmark}}</p>
-              <p class="card-text mb-1">{{address.state}} {{address.postal_code}}</p>
-              <p class="card-text mb-3">{{address.phone}}</p>
-              <div class="d-flex gap-2">
-                <a href="{% url 'address_edit' address.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                <a href="{% url 'address_delete' address.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
-                
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-          <!-- Address Card -->
-          
         </div>
-      </div>
     </div>
-  </div>
 </div>
 
 <!-- Add Address Modal -->
-<div
-  class="modal fade"
-  id="addAddressModal"
-  tabindex="-1"
-  aria-labelledby="addAddressModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="addAddressModalLabel">Add New Address</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form method="POST" action="{% url 'user_address' %}">
-  {% csrf_token %}
-  
-  <div class="mb-3">
-    <label for="addressNickname" class="form-label">Address Type</label>
-    <input type="text" class="form-control" id="addressNickname" name="address_type" placeholder="e.g. Home, Office, etc." />
-  </div>
+<div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAddressModalLabel">Add New Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'user_address' %}">
+                    {% csrf_token %}
 
-  <div class="row mb-3">
-    <div class="col-md-6 mb-3 mb-md-0">
-      <label for="street" class="form-label">Street</label>
-      <input type="text" class="form-control" id="street" name="street" />
-    </div>
-    <div class="col-md-6">
-      <label for="phoneNumber" class="form-label">Phone Number</label>
-      <input type="tel" class="form-control" id="phoneNumber" name="phone" />
-    </div>
-  </div>
+                    <div class="mb-3">
+                        <label for="addressNickname" class="form-label">Address Type</label>
+                        <input type="text" class="form-control" id="addressNickname" name="address_type"
+                            placeholder="e.g. Home, Office, etc." required />
+                    </div>
 
-  <div class="mb-3">
-    <label for="addressLine2" class="form-label">Landmark</label>
-    <input type="text" class="form-control" id="addressLine2" name="landmark" />
-  </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="street" class="form-label">Street Address</label>
+                            <input type="text" class="form-control" id="street" name="street" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phoneNumber" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phoneNumber" name="phone" required />
+                        </div>
+                    </div>
 
-  <div class="row mb-3">
-    <div class="col-md-4 mb-3 mb-md-0">
-      <label for="city" class="form-label">City</label>
-      <input type="text" class="form-control" id="city" name="city" />
-    </div>
-    <div class="col-md-4 mb-3 mb-md-0">
-      <label for="state" class="form-label">State</label>
-      <input type="text" class="form-control" id="state" name="state" />
-    </div>
-    <div class="col-md-4">
-      <label for="pincode" class="form-label">PIN Code</label>
-      <input type="text" class="form-control" id="pincode" name="pincode" />
-    </div>
-  </div>
+                    <div class="mb-3">
+                        <label for="addressLine2" class="form-label">Landmark</label>
+                        <input type="text" class="form-control" id="addressLine2" name="landmark" 
+                            placeholder="Optional landmark for easy identification" />
+                    </div>
 
-  <div>
-    <button type="submit" class="btn btn-primary">Save Address</button>
-  </div>
-</form>
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label for="city" class="form-label">City</label>
+                            <input type="text" class="form-control" id="city" name="city" required />
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <label for="state" class="form-label">State</label>
+                            <input type="text" class="form-control" id="state" name="state" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label for="pincode" class="form-label">PIN Code</label>
+                            <input type="text" class="form-control" id="pincode" name="pincode" required />
+                        </div>
+                    </div>
 
-      </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        
-      </div>
+                    <div class="d-flex gap-3 justify-content-end">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Address</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 
 {% include 'includes/footer.html' %}
-  </div>
-</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Simple form validation
+    const form = document.querySelector('#addAddressModal form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const requiredFields = form.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.style.borderColor = '#dc3545';
+                    isValid = false;
+                } else {
+                    field.style.borderColor = '#007bff';
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields');
+            }
+        });
+    }
+});
+</script>
