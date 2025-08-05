@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.urls import reverse
 from django.shortcuts import  get_object_or_404
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 # Create your views here.
@@ -40,6 +40,7 @@ def admin_dashboard(request):
     return render(request, 'admin/dashboard.html', {'heading': {'name': 'DASHBOARD'}})
 
 
+
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @login_required(login_url='admin_signin')  
@@ -49,10 +50,13 @@ def books(request):
 
     return render(request, 'admin/books.html', {"books":books})
 
+
+
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @login_required(login_url='admin_signin')  
 def admin_order(request):
+
     order_details=Order.objects.prefetch_related('order_items').order_by('-created_at')
 
     return render(request, 'admin/admin_order.html', {"order_details":order_details})
@@ -448,9 +452,52 @@ def variant_edit_post(request):
     return render(request, 'admin/variant_edit.html')
 
 
-def admin_order_details(request, order):
+@login_required
+def admin_order_details(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    
+    if request.method == 'POST':
+        # Handle payment status update
+        if 'is_paid' in request.POST:
+            is_paid = request.POST.get('is_paid') == 'true'
+            order.is_paid = is_paid
+            order.save()
+            messages.success(request, f"Payment status updated to {'Paid' if is_paid else 'Unpaid'}.")
+            return redirect('admin_order_details', order_id=order.id)
 
-    return render(request, "admin/admin_order_details.html")
+        # Handle order item status update
+        if 'status' in request.POST:
+            item_id = request.POST.get('item_id')
+            new_status = request.POST.get('status')
+            valid_statuses = ['pending', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'request to cancel']
+            
+            if new_status not in valid_statuses:
+                messages.error(request, "Invalid status selected.")
+                return redirect('admin_order_details', order_id=order.id)
+            
+            order_item = get_object_or_404(OrderItem, id=item_id, order=order)
+            
+            # Check if the item is being cancelled and the order is paid
+            if new_status == 'cancelled' and order.is_paid:
+                user = order.user
+                refund_amount = order_item.total_amount  # Changed from net_amount to total_amount
+                user.wallet_amount += refund_amount
+                user.save()
+                messages.success(request, f"Refunded ₹{refund_amount:.2f} to user {user.email}'s wallet.")
+            
+            order.status = new_status
+            # order_item.updated_at = timezone.now()
+            order_item.save()
+            messages.success(request, f"Status for item '{order_item.product_variant.product.book_title}' updated to {new_status.title()}.")
+            return redirect('admin_order_details', order_id=order.id)
+
+    context = {
+        'order': order,
+        'heading': {'name': f'Order Details #{order.id}'}
+    }
+    return render(request, 'admin/admin_order_details.html', context)
+
+
 
 
 def admin_review(request):

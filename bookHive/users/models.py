@@ -41,6 +41,7 @@ class CustomUser(AbstractUser):
         null=True,
         blank=True
     )
+    wallet_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     username = None  # Remove username field
     USERNAME_FIELD = 'email'  # Set email as the username field
     REQUIRED_FIELDS = []
@@ -107,15 +108,18 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     order_id = models.CharField(max_length=20, unique=True, blank=False, editable=False)
     is_active = models.BooleanField(default=True)
+    is_paid = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Order #{self.order_id} - {self.user.username}"
 
     def generate_order_id(self):
-        """Generate a unique order_id in the format BKDDMMYYYYHHMM."""
+        """Generate a unique order_id in the format BKDDMMYYYYHHMMSSmmm."""
         prefix = "BK"
         timestamp = datetime.datetime.now()
-        base_id = f"{prefix}{timestamp.strftime('%d%m%Y%H%M')}"
+
+        base_id = f"{prefix}{timestamp.strftime('%d%m%Y%H%M%S')}{str(timestamp.microsecond)[:3]}"
+
         order_id = base_id
         # Check for uniqueness and append a random digit if collision occurs
         counter = 0

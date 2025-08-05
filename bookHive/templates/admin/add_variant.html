@@ -1,73 +1,108 @@
 {% extends "admin/admin_base.html" %}
 
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+{% endblock head %}
+
 {% block heading %}
-<h2>Add Variant</h2>
+<h2 class="fw-semibold mb-0" style="font-size: 1.5rem; color: #1e293b;">Add Variant</h2>
 {% endblock heading %}
 
 {% block content %}
-<br>
-{% comment %} <nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url "books" %}">Books</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'add_variant' first_variant %}">Varient View</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Add Varient</li>
-  </ol>
-</nav> {% endcomment %}
-<br>
-<form id="addBookForm" method="POST" enctype="multipart/form-data">
-  {% csrf_token %}
-  
-  <input type="text" class="form-control" placeholder="Publisher" name="publisher" required /><br />
-  <input type="date" class="form-control" placeholder="Published Date" name="published_date" required /><br />
-  <input type="number" class="form-control" placeholder="Price" name="price" required /><br />
-  <input type="number" class="form-control" placeholder="Page" name="page" required /><br />
-  <input type="number" class="form-control" placeholder="Available Quantity" name="stock" required /><br />
-  <input type="text" class="form-control" placeholder="Language" name="language" required /><br />
-  <input type="file" class="form-control" placeholder="Image" name="image1" required /><br />
-  <input type="file" class="form-control" placeholder="Image" name="image2" required /><br />
-  <input type="file" class="form-control" placeholder="Image" name="image3" required /><br />
-  {% comment %} <select class="form-control" name="language" required>
-    <option value="" disabled selected>Select language</option>
-    <option value="" disabled selected></option>
-    <option value="" disabled selected>Select language</option> {% endcomment %}
-  <!-- Dropdown for Genre -->
-  {% comment %} <select class="form-control" name="genre_id" required>
-    <option value="" disabled selected>Select Genre</option>
-    {% for genre in all_genres %}
-    <option value="{{ genre.id }}">{{ genre.genre_name }}</option>
-    {% endfor %}
-    
-  </select><br /> {% endcomment %}
+<div class="card shadow-sm p-4" style="max-width: 600px; margin: 0 auto; border-radius: 10px; border: none;">
+    <form id="addVariantForm" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="publisher" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Publisher</label>
+            <input type="text" class="form-control" id="publisher" placeholder="Enter publisher" name="publisher" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="published_date" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Published Date</label>
+            <input type="date" class="form-control" id="published_date" name="published_date" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="price" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Price</label>
+            <input type="number" class="form-control" id="price" placeholder="Enter price" name="price" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="page" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Page Count</label>
+            <input type="number" class="form-control" id="page" placeholder="Enter page count" name="page" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="stock" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Available Quantity</label>
+            <input type="number" class="form-control" id="stock" placeholder="Enter available quantity" name="stock" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="language" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Language</label>
+            <input type="text" class="form-control" id="language" placeholder="Enter language" name="language" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="image1" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 1</label>
+            <input type="file" class="form-control" id="image1" name="image1" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="image2" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 2</label>
+            <input type="file" class="form-control" id="image2" name="image2" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="image3" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 3</label>
+            <input type="file" class="form-control" id="image3" name="image3" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <button type="submit" class="btn btn-primary w-100" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Add Variant</button>
 
-  {% comment %} <input type="file" class="form-control" multiple required /><br /> {% endcomment %}
-  
-  <button type="submit" class="btn btn-primary w-100">Add</button>
-  <br>
-  <!-- Display Messages -->
-  {% if messages %}
-  <ul class="messages">
-    {% for message in messages %}
-    <div
-      class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3"
-      role="alert"
-    >
-      {{ message }}
-      <button
-        type="button"
-        class="btn-close"
-        data-bs-dismiss="alert"
-        aria-label="Close"
-      ></button>
-    </div>
-    {% endfor %}
-  </ul>
-  {% endif %} {% if redirect %}
-  <script>
-    setTimeout(function () {
-      window.location.href = "{{ redirect_url }}";
-    }, 2000); // 2000ms = 2 seconds
-  </script>
-  {% endif %}
-</form>
+        <!-- Display Messages -->
+        {% if messages %}
+        <ul class="messages list-unstyled mt-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-size: 0.85rem; border-radius: 6px; background-color: #f1f5f9; color: #1e293b;">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </ul>
+        {% endif %}
 
+        <!-- Redirect Script -->
+        {% if redirect %}
+        <script>
+            setTimeout(function () {
+                window.location.href = "{{ redirect_url }}";
+            }, 2000);
+        </script>
+        {% endif %}
+    </form>
+</div>
+
+<style>
+    .card {
+        background-color: #ffffff;
+        border: none;
+        transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .form-control, .form-select {
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+    }
+    .form-label {
+        color: #1e293b;
+    }
+    .btn-primary {
+        transition: background-color 0.2s ease;
+    }
+    .btn-primary:hover {
+        background-color: #1e40af;
+    }
+    .alert {
+        background-color: #f1f5f9;
+        color: #1e293b;
+    }
+</style>
 {% endblock %}

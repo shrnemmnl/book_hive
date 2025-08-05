@@ -1,69 +1,126 @@
-{% extends "admin/admin_base.html" %} {% block heading %}
-<h2>Variant Edit</h2>
-{% endblock heading %} {% block content %}
-<div class="container mt-4">
-  <!-- Form for Adding/Editing a Book -->
-  <div class="card mt-4">
-    <div class="card-header bg-primary text-white">
-      {% comment %}
-      <h5 class="mb-0">Edit Book</h5>
-      {% endcomment %}
+{% extends "admin/admin_base.html" %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+{% endblock head %}
+
+{% block heading %}
+<h2 class="fw-semibold mb-0" style="font-size: 1.5rem; color: #1e293b;">Edit Variant</h2>
+{% endblock heading %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow-sm p-4" style="max-width: 600px; margin: 0 auto; border-radius: 10px; border: none;">
+        <div class="card-body" style="padding: 0;">
+            <h5 class="fw-medium mb-4" style="font-size: 1.1rem; color: #1e293b;">Edit Variant</h5>
+            <form method="POST" action="{% url 'variant_edit_post' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="variant_id" value="{{ variant.id }}">
+
+                <!-- Publisher -->
+                <div class="mb-3">
+                    <label for="publisher" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Publisher</label>
+                    <input type="text" class="form-control" id="publisher" name="publisher" value="{{ variant.publisher }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <!-- Published Date -->
+                <div class="mb-3">
+                    <label for="publishedDate" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Published Date</label>
+                    <input type="date" class="form-control" id="publishedDate" name="published_date" value="{{ variant.published_date|date:'Y-m-d' }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <!-- Price -->
+                <div class="mb-3">
+                    <label for="price" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Price</label>
+                    <input type="number" class="form-control" id="price" name="price" value="{{ variant.price }}" step="0.01" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <!-- Page -->
+                <div class="mb-3">
+                    <label for="page" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Page Count</label>
+                    <input type="number" class="form-control" id="page" name="page" value="{{ variant.page }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <!-- Available Quantity -->
+                <div class="mb-3">
+                    <label for="stock" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Available Quantity</label>
+                    <input type="number" class="form-control" id="stock" name="stock" value="{{ variant.available_quantity }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <!-- Language -->
+                <div class="mb-3">
+                    <label for="language" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Language</label>
+                    <input type="text" class="form-control" id="language" name="language" value="{{ variant.language }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <!-- Image 1 -->
+                <div class="mb-3">
+                    <label for="image1" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 1</label>
+                    {% if images and images.image1 %}
+                    <div class="mb-2">
+                        <img src="{{ images.image1.url }}" alt="Image 1" class="img-fluid rounded" style="max-width: 100px; border-radius: 6px;">
+                    </div>
+                    {% endif %}
+                    <input type="file" class="form-control" id="image1" name="image1" accept="image/*" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <!-- Image 2 -->
+                <div class="mb-3">
+                    <label for="image2" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 2</label>
+                    {% if images and images.image2 %}
+                    <div class="mb-2">
+                        <img src="{{ images.image2.url }}" alt="Image 2" class="img-fluid rounded" style="max-width: 100px; border-radius: 6px;">
+                    </div>
+                    {% endif %}
+                    <input type="file" class="form-control" id="image2" name="image2" accept="image/*" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <!-- Image 3 -->
+                <div class="mb-3">
+                    <label for="image3" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 3</label>
+                    {% if images and images.image3 %}
+                    <div class="mb-2">
+                        <img src="{{ images.image3.url }}" alt="Image 3" class="img-fluid rounded" style="max-width: 100px; border-radius: 6px;">
+                    </div>
+                    {% endif %}
+                    <input type="file" class="form-control" id="image3" name="image3" accept="image/*" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Update Variant</button>
+            </form>
+        </div>
     </div>
-    <div class="card-body">
-      <form
-        method="POST"
-        action="{% url 'variant_edit_post' %}"
-        enctype="multipart/form-data"
-      >
-        {% csrf_token %}
-
-        <input type="hidden" name="variant_id" value="{{ variant.id }}" />
-
-       
-  <input type="text" class="form-control" placeholder="Publisher" name="publisher"
-         value="{{ variant.publisher }}" required /><br />
-
-  <input type="date" class="form-control" placeholder="Published Date" name="published_date"
-         value="{{ variant.published_date|date:'Y-m-d' }}" required /><br />
-
-  <input type="number" class="form-control" placeholder="Price" name="price"
-         value="{{ variant.price }}" required /><br />
-
-  <input type="number" class="form-control" placeholder="Page" name="page"
-         value="{{ variant.page }}" required /><br />
-
-  <input type="number" class="form-control" placeholder="Available Quantity" name="stock"
-         value="{{ variant.available_quantity }}" required /><br />
-
-  <input type="text" class="form-control" placeholder="Language" name="language"
-         value="{{ variant.language }}" required /><br />
-
-  <!-- Optional image update -->
-   <label>Image 1:</label><br>
-  {% if images and images.image1 %}
-    <img src="{{ images.image1.url }}" alt="Image 1" width="100"><br>
-  {% endif %}
-  <input type="file" class="form-control" name="image1"><br>
-
-  <label>Image 2:</label><br>
-  {% if images and images.image2 %}
-    <img src="{{ images.image2.url }}" alt="Image 2" width="100"><br>
-  {% endif %}
-  <input type="file" class="form-control" name="image2"><br>
-
-  <label>Image 3:</label><br>
-  {% if images and images.image3 %}
-    <img src="{{ images.image3.url }}" alt="Image 3" width="100"><br>
-  {% endif %}
-  <input type="file" class="form-control" name="image3"><br>
-
-
-  <button type="submit" class="btn btn-primary">Update Variant</button>
-</form>
-
-      </form>
-    </div>
-  </div>
 </div>
 
-{% endblock content %}
+<style>
+    .card {
+        background-color: #ffffff;
+        border: none;
+        transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .form-control:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+    }
+    .form-label {
+        color: #1e293b;
+    }
+    .btn-primary {
+        transition: background-color 0.2s ease;
+    }
+    .btn-primary:hover {
+        background-color: #1e40af;
+    }
+    .img-fluid {
+        border-radius: 6px;
+    }
+</style>
+{% endblock %}

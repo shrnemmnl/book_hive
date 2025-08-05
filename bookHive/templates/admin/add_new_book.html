@@ -1,58 +1,97 @@
 {% extends "admin/admin_base.html" %}
 
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+{% endblock head %}
+
 {% block heading %}
-<h2>Add New Book</h2>
+<h2 class="fw-semibold mb-0" style="font-size: 1.5rem; color: #1e293b;">Add New Book</h2>
 {% endblock heading %}
 
 {% block content %}
-
-
-    
+<div class="card shadow-sm p-4" style="max-width: 600px; margin: 0 auto; border-radius: 10px; border: none;">
     <form id="addBookForm" method="POST" enctype="multipart/form-data">
-      {% csrf_token %}
-      <input type="text" class="form-control" placeholder="Book Title" name="book_name" required /><br />
-      <input type="text" class="form-control" placeholder="Author Name" name="author" required /><br />
-      <input type="file" class="form-control"  name="image" multiple required /><br />
-      
-
-      <!-- Dropdown for Genre -->
-      <select class="form-control" name="genre_id" required>
-        <option value="" disabled selected>Select Genre</option>
-        {% for genre in all_genres %}
-        <option value="{{ genre.id }}">{{ genre.genre_name }}</option>
-        {% endfor %}
-        
-      </select><br />
-
-      <textarea class="form-control" placeholder="Description" rows="3" name="description" required></textarea><br />
-      <button type="submit" class="btn btn-primary w-100">Add</button>
-      <br>
-      <!-- Display Messages -->
-      {% if messages %}
-      <ul class="messages">
-        {% for message in messages %}
-        <div
-          class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3"
-          role="alert"
-        >
-          {{ message }}
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-            aria-label="Close"
-          ></button>
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="book_name" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Title</label>
+            <input type="text" class="form-control" id="book_name" placeholder="Enter book title" name="book_name" required style="font-size: 0.9rem; padding: 0.65rem;">
         </div>
-        {% endfor %}
-      </ul>
-      {% endif %} {% if redirect %}
-      <script>
-        setTimeout(function () {
-          window.location.href = "{{ redirect_url }}";
-        }, 2000); // 2000ms = 2 seconds
-      </script>
-      {% endif %}
-    </form>
- 
+        <div class="mb-3">
+            <label for="author" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Author Name</label>
+            <input type="text" class="form-control" id="author" placeholder="Enter author name" name="author" required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="image" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Image</label>
+            <input type="file" class="form-control" id="image" name="image" multiple required style="font-size: 0.9rem; padding: 0.65rem;">
+        </div>
+        <div class="mb-3">
+            <label for="genre_id" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Genre</label>
+            <select class="form-select" id="genre_id" name="genre_id" required style="font-size: 0.9rem; padding: 0.65rem;">
+                <option value="" disabled selected>Select Genre</option>
+                {% for genre in all_genres %}
+                <option value="{{ genre.id }}">{{ genre.genre_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Description</label>
+            <textarea class="form-control" id="description" placeholder="Enter book description" rows="4" name="description" required style="font-size: 0.9rem; padding: 0.65rem;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary w-100" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Add Book</button>
 
+        <!-- Display Messages -->
+        {% if messages %}
+        <ul class="messages list-unstyled mt-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-size: 0.85rem; border-radius: 6px;">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <!-- Redirect Script -->
+        {% if redirect %}
+        <script>
+            setTimeout(function () {
+                window.location.href = "{{ redirect_url }}";
+            }, 2000);
+        </script>
+        {% endif %}
+    </form>
+</div>
+
+<style>
+    .card {
+        background-color: #ffffff;
+        border: none;
+        transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .form-control, .form-select {
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+    }
+    .form-label {
+        color: #1e293b;
+    }
+    .btn-primary {
+        transition: background-color 0.2s ease;
+    }
+    .btn-primary:hover {
+        background-color: #1e40af;
+    }
+    .alert {
+        background-color: #f1f5f9;
+        color: #1e293b;
+    }
+</style>
 {% endblock %}

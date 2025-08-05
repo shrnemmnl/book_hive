@@ -1,35 +1,76 @@
-{% extends "admin/admin_base.html" %} {% block heading %}
-<h2>{{ heading.name }}</h2>
-{% endblock heading %} {% block content %}
-<div class="container mt-4">
+{% extends "admin/admin_base.html" %}
 
-  <!-- Form for Adding New Genre -->
-  <div class="card mt-4">
-    <div class="card-header bg-primary text-white">
-      <h5 class="mb-0">Add New Genre</h5>
-    </div>
-    <div class="card-body">
-      <form method="POST" action="{% url 'genre_edit_post' %}">
-        {% csrf_token %}
-        <div class="mb-3">
-          <input type="hidden" name="genre_id" value="{{ genres.id }}">
-          <label for="genreName" class="form-label">Genre Name</label>
-          <input type="text" name="genre" value="{{ genres.genre_name }}" id="genreName" class="form-control"
-            required />
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+{% endblock head %}
+
+{% block heading %}
+<h2 class="fw-semibold mb-0" style="font-size: 1.5rem; color: #1e293b;">Edit Genre</h2>
+{% endblock heading %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow-sm p-4" style="max-width: 500px; margin: 0 auto; border-radius: 10px; border: none;">
+        <div class="card-body" style="padding: 0;">
+            <h5 class="fw-medium mb-4" style="font-size: 1.1rem; color: #1e293b;">Edit Genre</h5>
+            <form method="POST" action="{% url 'genre_edit_post' %}">
+                {% csrf_token %}
+                <input type="hidden" name="genre_id" value="{{ genres.id }}">
+
+                <!-- Genre Name -->
+                <div class="mb-3">
+                    <label for="genreName" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Genre Name</label>
+                    <input type="text" name="genre" value="{{ genres.genre_name }}" id="genreName" class="form-control" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Update Genre</button>
+
+                <!-- Display Messages -->
+                {% if messages %}
+                <ul class="messages list-unstyled mt-3">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-size: 0.85rem; border-radius: 6px; background-color: #f1f5f9; color: #1e293b;">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </form>
         </div>
-
-        <button type="submit" class="btn btn-success">Update Genre</button>
-        {% if messages %} {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-          {{ message }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %} {% endif %}
-      </form>
     </div>
-  </div>
-
-
-
 </div>
+
+<style>
+    .card {
+        background-color: #ffffff;
+        border: none;
+        transition: box-shadow 0.2s ease;
+    }
+    .card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .form-control:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
+    }
+    .form-label {
+        color: #1e293b;
+    }
+    .btn-primary {
+        transition: background-color 0.2s ease;
+    }
+    .btn-primary:hover {
+        background-color: #1e40af;
+    }
+    .alert {
+        background-color: #f1f5f9;
+        color: #1e293b;
+    }
+</style>
 {% endblock %}

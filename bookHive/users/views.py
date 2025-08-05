@@ -533,7 +533,9 @@ def order_search(request):
             start_date = datetime(2024, 1, 1).date()
             end_date = datetime(2024, 12, 31).date()
             orders = orders.filter(created_at__date__range=(start_date, end_date))
-
+    
+    
+    print("period filter -", period_filter)
     # Apply search filter for order_id
     if search_query:
         orders = orders.filter(order_id__icontains=search_query)
@@ -547,7 +549,8 @@ def order_search(request):
 
     context = {
         'order_details': orders,
-        'order_count': order_count
+        'order_count': order_count,
+        'period_filter' : period_filter,
     }
 
 
