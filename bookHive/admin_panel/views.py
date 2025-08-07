@@ -455,6 +455,7 @@ def variant_edit_post(request):
 @login_required
 def admin_order_details(request, order_id):
     order = get_object_or_404(Order, id=order_id)
+    print("hi")
     
     if request.method == 'POST':
         # Handle payment status update
