@@ -1,2 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenv
+venv/
+env/
+ENV/
+
+# Django
+*.log
+*.pot
+*.pyc
+media/
+staticfiles/
+local_settings.py
+
+# Environment
+.env
 *.env
-myenv/
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+.tox/
+htmlcov/
+
+# Builds
+build/
+dist/
+*.egg-info/
+.eggs/
