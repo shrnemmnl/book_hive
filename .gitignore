@@ -37,3 +37,6 @@ build/
 dist/
 *.egg-info/
 .eggs/
+
+*.sql
+db/
