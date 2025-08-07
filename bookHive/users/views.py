@@ -109,21 +109,18 @@ def signup(request):
 
 
 def loading_page(request):
+    # Start with all active books with min price in its variant
+    books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
     
     # Get filter parameters from request
     sort = request.GET.get('sort', 'featured')
-    genres = request.GET.get('genres', '')
-    min_price = request.GET.get('min_price', 0)
-    max_price = request.GET.get('max_price', None)
-
-    # Start with all active books
-    books = Product.objects.annotate(min_price=Min(
-        'variant__price')).filter(is_active=True)
+    genres = request.GET.get('genres', 'allgenres')
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
 
     # Apply genre filter if specified
-    if genres:
+    if genres and genres != 'allgenres':
         genre_list = genres.split(',')
-        print(genre_list)
         books = books.filter(genre__genre_name__in=genre_list)
 
     # Apply price range filter
@@ -152,14 +149,13 @@ def loading_page(request):
         books = books.order_by('-book_title')
     # else: featured, do nothing
 
-    # 🚨 NOW do pagination — after all filters and sorting
+    # Pagination
     page = request.GET.get('page', 1)
     paginator = Paginator(books, 6)
     books = paginator.get_page(page)
 
     # Get all available genres
-    categories = Product.objects.values_list(
-        'genre__genre_name', flat=True).distinct()
+    categories = Product.objects.values_list('genre__genre_name', flat=True).distinct()
 
     # Get price range
     price_range = {
@@ -172,8 +168,8 @@ def loading_page(request):
         'categories': categories,
         'price_range': price_range,
         'selected_sort': sort,
-        'selected_genres': genres.split(',') if genres else [],
-        'selected_min_price': min_price,
+        'selected_genres': genres.split(',') if genres and genres != 'allgenres' else [],
+        'selected_min_price': min_price if min_price else price_range['min'],
         'selected_max_price': max_price if max_price else price_range['max']
     }
 
@@ -191,7 +187,7 @@ def user_login(request):
 
         if user_check:
             login(request, user_check)
-            return redirect('home_page')  # Redirect normal users to user home
+            return redirect('loading_page')  # Redirect normal users to user home
         else:
             messages.error(
                 request, "Invalid email or password. Please try again.")
@@ -206,13 +202,12 @@ def logout_user(request):
     return redirect('loading_page')
 
 
-@never_cache
-def home_page(request):
-    books = Product.objects.annotate(min_price=Min(
-        'variant__price')).filter(is_active=True)
-    print(books)
+# @never_cache
+# def home_page(request):
 
-    return render(request, 'index.html', {'books': books})
+#     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
+    
+#     return render(request, 'index.html', {'books': books})
 
 
 def product_details(request, id):

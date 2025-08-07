@@ -22,25 +22,26 @@
           <!-- Sorting Options -->
           <div class="filter-section mb-3">
             <h5 class="fw-bold mb-2" style="font-size: 1rem;">Sort By</h5>
-            <form id="sortForm">
+            <form id="sortForm" method="get">
+              {% csrf_token %}
               <div class="form-check mb-2">
-                <input class="form-check-input" type="radio" name="sortOption" id="sortFeatured" value="featured" checked>
+                <input class="form-check-input" type="radio" name="sort" id="sortFeatured" value="featured" {% if selected_sort == 'featured' %}checked{% endif %}>
                 <label class="form-check-label" for="sortFeatured" style="font-size: 0.85rem;">Featured</label>
               </div>
               <div class="form-check mb-2">
-                <input class="form-check-input" type="radio" name="sortOption" id="sortLowHigh" value="lh">
+                <input class="form-check-input" type="radio" name="sort" id="sortLowHigh" value="lh" {% if selected_sort == 'lh' %}checked{% endif %}>
                 <label class="form-check-label" for="sortLowHigh" style="font-size: 0.85rem;">Price: Low to High</label>
               </div>
               <div class="form-check mb-2">
-                <input class="form-check-input" type="radio" name="sortOption" id="sortHighLow" value="hl">
+                <input class="form-check-input" type="radio" name="sort" id="sortHighLow" value="hl" {% if selected_sort == 'hl' %}checked{% endif %}>
                 <label class="form-check-label" for="sortHighLow" style="font-size: 0.85rem;">Price: High to Low</label>
               </div>
               <div class="form-check mb-2">
-                <input class="form-check-input" type="radio" name="sortOption" id="sortAZ" value="az">
+                <input class="form-check-input" type="radio" name="sort" id="sortAZ" value="az" {% if selected_sort == 'az' %}checked{% endif %}>
                 <label class="form-check-label" for="sortAZ" style="font-size: 0.85rem;">A-Z</label>
               </div>
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="sortOption" id="sortZA" value="za">
+                <input class="form-check-input" type="radio" name="sort" id="sortZA" value="za" {% if selected_sort == 'za' %}checked{% endif %}>
                 <label class="form-check-label" for="sortZA" style="font-size: 0.85rem;">Z-A</label>
               </div>
             </form>
@@ -51,21 +52,15 @@
             <h5 class="fw-bold mb-2" style="font-size: 1rem;">Filter by Genre</h5>
             <div class="genre-options">
               <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="genreAll" checked>
+                <input class="form-check-input" type="checkbox" id="genreAll" name="genres" value="allgenres" {% if 'allgenres' in selected_genres or selected_genres|length == 0 %}checked{% endif %}>
                 <label class="form-check-label" for="genreAll" style="font-size: 0.85rem;">All Genres</label>
               </div>
+              {% for category in categories %}
               <div class="form-check mb-2">
-                <input class="form-check-input genre-checkbox" type="checkbox" id="genreBusiness" value="Business & Management">
-                <label class="form-check-label" for="genreBusiness" style="font-size: 0.85rem;">Business and Management</label>
+                <input class="form-check-input genre-checkbox" type="checkbox" id="genre{{ category|slugify }}" name="genres" value="{{ category }}" {% if category in selected_genres %}checked{% endif %} {% if 'allgenres' in selected_genres %}disabled{% endif %}>
+                <label class="form-check-label" for="genre{{ category|slugify }}" style="font-size: 0.85rem;">{{ category }}</label>
               </div>
-              <div class="form-check mb-2">
-                <input class="form-check-input genre-checkbox" type="checkbox" id="genreSports" value="Sports">
-                <label class="form-check-label" for="genreSports" style="font-size: 0.85rem;">Sports</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input genre-checkbox" type="checkbox" id="genreRomance" value="Romance">
-                <label class="form-check-label" for="genreRomance" style="font-size: 0.85rem;">Romance</label>
-              </div>
+              {% endfor %}
             </div>
           </div>
 
@@ -74,25 +69,28 @@
             <h5 class="fw-bold mb-2" style="font-size: 1rem;">Price Range</h5>
             <div class="price-slider">
               <div class="range-slider">
-                <input type="range" class="form-range" id="priceMin" min="0" max="2000" step="100" value="0" >
-                <input type="range" class="form-range" id="priceMax" min="0" max="2000" step="100" value="2000" >
+                <input type="range" class="form-range" id="priceMin" min="{{ price_range.min }}" max="{{ price_range.max }}" step="100" name="min_price" value="{{ selected_min_price|default:price_range.min }}">
+                <input type="range" class="form-range" id="priceMax" min="{{ price_range.min }}" max="{{ price_range.max }}" step="100" name="max_price" value="{{ selected_max_price|default:price_range.max }}">
               </div>
               <div class="range-input d-flex align-items-center mt-2">
                 <div class="input-group">
                   <span class="input-group-text" style="font-size: 0.85rem;">₹</span>
-                  <input type="number" class="form-control" id="minPriceInput" value="0" min="0" style="font-size: 0.85rem;">
+                  <input type="number" class="form-control" id="minPriceInput" value="{{ selected_min_price|default:price_range.min }}" min="{{ price_range.min }}" style="font-size: 0.85rem;">
                 </div>
                 <div class="mx-2" style="font-size: 0.85rem;">-</div>
                 <div class="input-group">
                   <span class="input-group-text" style="font-size: 0.85rem;">₹</span>
-                  <input type="number" class="form-control" id="maxPriceInput" value="2000" min="0" style="font-size: 0.85rem;">
+                  <input type="number" class="form-control" id="maxPriceInput" value="{{ selected_max_price|default:price_range.max }}" min="{{ price_range.min }}" style="font-size: 0.85rem;">
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Apply Filters Button -->
-          <button id="applyFilters" class="btn btn-primary w-100" style="font-size: 0.9rem;">Apply Filters</button>
+          <!-- Apply Filters and Clear Buttons -->
+          <div class="d-flex gap-2">
+            <button id="applyFilters" type="submit" form="sortForm" class="btn btn-primary w-100" style="font-size: 0.9rem;">Apply Filters</button>
+            <button id="clearFilters" type="button" class="btn btn-outline-secondary w-100" style="font-size: 0.9rem; display: none;">Clear</button>
+          </div>
         </div>
       </div>
 
@@ -250,20 +248,6 @@
 </style>
 
 <script>
-// Sort functionality
-document.querySelectorAll('input[name="sortOption"]').forEach(radio => {
-  radio.addEventListener('change', function() {
-    if (this.checked) {
-      let sortValue = this.value;
-      if (sortValue !== 'featured') {
-        window.location.href = `?sort=${sortValue}`;
-      } else {
-        window.location.href = window.location.pathname;
-      }
-    }
-  });
-});
-
 // Handle "All Genres" checkbox
 document.getElementById('genreAll').addEventListener('change', function() {
   let isChecked = this.checked;
@@ -299,7 +283,6 @@ const maxPriceInput = document.getElementById('maxPriceInput');
 
 priceMin.addEventListener('input', function() {
   minPriceInput.value = this.value;
-  // Ensure min doesn't exceed max
   if (parseInt(this.value) > parseInt(priceMax.value)) {
     priceMax.value = this.value;
     maxPriceInput.value = this.value;
@@ -308,7 +291,6 @@ priceMin.addEventListener('input', function() {
 
 priceMax.addEventListener('input', function() {
   maxPriceInput.value = this.value;
-  // Ensure max doesn't go below min
   if (parseInt(this.value) < parseInt(priceMin.value)) {
     priceMin.value = this.value;
     minPriceInput.value = this.value;
@@ -317,7 +299,6 @@ priceMax.addEventListener('input', function() {
 
 minPriceInput.addEventListener('input', function() {
   priceMin.value = this.value;
-  // Ensure min doesn't exceed max
   if (parseInt(this.value) > parseInt(maxPriceInput.value)) {
     maxPriceInput.value = this.value;
     priceMax.value = this.value;
@@ -326,7 +307,6 @@ minPriceInput.addEventListener('input', function() {
 
 maxPriceInput.addEventListener('input', function() {
   priceMax.value = this.value;
-  // Ensure max doesn't go below min
   if (parseInt(this.value) < parseInt(minPriceInput.value)) {
     minPriceInput.value = this.value;
     priceMin.value = this.value;
@@ -334,15 +314,14 @@ maxPriceInput.addEventListener('input', function() {
 });
 
 // Apply filters button
-document.getElementById('applyFilters').addEventListener('click', function() {
-  let params = new URLSearchParams(window.location.search);
+document.getElementById('applyFilters').addEventListener('click', function(e) {
+  e.preventDefault();
+  let params = new URLSearchParams();
   
   // Get sort option
-  const sortOption = document.querySelector('input[name="sortOption"]:checked').value;
+  const sortOption = document.querySelector('input[name="sort"]:checked').value;
   if (sortOption !== 'featured') {
     params.set('sort', sortOption);
-  } else {
-    params.delete('sort');
   }
   
   // Get selected genres
@@ -354,38 +333,61 @@ document.getElementById('applyFilters').addEventListener('click', function() {
     
     if (selectedGenres.length > 0) {
       params.set('genres', selectedGenres.join(','));
-    } else {
-      params.delete('genres');
     }
-  } else {
-    params.delete('genres');
   }
   
   // Get price range
   const minPrice = document.getElementById('minPriceInput').value;
   const maxPrice = document.getElementById('maxPriceInput').value;
   
-  if (minPrice !== '0') {
+  if (minPrice !== '{{ price_range.min }}') {
     params.set('min_price', minPrice);
-  } else {
-    params.delete('min_price');
   }
   
-  if (maxPrice !== '2000') {
+  if (maxPrice !== '{{ price_range.max }}') {
     params.set('max_price', maxPrice);
-  } else {
-    params.delete('max_price');
   }
+  
+  // Show clear button
+  document.getElementById('clearFilters').style.display = 'block';
   
   // Redirect with params
   const queryString = params.toString();
   window.location.href = queryString ? `?${queryString}` : window.location.pathname;
 });
 
-// Initialize sort option on page load
+// Clear filters button
+document.getElementById('clearFilters').addEventListener('click', function() {
+  // Reset form
+  document.getElementById('sortForm').reset();
+  document.getElementById('sortFeatured').checked = true;
+  document.getElementById('genreAll').checked = true;
+  document.querySelectorAll('.genre-checkbox').forEach(checkbox => {
+    checkbox.checked = false;
+    checkbox.disabled = true;
+  });
+  document.getElementById('priceMin').value = '{{ price_range.min }}';
+  document.getElementById('priceMax').value = '{{ price_range.max }}';
+  document.getElementById('minPriceInput').value = '{{ price_range.min }}';
+  document.getElementById('maxPriceInput').value = '{{ price_range.max }}';
+  
+  // Hide clear button
+  this.style.display = 'none';
+  
+  // Redirect to base URL
+  window.location.href = window.location.pathname;
+});
+
+// Initialize form on page load
 window.addEventListener('DOMContentLoaded', function() {
   const urlParams = new URLSearchParams(window.location.search);
   const sortParam = urlParams.get('sort');
+  const hasFilters = urlParams.has('sort') || urlParams.has('genres') || urlParams.has('min_price') || urlParams.has('max_price');
+  
+  // Show clear button if filters are applied
+  if (hasFilters) {
+    document.getElementById('clearFilters').style.display = 'block';
+  }
   
   if (sortParam) {
     const sortRadio = document.getElementById(`sort${sortParam === 'lh' ? 'LowHigh' : 
@@ -395,19 +397,6 @@ window.addEventListener('DOMContentLoaded', function() {
     if (sortRadio) {
       sortRadio.checked = true;
     }
-  }
-  
-  // Initialize price range
-  const minPriceParam = urlParams.get('min_price');
-  if (minPriceParam) {
-    priceMin.value = minPriceParam;
-    minPriceInput.value = minPriceParam;
-  }
-  
-  const maxPriceParam = urlParams.get('max_price');
-  if (maxPriceParam) {
-    priceMax.value = maxPriceParam;
-    maxPriceInput.value = maxPriceParam;
   }
 });
 </script>
