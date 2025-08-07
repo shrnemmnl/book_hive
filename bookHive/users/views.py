@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist # Import your user model
 from django.contrib.auth.hashers import make_password  # Hash password before saving
-from django.views.decorators.cache import never_cache
+from django.views.decorators.cache import never_cache, cache_control
 from django.db.models import Min
 from admin_panel.models import Product, Variant
 from django.shortcuts import get_object_or_404
@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)  # Create logger
 
 
 def signup(request):
+    
     errors = {}  # Dictionary to store field-specific errors
 
     if request.method == 'POST':
@@ -331,6 +332,8 @@ def search_book(request):
         return render(request, 'index.html', {'books': books})
 
 
+
+@login_required
 def user_profile(request):
     has_error = False
     user = request.user
@@ -396,6 +399,8 @@ def user_profile(request):
     return render(request, 'user/user_profile.html' )
 
 
+
+@login_required
 def user_address(request):
     address = Address.objects.filter(user=request.user, is_active=True).order_by('-is_default')
     logger.info(f"New address is created: {address}")
@@ -446,6 +451,9 @@ def user_address(request):
 
     return render(request, 'user/user_address.html', {'addresss': address})
 
+
+
+@login_required
 def default_address(request, address_id):
     try:
         with transaction.atomic():
@@ -467,7 +475,7 @@ def default_address(request, address_id):
     return redirect('user_address')
 
 
-
+@login_required
 def user_cart(request):
     # Get or create the cart for the user
     cart, created = Cart.objects.get_or_create(user=request.user)
@@ -493,6 +501,7 @@ def user_cart(request):
 
 
 
+@login_required
 def user_order(request):
 
     order_details = Order.objects.prefetch_related('order_items').filter(user=request.user).order_by('-created_at')
@@ -557,6 +566,8 @@ def order_search(request):
     return render(request, 'user/user_order.html', context)
 
 
+
+@login_required
 def cancel_order(request, order_id):
 
     if request.method == 'POST':
@@ -584,7 +595,7 @@ def cancel_order(request, order_id):
 
     
 
-
+@login_required
 def user_wishlist(request):
     wishlist_items = Wishlist.objects.filter(user=request.user)
 
@@ -593,6 +604,7 @@ def user_wishlist(request):
 
 
 
+@login_required
 def wishlist_toggle(request):
     if request.method == "POST":
         variant_id = request.POST.get("product_id")  # this is Variant ID
@@ -610,14 +622,19 @@ def wishlist_toggle(request):
 
 
 
+@login_required
 def user_wallet(request):
 
     return render(request, 'user/user_wallet.html')
 
 
+
+@login_required
 def user_cust_care(request):
 
     return render(request, 'user/user_cust_care.html')
+
+
 
 
 def calculate_total(cart_items):
@@ -625,6 +642,8 @@ def calculate_total(cart_items):
 
 
 
+
+@login_required
 @csrf_exempt  # Use only if you don't have {% csrf_token %}, otherwise REMOVE this
 def checkoutpage(request):
     
@@ -716,6 +735,8 @@ def checkoutpage(request):
 
 
 
+
+@login_required
 def order_confirm(request, id):
 
     try:
@@ -731,6 +752,8 @@ def order_confirm(request, id):
 
 
 
+
+@login_required
 @require_POST
 def add_to_cart(request, id):
 
@@ -774,6 +797,8 @@ def add_to_cart(request, id):
         return JsonResponse({'success': True, 'redirect_url': '/user/cart/'})
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'message': 'Invalid JSON'})
+
+
 
 
 @require_POST
@@ -841,6 +866,10 @@ def delete_cart_item(request):
     except CartItem.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Item not found'})
 
+
+
+
+
 @never_cache
 @require_POST
 def verification(request):
@@ -907,6 +936,9 @@ def verification(request):
     return render(request, 'login/verification.html')
 
 
+
+
+@never_cache
 def fg_verification(request):
 
     if request.method == 'POST':
@@ -928,6 +960,10 @@ def fg_verification(request):
     return render(request, 'login/fg_verification.html')
 
 
+
+
+
+@never_cache
 def otp_page_fg(request):
 
     if request.method == 'POST':
@@ -950,31 +986,56 @@ def otp_page_fg(request):
     return render(request, 'login/otp_page_fg.html')
 
 
-def password_change(request):
-    print('hi')
-    test = request.session['verification_email']
-    user = CustomUser.objects.get(email=test)
 
+
+
+@never_cache
+# @cache_control(no_cache=True, must_revalidate=True, no_store=True)
+def password_change(request):
+
+    # 🚫 If password was changed, don't show this page again
+    if request.session.get('password_changed'):
+
+        del request.session['password_changed']
+        return redirect('login')
+
+    try:
+
+        test = request.session['verification_email']
+        user = CustomUser.objects.get(email=test)
+
+    except KeyError as e:
+
+        messages.error(request, "You have to verify your email first. Click the forget password.")
+        return redirect('login')
+        
     if request.method == 'POST':
 
         new_password = request.POST.get('new_password', '')
         confirm_password = request.POST.get('confirm_password', '')
-        print(new_password, confirm_password)
+        
 
         # Check if passwords match
         if new_password != confirm_password:
+
             messages.error(
                 request, "Passwords do not match. Please re-enter the password again.")
         else:
             user.password = make_password(new_password)  # new password saved.
             user.save()
-            print(user.password)
+            
             messages.success(request, "Your Password changed sucessfully.")
-            return render(request, 'login/password_change.html', {'redirect_to_login': True, 'redirect_url': 'login'})
+
+            request.session['password_changed'] = True  # 🧠 Set the flag
+            return redirect('login') 
 
     return render(request, 'login/password_change.html')
 
 
+
+
+
+@login_required
 def address_edit(request, address_id):
     address = get_object_or_404(Address, id=address_id)
     has_error = False
@@ -1007,6 +1068,9 @@ def address_edit(request, address_id):
     return render(request, 'user/address_edit.html', {'address': address})
 
 
+
+
+@login_required
 def address_delete(request, address_id):
 
     status = Address.objects.get(id=address_id)
@@ -1015,6 +1079,10 @@ def address_delete(request, address_id):
     return redirect('user_address')
 
 
+
+
+
+@login_required
 def change_variant(request, book_id):
     try:
         book = get_object_or_404(Product, id=book_id, is_active=True)
@@ -1064,6 +1132,8 @@ def change_variant(request, book_id):
 
 
 
+
+@login_required
 def download_invoice(request, id):
     order = Order.objects.get(id=id)
     order_items = order.order_items.all()  
