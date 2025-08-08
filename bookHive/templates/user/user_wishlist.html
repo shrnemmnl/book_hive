@@ -21,7 +21,12 @@
       <a href="{% url 'product_details' item.variant.product.id %}" class="btn btn-sm btn-primary">View Product</a>
     </div>
   </div>
+  {% empty %}
+          <div>
+            <p>No Wishlist found.</p>
+          </div>
 {% endfor %}
+
 
   </div>
   </div>

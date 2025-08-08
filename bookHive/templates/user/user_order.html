@@ -33,12 +33,14 @@
               <select name="status" class="form-select">
                 <option value="" {% if not request.GET.status %}selected{% endif %}>All Statuses</option>
                 <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="shipped" {% if request.GET.status == 'shipped' %}selected{% endif %}>Shipped</option>
                 <option value="delivered" {% if request.GET.status == 'delivered' %}selected{% endif %}>Delivered</option>
                 <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
                 <option value="request to cancel" {% if request.GET.status == 'request to cancel' %}selected{% endif %}>Request to Cancel</option>
               </select>
             </div>
             <button type="submit" class="btn btn-primary">Search</button>
+            <a href="{% url 'order_search' %}" class="btn btn-outline-secondary">Clear</a>
           </form>
           {% if period_filter %}
           <div class="mt-2">
@@ -77,7 +79,7 @@
                 </div>
                 <div class="col-md-3 text-md-end">
                   <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'request to cancel' %}dark
-                  {% elif order.status == 'cancelled' %}danger{% else %}warning{% endif %}">{{ order.status|capfirst }}</span>
+                  {% elif order.status == 'cancelled' %}danger{% elif order.status == 'shipped' %}info{% else %}warning{% endif %}">{{ order.status|capfirst }}</span>
                 </div>
               </div>
             </div>
@@ -113,7 +115,7 @@
               <div>
                 <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#viewDetailsModal{{ order.id }}">View Details</button>
                 <a href="{% url 'download_invoice' order.id %}" class="btn btn-sm btn-outline-success me-2">Invoice</a>
-                {% if order.status not in 'delivered,request to cancel,cancelled' %}
+                {% if order.status not in 'request to cancel,cancelled' %}
                 <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ order.id }}">Cancel Order</button>
                 {% endif %}
               </div>

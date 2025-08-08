@@ -32,6 +32,7 @@
                         <tr>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Sl No.</th>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Order ID</th>
+                            <th scope="col" style="color: #1e293b; font-weight: 500;">Coustomer Name</th>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Purchased Items</th>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Purchase Date</th>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Grand Total</th>
@@ -44,6 +45,8 @@
                         <tr class="order-row" data-order-id="{{ order.order_id }}">
                             <td>{{ forloop.counter }}</td>
                             <td>{{ order.order_id }}</td>
+                            <td>{{ order.user.first_name }} {{ order.user.last_name }}</td>
+                            
                             <td>
                                 <ul class="list-unstyled mb-0">
                                     {% for item in order.order_items.all %}

@@ -46,14 +46,12 @@
                 </div>
                 <div class="col-md-3">
                     <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Payment Status</p>
-                    <form action="{% url 'admin_order_details' order.id %}" method="POST" class="d-flex align-items-center">
-                        {% csrf_token %}
-                        <select name="is_paid" class="form-select form-select-sm me-2" style="font-size: 0.85rem; padding: 0.4rem; border-radius: 6px; max-width: 100px;">
-                            <option value="true" {% if order.is_paid %}selected{% endif %}>Paid</option>
-                            <option value="false" {% if not order.is_paid %}selected{% endif %}>Unpaid</option>
-                        </select>
-                        <button type="submit" class="btn btn-sm btn-outline-success" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 6px;">Update</button>
-                    </form>
+                    {% if order.is_paid %}
+                    <p class="fw-medium mb-1 badge bg-success text-white" style="font-size: 0.9rem;">Paid</p>
+                    {% else %}
+                    <p class="fw-medium mb-1 badge bg-danger text-white" style="font-size: 0.9rem;">Not Paid</p>
+                    {% endif %}
+                    
                 </div>
             </div>
         </div>
@@ -68,78 +66,96 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <h6 class="fw-medium" style="font-size: 0.95rem; color: #1e293b;">Customer Information</h6>
+                    <p class="mb-1 text-muted" style="font-size: 0.85rem;"><strong>Name:</strong>{{ order.user.first_name }} {{ order.user.last_name }}</p>
                     <p class="mb-1 text-muted" style="font-size: 0.85rem;"><strong>Email:</strong> {{ order.user.email }}</p>
-                    <p class="mb-1 text-muted" style="font-size: 0.85rem;"><strong>Phone:</strong> {{ order.shipping_address.phone_number|default:"Not provided" }}</p>
+                    <p class="mb-1 text-muted" style="font-size: 0.85rem;"><strong>Phone:</strong> {{ order.address.phone |default:"Not provided" }}</p>
                 </div>
                 <div class="col-md-6">
                     <h6 class="fw-medium" style="font-size: 0.95rem; color: #1e293b;">Shipping Address</h6>
                     <address class="text-muted" style="font-size: 0.85rem;">
-                        {{ order.shipping_address.address_line1 }}<br>
-                        {% if order.shipping_address.address_line2 %}
-                            {{ order.shipping_address.address_line2 }}<br>
-                        {% endif %}
-                        {{ order.shipping_address.city }}, {{ order.shipping_address.state }} {{ order.shipping_address.postal_code }}<br>
-                        {{ order.shipping_address.country }}
+                        {{ order.address.address_type }}<br>
+                        {{ order.address.street }}<br>
+                        
+                        {{ order.address.city }}<br>
+                        
+                        {{ order.address.landmark }}, {{ order.address.state }} {{ order.address.postal_code }}<br>
+                        
                     </address>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Order Items Card -->
-    <div class="card shadow-sm mb-4" style="border-radius: 10px; border: none;">
-        <div class="card-header" style="border-radius: 10px 10px 0 0; background-color: #f8fafc;">
-            <h5 class="mb-0 fw-medium" style="font-size: 1.1rem; color: #1e293b;">Order Items</h5>
+<!-- Order Items Card -->
+<div class="card shadow-sm mb-4" style="border-radius: 10px; border: none;">
+    <div class="card-header" style="border-radius: 10px 10px 0 0; background-color: #f8fafc;">
+        <h5 class="mb-0 fw-medium" style="font-size: 1.1rem; color: #1e293b;">Order Items</h5>
+    </div>
+    <div class="card-body" style="padding: 1.5rem;">
+        <!-- Display Current Order Status -->
+        <div class="mb-3">
+            <p class="mb-2" style="font-size: 0.9rem; color: #1e293b;">
+                Current Status: 
+                <span class="{% if order.status == 'pending' %}badge bg-warning text-dark{% elif order.status == 'shipped' %}badge bg-info text-dark{% elif order.status == 'out_for_delivery' %}badge bg-primary{% elif order.status == 'delivered' %}badge bg-success{% elif order.status == 'cancelled' %}badge bg-danger{% endif %}" style="font-size: 0.85rem;">
+                    {{ order.status|title }}
+                </span>
+            </p>
+            {% if order.status == 'request to cancel' or order.status == 'cancelled' %}
+            <p class="mb-2" style="font-size: 0.9rem; color: #1e293b;">
+                Cancel Reason: 
+                <span class="text-dark" style="font-size: 0.85rem;">
+                    {{ order.cancel_reason|title|default:"No reason provided" }}
+                </span>
+            </p>
+            {% endif %}
+            <!-- Order Status Form -->
+            <form action="{% url 'admin_order_details' order.id %}" method="POST" class="d-flex align-items-center">
+                {% csrf_token %}
+                <label for="order_status" class="me-2" style="font-size: 0.9rem; color: #1e293b;">Update Status:</label>
+                <select name="status" id="order_status" class="form-select form-select-sm me-2" style="font-size: 0.85rem; padding: 0.4rem; border-radius: 6px; max-width: 140px;">
+                    <option value="pending" {% if order.status == "pending" %}selected{% endif %}>Pending</option>
+                    <option value="shipped" {% if order.status == "shipped" %}selected{% endif %}>Shipped</option>
+                    <!-- <option value="out_for_delivery" {% if order.status == "out_for_delivery" %}selected{% endif %}>Out for Delivery</option> -->
+                    <option value="delivered" {% if order.status == "delivered" %}selected{% endif %}>Delivered</option>
+                    <option value="cancelled" {% if order.status == "cancelled" %}selected{% endif %}>Cancelled</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-success" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 6px;">Update</button>
+            </form>
         </div>
-        <div class="card-body" style="padding: 1.5rem;">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle" style="font-size: 0.9rem;">
-                    <thead>
-                        <tr>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">#</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Product</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Image</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Quantity</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Price</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Total</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in order.order_items.all %}
-                        <tr>
-                            <td>{{ forloop.counter }}</td>
-                            <td>
-                                <p class="mb-0 fw-medium" style="color: #1e293b; font-size: 0.9rem;">{{ item.product_variant.product.book_title }}</p>
-                                <small class="text-muted" style="font-size: 0.8rem;">{{ item.product_variant.product.author }}</small>
-                            </td>
-                            <td>
-                                <img src="{{ item.product_variant.product.image.url }}" alt="Book Cover" class="img-thumbnail" style="max-height: 50px; border-radius: 6px; border: none;">
-                            </td>
-                            <td>{{ item.quantity }}</td>
-                            <td>₹{{ item.product_variant.price|floatformat:2 }}</td>
-                            <td>₹{{ item.total_amount|floatformat:2 }}</td>
-                            <td>
-                                <form action="{% url 'admin_order_details' order.id %}" method="POST" class="d-flex align-items-center">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="item_id" value="{{ item.id }}">
-                                    <select name="status" class="form-select form-select-sm me-2" style="font-size: 0.85rem; padding: 0.4rem; border-radius: 6px; max-width: 140px;">
-                                        <option value="pending" {% if item.status == "pending" %}selected{% endif %}>Pending</option>
-                                        <option value="shipped" {% if item.status == "shipped" %}selected{% endif %}>Shipped</option>
-                                        <option value="out_for_delivery" {% if item.status == "out_for_delivery" %}selected{% endif %}>Out for Delivery</option>
-                                        <option value="delivered" {% if item.status == "delivered" %}selected{% endif %}>Delivered</option>
-                                        <option value="cancelled" {% if item.status == "cancelled" %}selected{% endif %}>Cancelled</option>
-                                    </select>
-                                    <button type="submit" class="btn btn-sm btn-outline-success" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 6px;">Update</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <!-- Order Items Table -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" style="font-size: 0.9rem;">
+                <thead>
+                    <tr>
+                        <th scope="col" style="color: #1e293b; font-weight: 500;">#</th>
+                        <th scope="col" style="color: #1e293b; font-weight: 500;">Product</th>
+                        <th scope="col" style="color: #1e293b; font-weight: 500;">Image</th>
+                        <th scope="col" style="color: #1e293b; font-weight: 500;">Quantity</th>
+                        <th scope="col" style="color: #1e293b; font-weight: 500;">Price</th>
+                        <th scope="col" style="color: #1e293b; font-weight: 500;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.order_items.all %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <p class="mb-0 fw-medium" style="color: #1e293b; font-size: 0.9rem;">{{ item.product_variant.product.book_title }}</p>
+                            <small class="text-muted" style="font-size: 0.8rem;">{{ item.product_variant.product.author }}</small>
+                        </td>
+                        <td>
+                            <img src="{{ item.product_variant.product.image.url }}" alt="Book Cover" class="img-thumbnail" style="max-height: 50px; border-radius: 6px; border: none;">
+                        </td>
+                        <td>{{ item.quantity }}</td>
+                        <td>₹{{ item.product_variant.price|floatformat:2 }}</td>
+                        <td>₹{{ item.total_amount|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 
     <!-- Order Summary Card -->
     <div class="card shadow-sm mb-4" style="border-radius: 10px; border: none;">
@@ -153,7 +169,7 @@
                         <tbody>
                             <tr>
                                 <td class="fw-medium" style="color: #1e293b;">Subtotal</td>
-                                <td class="text-end text-muted">₹{{ order.total_amount|floatformat:2 }}</td>
+                                <td class="text-end text-muted">₹{{ order.net_amount|floatformat:2 }}</td>
                             </tr>
                             {% if order.discount_amount %}
                             <tr>
@@ -171,7 +187,7 @@
                             </tr>
                             <tr class="table-active">
                                 <td class="fw-semibold" style="color: #1e293b; font-size: 1rem;">Grand Total</td>
-                                <td class="text-end fw-semibold" style="color: #1e293b; font-size: 1rem;">₹{{ order.total_amount|floatformat:2 }}</td>
+                                <td class="text-end fw-semibold" style="color: #1e293b; font-size: 1rem;">₹{{ order.net_amount|floatformat:2 }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -194,44 +210,36 @@
                     </div>
                     <span class="text-muted" style="font-size: 0.85rem;">{{ order.created_at|date:"d M Y, h:i A" }}</span>
                 </li>
-                {% if order.is_paid %}
-                <li class="list-group-item d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;">
-                    <div>
-                        <p class="mb-0 fw-medium" style="color: #1e293b;">Payment Received</p>
-                        <small class="text-muted" style="font-size: 0.8rem;">Payment processed successfully</small>
-                    </div>
-                    <span class="text-muted" style="font-size: 0.85rem;">{{ order.paid_at|default:order.created_at|date:"d M Y, h:i A" }}</span>
-                </li>
-                {% endif %}
-                {% for item in order.order_items.all %}
-                    {% if item.status == "shipped" %}
+                
+                
+                    {% if order.status == "shipped" %}
                     <li class="list-group-item d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;">
                         <div>
                             <p class="mb-0 fw-medium" style="color: #1e293b;">Item Shipped</p>
                             <small class="text-muted" style="font-size: 0.8rem;">{{ item.product_variant.product.book_title }}</small>
                         </div>
-                        <span class="text-muted" style="font-size: 0.85rem;">{{ item.updated_at|default:""|date:"d M Y, h:i A" }}</span>
+                        <span class="text-muted" style="font-size: 0.85rem;">{{ order.updated_at|default:""|date:"d M Y, h:i A" }}</span>
                     </li>
                     {% endif %}
-                    {% if item.status == "delivered" %}
+                    {% if order.status == "delivered" %}
                     <li class="list-group-item d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;">
                         <div>
                             <p class="mb-0 fw-medium" style="color: #1e293b;">Item Delivered</p>
                             <small class="text-muted" style="font-size: 0.8rem;">{{ item.product_variant.product.book_title }}</small>
                         </div>
-                        <span class="text-muted" style="font-size: 0.85rem;">{{ item.updated_at|default:""|date:"d M Y, h:i A" }}</span>
+                        <span class="text-muted" style="font-size: 0.85rem;">{{ order.updated_at|default:""|date:"d M Y, h:i A" }}</span>
                     </li>
                     {% endif %}
-                    {% if item.status == "cancelled" %}
+                    {% if order.status == "cancelled" %}
                     <li class="list-group-item d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #e2e8f0; font-size: 0.9rem;">
                         <div>
                             <p class="mb-0 fw-medium" style="color: #1e293b;">Item Cancelled</p>
-                            <small class="text-muted" style="font-size: 0.8rem;">{{ item.product_variant.product.book_title }}</small>
+                            <small class="text-muted" style="font-size: 0.8rem;">{{ item.product.book_title }}</small>
                         </div>
-                        <span class="text-muted" style="font-size: 0.85rem;">{{ item.updated_at|default:""|date:"d M Y, h:i A" }}</span>
+                        <span class="text-muted" style="font-size: 0.85rem;">{{ order.updated_at|default:""|date:"d M Y, h:i A" }}</span>
                     </li>
                     {% endif %}
-                {% endfor %}
+                
             </ul>
         </div>
     </div>
