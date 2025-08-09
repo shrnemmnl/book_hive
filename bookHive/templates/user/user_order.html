@@ -116,7 +116,7 @@
                 <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#viewDetailsModal{{ order.id }}">View Details</button>
                 <a href="{% url 'download_invoice' order.id %}" class="btn btn-sm btn-outline-success me-2">Invoice</a>
                 {% if order.status not in 'request to cancel,cancelled' %}
-                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ order.id }}">Cancel Order</button>
+                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ order.id }}"> {% if order.status == 'delivered' %}Return Request{% else %}Cancel Order{% endif %} </button>
                 {% endif %}
               </div>
             </div>
@@ -193,7 +193,7 @@
                   </div>
                   <div class="modal-body">
                     <div class="mb-3">
-                      <label for="cancelReason{{ order.id }}" class="form-label">Reason for cancellation:</label>
+                      <label for="cancelReason{{ order.id }}" class="form-label">Reason for {% if order.status == 'delivered' %}Return{% else %}cancellation:{% endif %}</label>
                       <textarea class="form-control" id="cancelReason{{ order.id }}" name="reason" rows="3" required></textarea>
                     </div>
                   </div>

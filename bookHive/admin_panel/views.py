@@ -501,8 +501,10 @@ def admin_order_details(request, order_id):
 
         order.status = new_status
         order.save()
+        
 
     context = {
+        'reload': True,
         'order': order,
         'heading': {'name': f'Order Details #{ order.id }'}
     }

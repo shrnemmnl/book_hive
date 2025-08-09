@@ -43,6 +43,7 @@ class Variant(models.Model):
     language = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
 
+    
 
 
 class ProductImage(models.Model):

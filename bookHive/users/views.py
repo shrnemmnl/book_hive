@@ -265,16 +265,7 @@ def product_details(request, id):
     # for i in review_content:
     #     print('review content ',i.rating)
     average_rating = review_content.aggregate(Avg('rating'))['rating__avg']
-    # book_user = CustomUser.objects.filter(review__product=book).distinct()
-    # review_count=book.review.count()
-    # print(review_count)
-    # try:
-    #     user_rating=Review.objects.get(user=book_user,product=book).anno #review count for a particular book
-    # except Review.DoesNotExist:
-    #     user_rating=None
-    # print(user_rating)
-    # average_rating = Review.objects.filter(product=book).aggregate(Avg('rating'))['rating__avg'] #rounded average rating figure of particular book
-    # print(average_rating)
+   
     context = {
         'book': book,  # specific product details which variants included
         'discount_price': discount_price,
@@ -648,8 +639,6 @@ def checkoutpage(request):
         address_id = request.POST.get('shippingAddress')
         payment_method = request.POST.get('payment_method')  # Use if needed later
 
-        print('address_id -', address_id)
-        print('payment_method -', payment_method)
 
         # ✅ Check for valid address
         try:
@@ -677,27 +666,21 @@ def checkoutpage(request):
 
             with transaction.atomic():
                 # ✅ Create Order
-                order = Order.objects.create(
-            user=request.user,
-            address=address,
-            net_amount=net_amount,
-            status='pending',
-            order_date=timezone.now()
-        )
-            print('order -', order)
-        # ✅ Add items to order
-            for item in cart_items:
-                OrderItem.objects.create(
-                order=order,
-                product_variant=item.product_variant,
-                quantity=item.quantity,
-                total_amount=item.product_variant.price * item.quantity,
-                image_url=item.product_variant.image_url if hasattr(item.product_variant, 'image_url') else None,
-                
-            )
+                order = Order.objects.create(user=request.user,address=address,net_amount=net_amount,status='pending',order_date=timezone.now())
+            
+                # ✅ Add items to order
+                for item in cart_items:
+                    OrderItem.objects.create(order=order,product_variant=item.product_variant,quantity=item.quantity,total_amount=item.product_variant.price * item.quantity,
+                    image_url=item.product_variant.image_url if hasattr(item.product_variant, 'image_url') else None)
 
-        # ✅ Clear cart
-            cart.delete()
+                    item.product_variant.available_quantity -= item.quantity
+                    item.product_variant.save()
+                    
+
+
+                # ✅Clear cart
+                cart.delete()
+
 
         # ✅ Redirect to order confirmation page with order_id
             return redirect('order_confirm', id=order.id)
@@ -711,8 +694,13 @@ def checkoutpage(request):
         cart = Cart.objects.filter(user=request.user).latest('created_at')
         cart_items = cart.cart_items.all()
 
+        for item in cart_items:
+            if item.quantity > item.product_variant.available_quantity:
+                messages.error(request, "Ordered quantity is more than stock.")
+                return redirect('user_cart')
+            
     except Cart.DoesNotExist:
-
+        
         cart_items = []
 
     subtotal = calculate_total(cart_items)
@@ -751,45 +739,48 @@ def order_confirm(request, id):
 @login_required
 @require_POST
 def add_to_cart(request, id):
-
     try:
         data = json.loads(request.body)
         variant_id = data.get('variant_id')
-        quantity = data.get('quantity')
-        print(f"data:{data}, vaiant id:{variant_id}, quantity: {quantity}  {type(quantity)}")
+        quantity = int(data.get('quantity', 0))  # ensure integer
+        
+        if quantity <= 0:
+            return JsonResponse({'success': False, 'message': 'Invalid quantity'})
+        
+        # Get or create user's cart
+        cart, _ = Cart.objects.get_or_create(user=request.user)
 
-        # variant = get_object_or_404(Variant, id=variant_id)
-        # print(variant)
-        # Try to find an existing cart for the current user.
-        try:
-            cart = Cart.objects.get(user=request.user)
-            created = False
-        except Cart.DoesNotExist:
-            cart = Cart.objects.create(user=request.user)
-            created = True
-            
-
-        # get the actual Variant object
+        # Get variant object
         variant = get_object_or_404(Variant, id=variant_id)
-        # Try to find an existing cart item
+
         try:
             cart_item = CartItem.objects.get(cart=cart, product_variant=variant)
-            cart_item.quantity += quantity  # if you want to update quantity
+
+            # Check quantity limit
+            if cart_item.quantity + quantity > 5:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'You cannot add more than 5 of this item.'
+                })
+
+            cart_item.quantity += quantity
             cart_item.save()
-            created = False
 
         except CartItem.DoesNotExist:
-            # If not found, create a new one
-            cart_item = CartItem.objects.create(
+            if quantity > 5:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'You cannot add more than 5 of this item.'
+                })
+
+            CartItem.objects.create(
                 cart=cart,
                 product_variant=variant,
-                quantity=quantity,
+                quantity=quantity
             )
-            created = True
-        print(cart_item)
-        
-        # You can now process and return success
+
         return JsonResponse({'success': True, 'redirect_url': '/user/cart/'})
+
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'message': 'Invalid JSON'})
 
