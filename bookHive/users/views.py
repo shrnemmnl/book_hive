@@ -743,7 +743,11 @@ def add_to_cart(request, id):
         data = json.loads(request.body)
         variant_id = data.get('variant_id')
         quantity = int(data.get('quantity', 0))  # ensure integer
+
+        # Remove wishlist entry 
+        Wishlist.objects.filter(user = request.user, variant=variant_id).delete()
         
+
         if quantity <= 0:
             return JsonResponse({'success': False, 'message': 'Invalid quantity'})
         
