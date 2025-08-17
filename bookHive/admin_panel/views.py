@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from users.models import CustomUser,Order,OrderItem,Review # Import your user model
+from users.models import CustomUser,Order,OrderItem,Review, Wallet# Import your user model
 from .models import Genre, Product, Variant, ProductImage
 from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.cache import never_cache, cache_control
@@ -48,6 +48,12 @@ def books(request):
     
     books = Product.objects.select_related('genre').order_by('-updated_at')
 
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(books, 5)
+    books = paginator.get_page(page)
+
+
     return render(request, 'admin/books.html', {"books":books})
 
 
@@ -59,7 +65,13 @@ def admin_order(request):
 
     order_details=Order.objects.prefetch_related('order_items').order_by('-created_at')
 
+    page = request.GET.get('page', 1)
+    paginator = Paginator(order_details, 10)
+    order_details = paginator.get_page(page)
+
     return render(request, 'admin/admin_order.html', {"order_details":order_details})
+
+
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
@@ -459,25 +471,16 @@ def admin_order_details(request, order_id):
     
     
     if request.method == 'POST':
-        # Handle payment status update
-        # if 'is_paid' in request.POST:
-        #     is_paid = request.POST.get('is_paid') == 'true'
-        #     order.is_paid = is_paid
-        #     order.save()
-        #     messages.success(request, f"Payment status updated to {'Paid' if is_paid else 'Unpaid'}.")
-        #     return redirect('admin_order_details', order_id=order.id)
-
-        # Handle order item status update
-        # item_id = request.POST.get('item_id')
+        
         new_status = request.POST.get('status')
-        print(new_status)
+        
         valid_statuses = ['pending', 'shipped', 'delivered', 'cancelled', 'request to cancel']
         
         if new_status == 'delivered':
             order.is_paid = True
 
 
-        if new_status not in valid_statuses:
+        elif new_status not in valid_statuses:
             messages.error(request, "Invalid status selected.")
             return redirect('admin_order_details', order_id=order.id)
             
@@ -486,17 +489,30 @@ def admin_order_details(request, order_id):
         
             
         # Check if the item is being cancelled and the order is paid
-        if new_status == 'request to cancel' and order.is_paid:
+        elif new_status == 'cancelled' and order.is_paid:
+
             user = order.user
-            refund_amount = order.order_items.total_amount  # Changed from net_amount to total_amount
-            user.wallet_amount += refund_amount
-            user.save()
-            messages.success(request, f"Refunded ₹{refund_amount:.2f} to user {user.email}'s wallet.")
+
+            #Stock need to update
+            for item in order.order_items.all():
+                variant = item.product_variant  
+                variant.available_quantity += item.quantity 
+                variant.save()
+                
             
+            
+            
+            refund_amount = order.net_amount  # Changed from net_amount to total_amount
+            user_wallet, created = Wallet.objects.get_or_create(user=user)
+            user_wallet.wallet_amount += refund_amount
+            user_wallet.save()
+
             order.status = 'cancelled'
-            # order_item.updated_at = timezone.now()
-            order.order_items.save()
-            messages.success(request, f"Status for item '{ order.order_items.product_variant.product.book_title }' updated to {order.status}.")
+    
+            order.save()
+        
+            messages.success(request, f"Refunded ₹{refund_amount:.2f} to user {user.email}'s wallet.")
+          
             return redirect('admin_order_details', order_id=order.id)
 
         order.status = new_status

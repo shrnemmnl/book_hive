@@ -15,6 +15,15 @@
         <div class="card-body" style="padding: 1.5rem;">
             <div class="d-flex align-items-center gap-3">
                 <input type="text" id="searchInput" class="form-control" placeholder="Search by Order ID or Item" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <select id="statusFilter" class="form-control" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0; width: 200px;">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="request to cancel">Request to Cancel</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <button class="btn btn-outline-secondary" id="sortStatusBtn" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Sort Status (Asc)</button>
                 <button class="btn btn-outline-secondary" id="clearSearch" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Clear</button>
             </div>
         </div>
@@ -42,11 +51,10 @@
                     </thead>
                     <tbody>
                         {% for order in order_details %}
-                        <tr class="order-row" data-order-id="{{ order.order_id }}">
+                        <tr class="order-row" data-order-id="{{ order.order_id }}" data-status="{{ order.status }}">
                             <td>{{ forloop.counter }}</td>
                             <td>{{ order.order_id }}</td>
                             <td>{{ order.user.first_name }} {{ order.user.last_name }}</td>
-                            
                             <td>
                                 <ul class="list-unstyled mb-0">
                                     {% for item in order.order_items.all %}
@@ -85,11 +93,31 @@
     </div>
 
     <!-- Pagination -->
-    <div class="d-flex justify-content-center align-items-center gap-3 mt-3">
-        <button id="prevPage" class="btn btn-outline-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Previous</button>
-        <span id="pageInfo" class="text-muted" style="font-size: 0.9rem;"></span>
-        <button id="nextPage" class="btn btn-outline-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Next</button>
-    </div>
+   <div class="pagination-wrapper mt-4">
+          <nav>
+            <ul class="pagination justify-content-center">
+              {% if order_details.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ order_details.previous_page_number }}" style="font-size: 0.85rem;">
+                  <i class="bi bi-chevron-left"></i>
+                </a>
+              </li>
+              {% endif %}
+              {% for i in order_details.paginator.page_range %}
+              <li class="page-item{% if order_details.number == i %} active{% endif %}">
+                <a class="page-link" href="?page={{ i }}" style="font-size: 0.85rem;">{{ i }}</a>
+              </li>
+              {% endfor %}
+              {% if order_details.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ order_details.next_page_number }}" style="font-size: 0.85rem;">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
 </div>
 
 <style>
@@ -145,26 +173,64 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Search functionality
         const searchInput = document.getElementById('searchInput');
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('.order-row');
-            
-            rows.forEach(row => {
+        const statusFilter = document.getElementById('statusFilter');
+        const sortStatusBtn = document.getElementById('sortStatusBtn');
+        let isSortAscending = true;
+
+        function filterAndSortOrders() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const statusTerm = statusFilter.value.toLowerCase();
+            const rows = Array.from(document.querySelectorAll('.order-row'));
+
+            // Filter rows
+            let filteredRows = rows.filter(row => {
                 const text = row.textContent.toLowerCase();
-                if (text.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+                const status = row.getAttribute('data-status').toLowerCase();
+                const matchesSearch = searchTerm ? text.includes(searchTerm) : true;
+                const matchesStatus = statusTerm ? status === statusTerm : true;
+                return matchesSearch && matchesStatus;
             });
+
+            // Sort rows by status
+            filteredRows.sort((a, b) => {
+                const statusA = a.getAttribute('data-status').toLowerCase();
+                const statusB = b.getAttribute('data-status').toLowerCase();
+                return isSortAscending ? statusA.localeCompare(statusB) : statusB.localeCompare(statusA);
+            });
+
+            // Update table display
+            rows.forEach(row => row.style.display = 'none');
+            filteredRows.forEach(row => row.style.display = '');
+
+            // Update serial numbers
+            filteredRows.forEach((row, index) => {
+                row.querySelector('td:first-child').textContent = index + 1;
+            });
+        }
+
+        // Search input event
+        searchInput.addEventListener('input', filterAndSortOrders);
+
+        // Status filter event
+        statusFilter.addEventListener('change', filterAndSortOrders);
+
+        // Sort status button
+        sortStatusBtn.addEventListener('click', () => {
+            isSortAscending = !isSortAscending;
+            sortStatusBtn.textContent = `Sort Status (${isSortAscending ? 'Asc' : 'Desc'})`;
+            filterAndSortOrders();
         });
 
-        // Clear search
+        // Clear search and filters
         document.getElementById('clearSearch').addEventListener('click', function() {
             searchInput.value = '';
+            statusFilter.value = '';
+            isSortAscending = true;
+            sortStatusBtn.textContent = 'Sort Status (Asc)';
             const rows = document.querySelectorAll('.order-row');
-            rows.forEach(row => {
+            rows.forEach((row, index) => {
                 row.style.display = '';
+                row.querySelector('td:first-child').textContent = index + 1;
             });
         });
 

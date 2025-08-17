@@ -21,6 +21,9 @@
   <!-- Google Fonts for better typography -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
+  <!-- Toastr CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
   <!-- Custom CSS -->
   <style>
     body {
@@ -189,9 +192,13 @@
                   <i class="bi bi-person-circle me-2"></i>Hi {{ request.user.first_name }}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                  <li><a class="dropdown-item" href="{% url 'user_profile' %}">My Account</a></li>
-                  <li><a class="dropdown-item" href="{% url 'user_order' %}">My Orders</a></li>
-                  <li><a class="dropdown-item" href="{% url 'user_wishlist' %}">My Wishlist</a></li>
+                  <li><a class="dropdown-item" href="{% url 'user_profile' %}">Profile</a></li>
+                  <li><a class="dropdown-item" href="{% url 'user_address' %}">Address</a></li>
+                  <li><a class="dropdown-item" href="{% url 'user_order' %}">Orders</a></li>
+                  <li><a class="dropdown-item" href="{% url 'user_cart' %}">Cart</a></li>
+                  <li><a class="dropdown-item" href="{% url 'user_wishlist' %}">Wishlist</a></li>
+                  <li><a class="dropdown-item" href="{% url 'user_wallet' %}">Wallet</a></li>
+                  <li><a class="dropdown-item" href="{% url 'user_cust_care' %}">Customer Care</a></li>
                   <li><hr class="dropdown-divider"></li>
                   <li><a class="dropdown-item text-danger" href="{% url 'logout_user' %}">Logout</a></li>
                 </ul>

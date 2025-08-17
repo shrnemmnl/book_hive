@@ -95,11 +95,31 @@
     </div>
 
     <!-- Pagination -->
-    <div class="d-flex justify-content-center align-items-center gap-3 mt-3">
-        <button id="prevPage" class="btn btn-outline-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Previous</button>
-        <span id="pageInfo" class="text-muted" style="font-size: 0.9rem;"></span>
-        <button id="nextPage" class="btn btn-outline-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Next</button>
-    </div>
+    <div class="pagination-wrapper mt-4">
+          <nav>
+            <ul class="pagination justify-content-center">
+              {% if books.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ books.previous_page_number }}" style="font-size: 0.85rem;">
+                  <i class="bi bi-chevron-left"></i>
+                </a>
+              </li>
+              {% endif %}
+              {% for i in books.paginator.page_range %}
+              <li class="page-item{% if books.number == i %} active{% endif %}">
+                <a class="page-link" href="?page={{ i }}" style="font-size: 0.85rem;">{{ i }}</a>
+              </li>
+              {% endfor %}
+              {% if books.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ books.next_page_number }}" style="font-size: 0.85rem;">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
 </div>
 
 {% for book in books %}

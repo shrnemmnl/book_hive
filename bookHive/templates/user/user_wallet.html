@@ -15,7 +15,7 @@
             <div class="row align-items-center">
               <div class="col-md-6">
                 <h5 class="card-title">Wallet Balance</h5>
-                <h2 class="text-primary mb-0"></h2>
+                <h2 class="text-primary mb-0">₹ {{wallet_amount}}</h2>
               </div>
               <!-- <div class="col-md-6 text-md-end mt-3 mt-md-0">
                 <button class="btn btn-primary">Add Money</button>
@@ -24,8 +24,8 @@
           </div>
         </div>
 
-        <h5 class="mb-3">Transaction History</h5>
-        <div class="table-responsive">
+        {% comment %} <h5 class="mb-3">Transaction History</h5> {% endcomment %}
+        {% comment %} <div class="table-responsive">
           <table class="table">
             <thead>
               <tr>
@@ -37,38 +37,33 @@
               </tr>
             </thead>
             <tbody>
+              {% if user_wallet %}
               <tr>
-                <td>May 8, 2025</td>
-                <td>Added to wallet</td>
-                <td><span class="badge bg-success">Credit</span></td>
-                <td>₹2,000</td>
-                <td><span class="text-success">Completed</span></td>
+                <td>{{ wallet.created_at|date:"M d, Y" }}</td>
+                <td>Added to Wallet</td>
+                <td>
+                  <span class="badge bg-success">Credit</span>
+                  {% comment %} {% if tx.is_credit %}
+                  <span class="badge bg-success">Credit</span>
+                  {% else %}
+                  <span class="badge bg-danger">Debit</span>
+                  {% endif %} {% endcomment %}
+                {% comment %} </td>
+                <td>₹{{ wallet.amount }}</td>
+                <td>
+                  <span class="text-success">Completed</span>
+                </td>
               </tr>
+              {% endif %} {% empty %}
               <tr>
-                <td>May 7, 2025</td>
-                <td>Payment for Order #ORD12345</td>
-                <td><span class="badge bg-danger">Debit</span></td>
-                <td>₹1,299</td>
-                <td><span class="text-success">Completed</span></td>
-              </tr>
-              <tr>
-                <td>May 2, 2025</td>
-                <td>Refund for Order #ORD12332</td>
-                <td><span class="badge bg-success">Credit</span></td>
-                <td>₹799</td>
-                <td><span class="text-success">Completed</span></td>
-              </tr>
-              <tr>
-                <td>April 28, 2025</td>
-                <td>Added to wallet</td>
-                <td><span class="badge bg-success">Credit</span></td>
-                <td>₹2,000</td>
-                <td><span class="text-success">Completed</span></td>
+                <td colspan="5" class="text-center text-muted">
+                  No transactions yet.
+                </td>
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
+        </div> {% endcomment %}
+      </div> 
     </div>
   </div>
 </div>

@@ -212,6 +212,33 @@
           {% endfor %}
         </div>
       </div>
+
+      <!-- Pagination -->
+   <div class="pagination-wrapper mt-4">
+          <nav>
+            <ul class="pagination justify-content-center">
+              {% if order_details.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ order_details.previous_page_number }}" style="font-size: 0.85rem;">
+                  <i class="bi bi-chevron-left"></i>
+                </a>
+              </li>
+              {% endif %}
+              {% for i in order_details.paginator.page_range %}
+              <li class="page-item{% if order_details.number == i %} active{% endif %}">
+                <a class="page-link" href="?page={{ i }}" style="font-size: 0.85rem;">{{ i }}</a>
+              </li>
+              {% endfor %}
+              {% if order_details.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ order_details.next_page_number }}" style="font-size: 0.85rem;">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
     </div>
   </div>
 </div>

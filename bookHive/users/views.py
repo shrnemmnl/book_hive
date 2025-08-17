@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist # Import your user model
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet # Import your user model
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache, cache_control
 from django.db.models import Min
@@ -109,6 +109,11 @@ def signup(request):
 
 
 def loading_page(request):
+
+    request.session['address_update'] = False
+    
+
+    
     # Start with all active books with min price in its variant
     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
     
@@ -195,6 +200,7 @@ def user_login(request):
     return render(request, 'login/login.html')
 
 
+
 @never_cache
 def logout_user(request):
 
@@ -202,12 +208,7 @@ def logout_user(request):
     return redirect('loading_page')
 
 
-# @never_cache
-# def home_page(request):
 
-#     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True)
-    
-#     return render(request, 'index.html', {'books': books})
 
 
 def product_details(request, id):
@@ -388,12 +389,13 @@ def user_profile(request):
 
 @login_required
 def user_address(request):
+
     address = Address.objects.filter(user=request.user, is_active=True).order_by('-is_default')
     logger.info(f"New address is created: {address}")
     has_error = False
+    
 
     if request.method == 'POST':
-
         
         address_type = request.POST.get('address_type', '').strip().capitalize()
         street = request.POST.get('street', '').strip().capitalize()
@@ -419,7 +421,8 @@ def user_address(request):
         else:
             default = True
 
-        if not has_error:       
+        if not has_error:
+
             Address.objects.create(
                 user=request.user,
                 address_type = address_type,
@@ -432,10 +435,17 @@ def user_address(request):
                 is_default = default,
             )
             messages.success(request, "Your new delivery address has been added successfully.")
-            return redirect('user_address')  # Or wherever you want to redirect
+
+            address_update = request.session['address_update']
+            print(address_update)
+            if address_update:
+                return redirect('checkoutpage')
+            else:
+                return redirect('user_address')  # Or wherever you want to redirect
+            
 
 
-    return render(request, 'user/user_address.html', {'addresss': address})
+    return render(request, 'user/user_address.html', {'addresss': address })
 
 
 
@@ -463,6 +473,8 @@ def default_address(request, address_id):
 
 @login_required
 def user_cart(request):
+
+    
     # Get or create the cart for the user
     cart, created = Cart.objects.get_or_create(user=request.user)
     # logger.debug(f"this is the cart created- {cart}")
@@ -491,6 +503,11 @@ def user_cart(request):
 def user_order(request):
 
     order_details = Order.objects.prefetch_related('order_items').filter(user=request.user).order_by('-created_at')
+    
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(order_details, 5)
+    order_details = paginator.get_page(page)
     
 
     return render(request, 'user/user_order.html', {'order_details': order_details})
@@ -611,7 +628,11 @@ def wishlist_toggle(request):
 @login_required
 def user_wallet(request):
 
-    return render(request, 'user/user_wallet.html')
+    
+    user_wallet = get_object_or_404(Wallet, user=request.user)
+    wallet_amount = user_wallet.wallet_amount
+
+    return render(request, 'user/user_wallet.html', {'wallet_amount': wallet_amount, 'user_wallet' : user_wallet})
 
 
 
@@ -632,10 +653,14 @@ def calculate_total(cart_items):
 @login_required
 @csrf_exempt  # Use only if you don't have {% csrf_token %}, otherwise REMOVE this
 def checkoutpage(request):
-    
+
+    request.session['address_update'] = True
+        
 
     if request.method == 'POST':
         
+        request.session['address_update'] = False
+
         address_id = request.POST.get('shippingAddress')
         payment_method = request.POST.get('payment_method')  # Use if needed later
 
@@ -1053,7 +1078,13 @@ def address_edit(request, address_id):
         if not has_error:       
             address.save()
             messages.success(request, "Your new delivery address has been Edited successfully.")
-            return redirect('user_address')  # Or wherever you want to redirect
+
+            address_update = request.session['address_update']
+            if address_update:
+                return redirect('checkoutpage')
+            else:
+                return redirect('user_address')
+            
 
     return render(request, 'user/address_edit.html', {'address': address})
 
@@ -1125,6 +1156,7 @@ def change_variant(request, book_id):
 
 @login_required
 def download_invoice(request, id):
+    
     order = Order.objects.get(id=id)
     order_items = order.order_items.all()  
     template_path = 'invoices/invoice_template.html'
