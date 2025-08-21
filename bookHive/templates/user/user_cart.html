@@ -116,7 +116,7 @@
 
     // 👇 Client-side limit
     if (action === "increase" && currentQty >= 5) {
-      alert("Maximum quantity is 5");
+      toastr.warning("Maximum quantity is 5"); // ✅ toast instead of alert
       return;
     }
 

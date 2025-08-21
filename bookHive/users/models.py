@@ -85,8 +85,14 @@ class CartItem(models.Model):
     product_variant = models.ForeignKey(Variant, on_delete=models.CASCADE, related_name='cart_items')
     quantity = models.PositiveIntegerField(default=1)
 
+    def get_discounted_price(self):
+        price = self.product_variant.price
+        if self.product_variant.product.is_offer:
+            price = round(price - (price * self.product_variant.product.discount_percentage / 100))
+        return price
+
     def get_total_price(self):
-        return self.quantity * self.product_variant.price
+        return self.get_discounted_price() * self.quantity
 
 
     def __str__(self):
@@ -155,11 +161,6 @@ class OrderItem(models.Model):
     status = models.CharField(max_length=50, default='pending')
     image_url = models.URLField(max_length=500, null=True, blank=True)
     shipping_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-
-    def save(self, *args, **kwargs):
-        if self.product_variant:
-            self.total_amount = self.quantity * self.product_variant.price
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Item #{self.id} - {self.product_variant}"

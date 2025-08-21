@@ -1,34 +1,98 @@
 {% load static %} {% include 'includes/header.html' %}
 
-<div class="container-fluid">
+<div class="container-fluid py-4">
   <div class="row">
     <!-- Include sidebar -->
     <div class="col-lg-3">{% include 'user/UserProfile/sidebar.html' %}</div>
 
     <!-- Main Content Column -->
-      <div class="col-lg-9 py-5">
-    {% for item in wishlist_items %}
-  <div class="card">
-    <div class="col-md-2">
-          <img
-            src="{{ item.variant.product.image.url }}"
-            alt="Book Cover"
-            class="img-fluid"
-          />
-    <div class="card-body">
-      <h5>{{ item.variant.product.book_title }}</h5>
-      <p>Variant: {{ item.variant.language   }} | ₹{{ item.variant.price }}</p>
-      <a href="{% url 'product_details' item.variant.product.id %}" class="btn btn-sm btn-primary">View Product</a>
+    <div class="col-lg-9 py-5">
+      <h2 class="mb-4">My Wishlist</h2>
+
+      <div id="wishlist-container">
+        <!-- 👈 add this wrapper -->
+        {% for item in wishlist_items %}
+        <div class="card mb-3 shadow-sm border-0" style="border-radius: 10px">
+          <div class="row g-0 align-items-center">
+            <div class="col-md-2 p-3">
+              <img
+                src="{{ item.variant.product.image.url }}"
+                alt="{{ item.variant.product.book_title }}"
+                class="img-fluid rounded"
+                style="max-height: 120px; object-fit: cover"
+              />
+            </div>
+            <div class="col-md-7">
+              <div class="card-body">
+                <h5 class="card-title mb-1">
+                  {{ item.variant.product.book_title }}
+                </h5>
+                <p class="card-text text-muted mb-2">
+                  Variant: {{ item.variant.language }} | ₹{{ item.variant.price }}
+                </p>
+                <a
+                  href="{% url 'product_details' item.variant.product.id %}"
+                  class="btn btn-sm btn-primary"
+                  >View Product</a
+                >
+              </div>
+            </div>
+            <div class="col-md-3 text-end p-3">
+              <button class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash" data-id="{{ item.id }}"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="card p-4 text-center border-0 shadow-sm">
+        <p class="text-muted mb-0">No items in your wishlist.</p>
+      </div>
+      {% endfor %}
     </div>
   </div>
-  {% empty %}
-          <div>
-            <p>No Wishlist found.</p>
-          </div>
-{% endfor %}
-
-
-  </div>
-  </div>
 </div>
+
+<!-- delete cart-items -->
+<script>
+  $(document).ready(function () {
+    $(".bi-trash").click(function () {
+      const itemId = $(this).data("id");
+
+      $.ajax({
+        url: "remove-from-wishlist",
+        type: "POST",
+        data: {
+          item_id: itemId,
+          csrfmiddlewaretoken: "{{ csrf_token }}",
+        },
+        success: function (response) {
+          if (response.success) {
+            // Remove item card from DOM
+            $(`.btn-outline-danger:has([data-id="${itemId}"])`)
+              .closest(".card")
+              .remove();
+
+            // 👇 if no more cards left, show empty message
+            if ($("#wishlist-container .card").length === 0) {
+              $("#wishlist-container").html(`
+                <div class="card p-4 text-center border-0 shadow-sm">
+                  <p class="text-muted mb-0">No items in your wishlist.</p>
+                </div>
+              `);
+            }
+          } else {
+            // error response from backend
+            toastr.error("Error: " + response.error);
+          }
+        },
+        error: function () {
+          toastr.error("Something went wrong!");
+        },
+      });
+    });
+  });
+</script>
+
 {% include 'includes/footer.html' %}

@@ -9,16 +9,24 @@ urlpatterns = [
     path('product_details/<int:id>/', views.product_details, name='product_details'),
     path('search_book', views.search_book, name='search_book'),
     path('user-profile',views.user_profile, name='user_profile'),
+    #user address
     path('user_address',views.user_address, name='user_address'),
     path('default-address/<int:address_id>/',views.default_address, name='default_address'),
+    path('address_delete/<int:address_id>/',views.address_delete, name='address_delete'),
+    # cart 
     path('user-cart',views.user_cart, name='user_cart'),
     path('add_to_cart/<int:id>/',views.add_to_cart, name='add_to_cart'),
     path('update-quantity', views.update_cart_quantity, name='update_cart_quantity'),
+    path('delete-cart-item',views.delete_cart_item, name='delete_cart_item'),
+    #user order
     path('user_order',views.user_order, name='user_order'),
     path('order/search',views.order_search, name='order_search'),
     path('cancel_order/<int:order_id>/',views.cancel_order, name='cancel_order'),
+    #user wishlist
     path('user-wishlist',views.user_wishlist, name='user_wishlist'),
+    path('remove-from-wishlist',views.remove_from_wishlist, name='remove_from_wishlist'),
     path('wishlist/toggle/', views.wishlist_toggle, name='wishlist-toggle'),
+
     path('user_wallet',views.user_wallet, name='user_wallet'),
     path('user_cust_care',views.user_cust_care, name='user_cust_care'),
     path('checkoutpage',views.checkoutpage, name='checkoutpage'),
@@ -27,9 +35,9 @@ urlpatterns = [
     path('otp_page_fg',views.otp_page_fg, name='otp_page_fg'),
     path('password_change',views.password_change, name='password_change'),
     path('address_edit/<int:address_id>/',views.address_edit, name='address_edit'),
-    path('address_delete/<int:address_id>/',views.address_delete, name='address_delete'),
+    
     path('change_variant/<int:book_id>/',views.change_variant, name='change_variant'),
-    path('delete-cart-item',views.delete_cart_item, name='delete_cart_item'),
+    
     path('order-confirm/<int:id>/',views.order_confirm, name='order_confirm'),
     path('download_invoice/<int:id>/',views.download_invoice, name='download_invoice'),     
 ]

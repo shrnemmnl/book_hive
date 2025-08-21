@@ -11,6 +11,9 @@ from django.core.paginator import Paginator
 from django.urls import reverse
 from django.shortcuts import  get_object_or_404
 from datetime import datetime, timezone
+from django.db.models import F
+
+
 
 
 # Create your views here.
@@ -474,7 +477,7 @@ def admin_order_details(request, order_id):
         
         new_status = request.POST.get('status')
         
-        valid_statuses = ['pending', 'shipped', 'delivered', 'cancelled', 'request to cancel']
+        valid_statuses = ['pending', 'shipped', 'delivered', 'cancelled', 'request to cancel','return approved','request to return']
         
         if new_status == 'delivered':
             order.is_paid = True
@@ -483,31 +486,36 @@ def admin_order_details(request, order_id):
         elif new_status not in valid_statuses:
             messages.error(request, "Invalid status selected.")
             return redirect('admin_order_details', order_id=order.id)
-            
-        # order_item = get_object_or_404(OrderItem, id=item_id, order=order)
-
         
+        #If item cancelled stock needs to update.    
+        elif new_status == 'cancelled':
+
+            #Stock need to update
+            for item in order.order_items.all():
+                variant = item.product_variant  
+                variant.available_quantity = F('available_quantity') + item.quantity  # db math - more safe and concorency proof
+                variant.save(update_fields=['available_quantity'])  #save only field available_quantity
             
         # Check if the item is being cancelled and the order is paid
-        elif new_status == 'cancelled' and order.is_paid:
+        elif new_status == 'return approved' and order.is_paid:
 
             user = order.user
 
             #Stock need to update
             for item in order.order_items.all():
                 variant = item.product_variant  
-                variant.available_quantity += item.quantity 
-                variant.save()
+                variant.available_quantity = F('available_quantity') + item.quantity  # db math - more safe and concorency proof
+                variant.save(update_fields=['available_quantity'])  #save only field available_quantity
                 
             
             
-            
+            #Wallet crediting
             refund_amount = order.net_amount  # Changed from net_amount to total_amount
             user_wallet, created = Wallet.objects.get_or_create(user=user)
             user_wallet.wallet_amount += refund_amount
             user_wallet.save()
 
-            order.status = 'cancelled'
+            order.status = 'return approved'
     
             order.save()
         

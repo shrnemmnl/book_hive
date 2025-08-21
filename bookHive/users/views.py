@@ -39,6 +39,8 @@ logger = logging.getLogger(__name__)  # Create logger
 
 def signup(request):
     
+    if request.user.is_authenticated:
+        return redirect('loading_page')  # already logged in → go to home
     errors = {}  # Dictionary to store field-specific errors
 
     if request.method == 'POST':
@@ -109,6 +111,8 @@ def signup(request):
 
 
 def loading_page(request):
+
+    
 
     request.session['address_update'] = False
     
@@ -184,6 +188,9 @@ def loading_page(request):
 @never_cache
 def user_login(request):
 
+    if request.user.is_authenticated:
+        return redirect('loading_page')
+
     if request.method == 'POST':
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '').strip()
@@ -192,10 +199,10 @@ def user_login(request):
 
         if user_check:
             login(request, user_check)
+            messages.success(request, "Login successful.")
             return redirect('loading_page')  # Redirect normal users to user home
         else:
-            messages.error(
-                request, "Invalid email or password. Please try again.")
+            messages.error(request, "Invalid email or password. Please try again.")
 
     return render(request, 'login/login.html')
 
@@ -243,7 +250,6 @@ def product_details(request, id):
             product=book,
             rating=int(rating),
             comments=comments,
-            status='pending',
         )
 
         messages.success(request, "Your Review is successfully submitted.")
@@ -482,20 +488,31 @@ def user_cart(request):
 
     # Get all active cart items linked to this cart
     cart_item = CartItem.objects.filter(cart=cart, product_variant__is_active=True)
+    subtotal = 0
+    for item in cart_item:
+        product = item.product_variant.product
+        price = item.product_variant.price  
+        if product.is_offer:
+            # apply discount on this product
+            price = round(
+                price - (price * product.discount_percentage / 100)
+            )
 
+        # store discounted price in the item (optional, for template)
+        item.discounted_price = price  
+
+        # add to subtotal (quantity * discounted price)
+        subtotal += price * item.quantity  
+        item.total_price = price * item.quantity
     count = cart_item.count()
-    print("count -",count)
-    logger.debug(f"This is the cart created- {cart_item}")
-    # Calculate subtotal
-    subtotal = sum(item.get_total_price() for item in cart_item)
 
-    # Render the cart page
+    logger.debug(f"This is the cart created- {cart_item}")
+
     return render(request, 'user/user_cart.html', {
         'cart_item': cart_item,
         'subtotal': subtotal,
-        'count' : count,
+        'count': count,
     })
-
 
 
 
@@ -509,7 +526,7 @@ def user_order(request):
     paginator = Paginator(order_details, 5)
     order_details = paginator.get_page(page)
     
-
+    
     return render(request, 'user/user_order.html', {'order_details': order_details})
 
 
@@ -580,7 +597,11 @@ def cancel_order(request, order_id):
         try:
 
             order = Order.objects.get(id=order_id)
-            order.status = 'request to cancel'
+            if order.status == 'delivered':
+                order.status = 'request to return'
+            else:
+                order.status = 'request to cancel'
+                
             order.is_active = False
             order.cancel_reason = reason
             order.save()
@@ -629,7 +650,7 @@ def wishlist_toggle(request):
 def user_wallet(request):
 
     
-    user_wallet = get_object_or_404(Wallet, user=request.user)
+    user_wallet, created = Wallet.objects.get_or_create(user=request.user)
     wallet_amount = user_wallet.wallet_amount
 
     return render(request, 'user/user_wallet.html', {'wallet_amount': wallet_amount, 'user_wallet' : user_wallet})
@@ -651,19 +672,16 @@ def calculate_total(cart_items):
 
 
 @login_required
-@csrf_exempt  # Use only if you don't have {% csrf_token %}, otherwise REMOVE this
 def checkoutpage(request):
 
     request.session['address_update'] = True
         
 
     if request.method == 'POST':
-        
         request.session['address_update'] = False
 
         address_id = request.POST.get('shippingAddress')
-        payment_method = request.POST.get('payment_method')  # Use if needed later
-
+        payment_method = request.POST.get('payment_method')  # maybe later
 
         # ✅ Check for valid address
         try:
@@ -684,62 +702,78 @@ def checkoutpage(request):
             messages.error(request, "Your cart is empty.")
             return redirect('cart')
 
-        # ✅ Calculate net amount
-        net_amount = calculate_total(cart_items)
+        # ✅ Calculate net amount (with discounts)
+        net_amount = sum(item.get_total_price() for item in cart_items)
 
         try:
-
             with transaction.atomic():
                 # ✅ Create Order
-                order = Order.objects.create(user=request.user,address=address,net_amount=net_amount,status='pending',order_date=timezone.now())
+                order = Order.objects.create(
+                    user=request.user,
+                    address=address,
+                    net_amount=net_amount,
+                    status='pending',
+                    order_date=timezone.now()
+                )
             
                 # ✅ Add items to order
                 for item in cart_items:
-                    OrderItem.objects.create(order=order,product_variant=item.product_variant,quantity=item.quantity,total_amount=item.product_variant.price * item.quantity,
-                    image_url=item.product_variant.image_url if hasattr(item.product_variant, 'image_url') else None)
+                    discounted_price = item.get_discounted_price()
+                    total_amount = item.get_total_price()
+                    logger.info(f'[Order]{discounted_price},{total_amount} kkkkkkkkkkk')
 
+                    OrderItem.objects.create(
+                        order=order,
+                        product_variant=item.product_variant,
+                        quantity=item.quantity,
+                        total_amount=total_amount,     
+                        image_url=item.product_variant.image_url if hasattr(item.product_variant, 'image_url') else None
+                    )
+
+                    # ✅ Update stock
                     item.product_variant.available_quantity -= item.quantity
                     item.product_variant.save()
-                    
 
-
-                # ✅Clear cart
+                # ✅ Clear cart
                 cart.delete()
 
-
-        # ✅ Redirect to order confirmation page with order_id
+            # ✅ Redirect to order confirmation page with order_id
             return redirect('order_confirm', id=order.id)
 
         except Exception as e:
-
             messages.error(request, f"Something went wrong: {str(e)}")
+
     
     # 🟡 Handle GET request
     try:
+    # ✅ Get latest cart for the user
         cart = Cart.objects.filter(user=request.user).latest('created_at')
         cart_items = cart.cart_items.all()
 
+        # ✅ Stock validation
         for item in cart_items:
             if item.quantity > item.product_variant.available_quantity:
-                messages.error(request, "Ordered quantity is more than stock.")
+                messages.error(request, f"Ordered quantity of {item.product_variant.product.book_title} is more than available stock.")
                 return redirect('user_cart')
-            
+
     except Cart.DoesNotExist:
-        
         cart_items = []
 
-    subtotal = calculate_total(cart_items)
-    shipping = 0  # You can make this dynamic later
+    subtotal = sum(item.get_total_price() for item in cart_items)
+    shipping = 0  
     total = subtotal + shipping
-
-    addresses = Address.objects.filter(user=request.user, is_active=True).order_by('-is_default')
+    addresses = Address.objects.filter(
+        user=request.user, is_active=True
+    ).order_by('-is_default')
 
     return render(request, 'user/checkoutpage.html', {
         'addresses': addresses,
         'cart_items': cart_items,
         'subtotal': subtotal,
-        'total': total
+        'shipping': shipping,
+        'total': total,
     })
+
 
 
 
@@ -785,11 +819,21 @@ def add_to_cart(request, id):
         try:
             cart_item = CartItem.objects.get(cart=cart, product_variant=variant)
 
+            new_quantity = cart_item.quantity + quantity
+            print('new_quantity -',new_quantity)
             # Check quantity limit
-            if cart_item.quantity + quantity > 5:
+            if new_quantity > 5:
                 return JsonResponse({
                     'success': False,
                     'message': 'You cannot add more than 5 of this item.'
+                })
+            print('stock - ',cart_item.product_variant.available_quantity)
+            print('quantity- ',quantity)
+
+            if cart_item.product_variant.available_quantity <= quantity:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Invalid quantity'
                 })
 
             cart_item.quantity += quantity
@@ -815,9 +859,8 @@ def add_to_cart(request, id):
 
 
 
-
+@login_required
 @require_POST
-@csrf_exempt  # NOT safe in production unless token is handled
 def update_cart_quantity(request):
     item_id = request.POST.get('item_id')
     action = request.POST.get('action')  # 'increase' or 'decrease'
@@ -825,6 +868,7 @@ def update_cart_quantity(request):
     try:
         cart_item = CartItem.objects.get(id=item_id)
 
+        # Update quantity
         if action == 'increase':
             cart_item.quantity += 1
         elif action == 'decrease' and cart_item.quantity > 1:
@@ -832,16 +876,10 @@ def update_cart_quantity(request):
         
         cart_item.save()
 
-        # Total price for this item
+        # ✅ Use model method for item total
         item_total_price = cart_item.get_total_price()
 
-        # Optional: Cart total for all items of this user
-        cart_total = CartItem.objects.filter(cart=cart_item.cart).annotate(total_price=ExpressionWrapper(
-            F('quantity') * F('product_variant__price'),output_field=DecimalField())).aggregate(
-                total=Sum('total_price'))['total']
-        
-        # logger.debug(f"This is the cart item cart - {cart_item.cart}")
-
+        # ✅ Subtotal (all items, discounts included)
         cart_items = CartItem.objects.filter(cart=cart_item.cart)
         subtotal = sum(item.get_total_price() for item in cart_items)
 
@@ -849,16 +887,18 @@ def update_cart_quantity(request):
             'success': True,
             'new_quantity': cart_item.quantity,
             'item_total_price': item_total_price,
-            'cart_total': cart_total,
-            'subtotal' : subtotal,
+            'subtotal': subtotal,
+            'cart_total': subtotal,
         })
 
     except CartItem.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Item not found'})
 
 
+
+
+@login_required
 @require_POST
-@csrf_exempt
 def delete_cart_item(request):
     item_id = request.POST.get('item_id')
 
@@ -884,10 +924,11 @@ def delete_cart_item(request):
 
 
 
-
 @never_cache
-@require_POST
 def verification(request):
+
+    if request.user.is_authenticated:
+        return redirect('loading_page')
 
     if request.method == 'POST':
 
@@ -956,6 +997,9 @@ def verification(request):
 @never_cache
 def fg_verification(request):
 
+    if request.user.is_authenticated:
+        return redirect('loading_page')
+
     if request.method == 'POST':
 
         email = request.POST.get('email', '').strip()
@@ -981,6 +1025,9 @@ def fg_verification(request):
 @never_cache
 def otp_page_fg(request):
 
+    if request.user.is_authenticated:
+        return redirect('loading_page')
+
     if request.method == 'POST':
 
         action = request.POST.get('action')
@@ -1005,7 +1052,6 @@ def otp_page_fg(request):
 
 
 @never_cache
-# @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def password_change(request):
 
     # 🚫 If password was changed, don't show this page again
@@ -1097,13 +1143,18 @@ def address_delete(request, address_id):
     status = Address.objects.get(id=address_id)
     status.is_active = not status.is_active
     status.save()
+
+    set_default_address = Address.objects.filter(user=request.user, is_active=True).first()
+    set_default_address.is_default = True
+    set_default_address.save()
+
     return redirect('user_address')
 
 
 
 
 
-@login_required
+
 def change_variant(request, book_id):
     try:
         book = get_object_or_404(Product, id=book_id, is_active=True)
@@ -1178,6 +1229,26 @@ def download_invoice(request, id):
     return response
 
 
+
+
+@login_required
+@require_POST
+def remove_from_wishlist(request):
+    item_id = request.POST.get('item_id')
+    print('item_id -', item_id)
+
+    #handling the wishlist item removal
+    try:
+        #wishlist item removal
+        wish_item = Wishlist.objects.get(id=item_id, user=request.user)
+        wish_item.delete()
+
+        return JsonResponse({
+            'success': True,
+        })
+
+    except Wishlist.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Item not found'}) 
 
 
 

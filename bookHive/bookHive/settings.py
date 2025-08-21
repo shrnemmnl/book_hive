@@ -101,6 +101,12 @@ DATABASES = {
 
 AUTH_USER_MODEL = 'users.CustomUser'
 
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # tell allauth there is no username
+ACCOUNT_USERNAME_REQUIRED = False         # don't require username at signup
+ACCOUNT_EMAIL_REQUIRED = True             # email is mandatory
+ACCOUNT_AUTHENTICATION_METHOD = "email"   # login with email
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -161,7 +167,7 @@ SITE_ID = 1
 SOCIALACCOUNT_QUERY_EMAIL = True
 
 
-LOGIN_REDIRECT_URL = 'home_page'
+LOGIN_REDIRECT_URL = 'loading_page'
 
 
 

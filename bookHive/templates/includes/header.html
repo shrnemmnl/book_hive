@@ -265,3 +265,38 @@
       </div>
     </nav>
   </header>
+
+
+
+   <!-- jQuery (needed for toastr) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Toastr JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <!-- Toast config & Django messages handler -->
+    <script>
+    toastr.options = {
+        "closeButton": true,
+        "progressBar": true,
+        "positionClass": "toast-bottom-center",
+        "timeOut": "3000"
+    };
+
+    {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == "error" or message.tags == "danger" %}
+                toastr.error("{{ message|escapejs }}");
+            {% elif message.tags == "success" %}
+                toastr.success("{{ message|escapejs }}");
+            {% elif message.tags == "warning" %}
+                toastr.warning("{{ message|escapejs }}");
+            {% else %}
+                toastr.info("{{ message|escapejs }}");
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</script>
+
+
+    {% block extra_js %}{% endblock %}

@@ -75,8 +75,12 @@
                                     <span class="badge bg-success text-dark" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Delivered</span>
                                 {% elif order.status == "request to cancel" %}
                                     <span class="badge bg-dark text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Request to Cancel</span>
+                                {% elif order.status == "request to return" %}
+                                    <span class="badge bg-dark text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Request to Cancel</span>
                                 {% elif order.status == "cancelled" %}
                                     <span class="badge bg-danger text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Cancelled</span>
+                                {% elif order.status == "return approved" %}
+                                    <span class="badge bg-primary text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Return Approved</span>
                                 {% else %}
                                     <span class="badge bg-secondary text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">{{ order.status|capfirst }}</span>
                                 {% endif %}
