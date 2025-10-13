@@ -22,7 +22,7 @@
     <!-- Book Cover and Variant Images -->
     <div class="col-md-4 mb-3">
       <!-- Main large image with zoom container -->
-      <div class="position-relative mb-3 rounded shadow-sm" id="imageContainer" style="overflow: hidden;">
+      <div class="position-relative mb-3 rounded shadow-lg" id="imageContainer" style="overflow: hidden;">
         <img id="mainImage" src="{{ default_variant.productimage_set.first.image1.url }}" alt="{{ book.book_title }}"
           class="img-fluid rounded w-100" style="max-height: 400px; object-fit: contain;">
         <div id="zoomedImage"
@@ -31,7 +31,7 @@
       </div>
 
       <!-- Thumbnail images row -->
-      <div class="row g-2">
+      <div class="row g-2 rounded shadow-lg">
         {% with images=default_variant.productimage_set.first %}
         <div class="col-4">
           <img src="{{ images.image1.url }}" alt="Image 1" class="img-fluid rounded thumbnail border"
@@ -68,9 +68,9 @@
       </div>
 
       <!-- Variant Selector -->
-      <div class="mb-3">
+      <div class="mb-3 rounded">
         <label for="variantSelector" class="form-label fw-bold" style="font-size: 0.9rem;">Select Language:</label>
-        <select id="variantSelector" class="form-select" onchange="changeVariant(this.value)" style="font-size: 0.85rem;">
+        <select id="variantSelector" class="form-select shadow-lg" onchange="changeVariant(this.value)" style="font-size: 0.85rem;">
           {% for variant in variants %}
           <option value="{{ variant.id }}" {% if variant.id == default_variant.id %} selected {% endif %}>
             {{ variant.publisher }} Edition - {{ variant.language }}
@@ -104,9 +104,9 @@
         </p>
 
         {% if default_variant.available_quantity > 0 %}
-        <div class="input-group mb-3" style="max-width: 150px;">
+        <div class="input-group mb-3 shadow-lg" style="max-width: 150px;">
           <button class="btn btn-outline-secondary" type="button" id="decreaseQty" style="font-size: 0.85rem;">-</button>
-          <input type="number" id="quantity" class="form-control text-center" value="1" min="1" max="5" readonly style="font-size: 0.85rem;">
+          <input type="number" id="quantity" class="form-control text-center" value="1" min="1" max="{{ default_variant.available_quantity }}" readonly style="font-size: 0.85rem;">
           <button class="btn btn-outline-secondary" type="button" id="increaseQty" style="font-size: 0.85rem;">+</button>
         </div>
         {% endif %}
@@ -114,15 +114,15 @@
 
       <!-- Action Buttons -->
       <div class="d-flex gap-2 mb-3">
-        <button class="btn btn-primary flex-fill add-to-cart-btn {% if is_sold_out %}disabled{% endif %}" 
+        <button class="btn btn-primary flex-fill add-to-cart-btn shadow-lg {% if is_sold_out %}disabled{% endif %}" 
                 data-book-id="{{ book.id }}" type="button" style="font-size: 0.9rem;">
           Add to Cart
         </button>
-        <button class="btn btn-danger flex-fill buy-now-btn {% if is_sold_out %}disabled{% endif %}" 
+        <button class="btn btn-danger flex-fill buy-now-btn shadow-lg {% if is_sold_out %}disabled{% endif %}" 
                 data-book-id="{{ book.id }}" type="button" style="font-size: 0.9rem;">
           Buy Now
         </button>
-        <button class="btn btn-outline-secondary wishlist-toggle-btn" data-product-id="{{ book.id }}" style="font-size: 0.9rem;">
+        <button class="btn btn-outline-secondary wishlist-toggle-btn shadow-lg" data-product-id="{{ book.id }}" style="font-size: 0.9rem;">
           {% if variant in user_wishlist_variants %}
           💔
           {% else %}
@@ -135,47 +135,47 @@
       <div id="wishlist-toast" class="alert d-none mt-2" role="alert" style="font-size: 0.85rem;"></div>
 
       <!-- Book Specifications -->
-      <div class="row g-3 mt-2">
-        <div class="col-md-6">
-          <table class="table table-borderless" style="font-size: 0.85rem;">
+      <div class="row g-3 mt-2" >
+        <div class="col-md-5 mx-auto rounded shadow-lg" >
+          <table class="table table-borderless" style="font-size: 0.85rem;" >
             <tbody>
               <tr>
-                <th scope="row" class="fw-bold">Book:</th>
-                <td>{{ book.book_title }}</td>
+                <th scope="row" class="fw-bold" style="background-color: rgba(255, 239, 218, 1);">Book:</th>
+                <td style="background-color: rgba(255, 239, 218, 1);">{{ book.book_title }}</td>
               </tr>
               <tr>
-                <th scope="row" class="fw-bold">Author:</th>
-                <td><a href="#" class="text-primary">{{ book.author }}</a></td>
+                <th scope="row" class="fw-bold" style="background-color: rgba(255, 239, 218, 1);">Author:</th>
+                <td style="background-color: rgba(255, 239, 218, 1);"><a href="#" class="text-primary">{{ book.author }}</a></td>
               </tr>
               <tr>
-                <th scope="row" class="fw-bold">Category:</th>
-                <td>{{ book.genre.genre_name }}</td>
+                <th scope="row" class="fw-bold" style="background-color: rgba(255, 239, 218, 1);">Category:</th>
+                <td style="background-color: rgba(255, 239, 218, 1);">{{ book.genre.genre_name }}</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6 mx-auto rounded shadow-lg">
           <table class="table table-borderless" style="font-size: 0.85rem;">
             <tbody>
               <tr>
-                <th scope="row" class="fw-bold">Publishing Date:</th>
-                <td id="variantDate">{{ default_variant.published_date }}</td>
+                <th scope="row" class="fw-bold" style="background-color: rgba(255, 239, 218, 1);">Publishing Date:</th>
+                <td id="variantDate" style="background-color: rgba(255, 239, 218, 1);">{{ default_variant.published_date }}</td>
               </tr>
               <tr>
-                <th scope="row" class="fw-bold">Publisher:</th>
-                <td id="variantPublisherLink"><a href="#" class="text-primary">{{ default_variant.publisher }}</a></td>
+                <th scope="row" class="fw-bold" style="background-color: rgba(255, 239, 218, 1);">Publisher:</th>
+                <td id="variantPublisherLink" style="background-color: rgba(255, 239, 218, 1);"><a href="#" class="text-primary">{{ default_variant.publisher }}</a></td>
               </tr>
               <tr>
-                <th scope="row" class="fw-bold">Edition:</th>
-                <td>1</td>
+                <th scope="row" class="fw-bold" style="background-color: rgba(255, 239, 218, 1);">Edition:</th>
+                <td style="background-color: rgba(255, 239, 218, 1);">1</td>
               </tr>
               <tr>
-                <th scope="row" class="fw-bold">Number of pages:</th>
-                <td id="variantPages">{{ default_variant.page }}</td>
+                <th scope="row" class="fw-bold" style="background-color: rgba(255, 239, 218, 1);">Number of pages:</th>
+                <td id="variantPages" style="background-color: rgba(255, 239, 218, 1);">{{ default_variant.page }}</td>
               </tr>
               <tr>
-                <th scope="row" class="fw-bold">Language:</th>
-                <td id="variantLanguage">{{ default_variant.language }}</td>
+                <th scope="row" class="fw-bold" style="background-color: rgba(255, 239, 218, 1);">Language:</th>
+                <td id="variantLanguage" style="background-color: rgba(255, 239, 218, 1);">{{ default_variant.language }}</td>
               </tr>
             </tbody>
           </table>
@@ -186,7 +186,7 @@
 
   <!-- Book Summary -->
   <div class="row mt-4">
-    <div class="col-12">
+    <div class="col-12 rounded shadow-lg">
       <h2 class="fw-bold border-bottom pb-2 mb-3" style="font-size: 1.5rem;">BOOK SUMMARY</h2>
       <p class="lead" style="font-size: 0.9rem;">{{ book.description }}</p>
     </div>
@@ -205,7 +205,7 @@
   <div class="row g-3">
     <!-- Overall Rating Panel (Left Side) -->
     <div class="col-md-4 mb-3">
-      <div class="card shadow-sm">
+      <div class="card rounded shadow-lg">
         <div class="card-body">
           <h3 class="card-title fw-bold" style="font-size: 1.25rem;">Overall Rating</h3>
           <div class="d-flex align-items-center mb-3">
@@ -241,7 +241,7 @@
       <!-- Individual Reviews -->
       {% for review in review_content %}
       {% if review.is_active %}
-      <div class="card mb-3 shadow-sm">
+      <div class="card mb-3 rounded shadow-lg">
         <div class="card-body">
           <div class="d-flex justify-content-between mb-2">
             <div class="text-warning">
@@ -265,14 +265,14 @@
     <h3 class="fw-bold mb-3" style="font-size: 1.25rem;">More from this Genre 📚</h3>
     <div class="related-books d-flex flex-wrap gap-3">
       {% for book in related_books %}
-      <div class="book-card bg-white rounded shadow-sm p-2" style="width: 180px;">
+      <div class="book-card bg-white rounded rounded shadow-lg p-2" style="width: 180px;">
         <a href="{% url 'product_details' book.id %}">
           <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid rounded" style="width: 100%; height: 200px; object-fit: cover;">
           <h4 class="fw-bold mt-2" style="font-size: 0.9rem;">{{ book.book_title }}</h4>
           <p class="text-muted" style="font-size: 0.8rem;">by {{ book.author }}</p>
           {% if book.discount_percentage > 0 %}
-          <span class="text-danger" style="font-size: 0.8rem;">{{ book.discount_percentage }}% OFF</span>
-          {% endif %}
+          <span class="text-danger no-underline" style="font-size: 0.8rem;">{{ book.discount_percentage }}% OFF</span>
+          {% endif %} 
         </a>
       </div>
       {% empty %}
@@ -340,34 +340,51 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function setupQtyButtons() {
-  const qtyInput = document.getElementById('quantity');
-  const increaseBtn = document.getElementById('increaseQty');
-  const decreaseBtn = document.getElementById('decreaseQty');
-  const maxQty = 5;
-  const minQty = 1;
+    const qtyInput = document.getElementById('quantity');
+    const increaseBtn = document.getElementById('increaseQty');
+    const decreaseBtn = document.getElementById('decreaseQty');
+    const maxQty = parseInt('{{ default_variant.available_quantity|default:0 }}');
+    const minQty = 1;
 
-  if (!qtyInput || !increaseBtn || !decreaseBtn) return;
+    if (!qtyInput || !increaseBtn || !decreaseBtn) return;
 
-  function updateButtons() {
-    const value = parseInt(qtyInput.value);
-    increaseBtn.disabled = value >= maxQty;
-    decreaseBtn.disabled = value <= minQty;
+    // ✅ First, remove any previous event listeners to avoid duplication
+    increaseBtn.replaceWith(increaseBtn.cloneNode(true));
+    decreaseBtn.replaceWith(decreaseBtn.cloneNode(true));
+
+    // Re-grab the new clean buttons
+    const newIncreaseBtn = document.getElementById('increaseQty');
+    const newDecreaseBtn = document.getElementById('decreaseQty');
+
+    function updateButtons() {
+      const value = parseInt(qtyInput.value);
+      newIncreaseBtn.disabled = value >= maxQty;
+      newDecreaseBtn.disabled = value <= minQty;
+    }
+
+    newIncreaseBtn.addEventListener('click', () => {
+      let value = parseInt(qtyInput.value);
+      if (value < maxQty) {
+        qtyInput.value = value + 1;
+      }
+      updateButtons();
+    });
+
+    newDecreaseBtn.addEventListener('click', () => {
+      let value = parseInt(qtyInput.value);
+      if (value > minQty) {
+        qtyInput.value = value - 1;
+      }
+      updateButtons();
+    });
+
+    updateButtons();
   }
 
-  increaseBtn.addEventListener('click', () => {
-    let value = parseInt(qtyInput.value);
-    if (value < maxQty) qtyInput.value = value + 1;
-    updateButtons();
+  // ✅ Make sure it runs only once
+  document.addEventListener('DOMContentLoaded', () => {
+    setupQtyButtons();
   });
-
-  decreaseBtn.addEventListener('click', () => {
-    let value = parseInt(qtyInput.value);
-    if (value > minQty) qtyInput.value = value - 1;
-    updateButtons();
-  });
-
-  updateButtons();
-}
 
 function changeVariant(variantId) {
   const bookId = document.getElementById('book-id')?.value;

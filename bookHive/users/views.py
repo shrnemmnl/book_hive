@@ -1,8 +1,10 @@
 
 from datetime import datetime, timedelta
+import random
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
+from django.conf import settings
 from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet # Import your user model
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache, cache_control
@@ -30,10 +32,14 @@ import os
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 from django.http import HttpResponse
+import razorpay
+
+
 
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 logger = logging.getLogger(__name__)  # Create logger
+
 
 
 
@@ -114,8 +120,9 @@ def loading_page(request):
 
     
 
-    request.session['address_update'] = False
     
+    request.session['address_update']= False
+    # logger.debug(f"address flag : {address_update}")
 
     
     # Start with all active books with min price in its variant
@@ -188,6 +195,10 @@ def loading_page(request):
 @never_cache
 def user_login(request):
 
+    errors = {}
+    found_error=False
+    user_check=None
+
     if request.user.is_authenticated:
         return redirect('loading_page')
 
@@ -195,16 +206,40 @@ def user_login(request):
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '').strip()
 
-        user_check = authenticate(email=email, password=password)
+        email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
 
+        # Backend validation
+        if not email:
+            errors['email'] = "Email is required."
+            print("email")
+            found_error=True
+            
+
+        if not re.match(email_regex, email):
+            errors['email'] = "Please enter a valid email address."
+            print("email1")
+            found_error=True
+            
+        
+        if not password:
+            errors['password'] = "Password is required."
+            print("password")
+            found_error=True
+            
+
+        if not found_error:       
+            user_check = authenticate(email=email, password=password)
+            
+            
+        
         if user_check:
             login(request, user_check)
             messages.success(request, "Login successful.")
             return redirect('loading_page')  # Redirect normal users to user home
         else:
-            messages.error(request, "Invalid email or password. Please try again.")
+            messages.error(request, "Authentication Error, Check the Credentials and Try Again.")
 
-    return render(request, 'login/login.html')
+    return render(request, 'login/login.html', {'errors':errors})
 
 
 
@@ -219,12 +254,11 @@ def logout_user(request):
 
 
 def product_details(request, id):
-    
-
     # Fetch the product
     try:
         book = get_object_or_404(Product, id=id, is_active=True)
     except:
+        messages.error(request, "Book is no longer available.")
         return redirect('loading_page')
 
     # get the possible variants from the respective product
@@ -262,8 +296,7 @@ def product_details(request, id):
     default_variant = variants.first()
 
     if book.is_offer and default_variant:
-        discount_price = round(
-            default_variant.price - (default_variant.price * book.discount_percentage / 100))
+        discount_price = round(default_variant.price - (default_variant.price * book.discount_percentage / 100))
     else:
         discount_price = default_variant.price
 
@@ -315,14 +348,74 @@ def get_variant_details(request, variant_id):
 
 
 def search_book(request):
-    # print('hellooooooooooooooooooooooooooooooo')
-    if request.method == 'GET':
-        search_string = request.GET.get('search_string')
-        print(search_string)
-        books = Product.objects.annotate(min_price=Min('variant__price')).filter(
-            is_active=True, book_title__istartswith=search_string)
+    
+    search_string = request.GET.get('search_string', "").strip()
+    # Start with all active books with min price in its variant
+    books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True, book_title__istartswith=search_string)
+    
+    # Get filter parameters from request
+    sort = request.GET.get('sort', 'featured')
+    genres = request.GET.get('genres', 'allgenres')
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
 
-        return render(request, 'index.html', {'books': books})
+    # Apply genre filter if specified
+    if genres and genres != 'allgenres':
+        genre_list = genres.split(',')
+        books = books.filter(genre__genre_name__in=genre_list)
+
+    # Apply price range filter
+    if min_price:
+        try:
+            min_price = float(min_price)
+            books = books.filter(min_price__gte=min_price)
+        except (ValueError, TypeError):
+            pass
+
+    if max_price:
+        try:
+            max_price = float(max_price)
+            books = books.filter(min_price__lte=max_price)
+        except (ValueError, TypeError):
+            pass
+
+    # Apply sorting
+    if sort == 'lh':
+        books = books.order_by('min_price')
+    elif sort == 'hl':
+        books = books.order_by('-min_price')
+    elif sort == 'az':
+        books = books.order_by('book_title')
+    elif sort == 'za':
+        books = books.order_by('-book_title')
+    # else: featured, do nothing
+
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(books, 6)
+    books = paginator.get_page(page)
+
+    # Get all available genres
+    categories = Product.objects.values_list('genre__genre_name', flat=True).distinct()
+
+    # Get price range
+    price_range = {
+        'min': Product.objects.aggregate(min_price=Min('variant__price'))['min_price'] or 0,
+        'max': Product.objects.aggregate(max_price=Max('variant__price'))['max_price'] or 2000
+    }
+
+    context = {
+        'books': books,
+        'categories': categories,
+        'price_range': price_range,
+        'selected_sort': sort,
+        'selected_genres': genres.split(',') if genres and genres != 'allgenres' else [],
+        'selected_min_price': min_price if min_price else price_range['min'],
+        'selected_max_price': max_price if max_price else price_range['max']
+    }
+
+    return render(request, 'index.html', context)
+    
 
 
 
@@ -330,6 +423,7 @@ def search_book(request):
 def user_profile(request):
     has_error = False
     user = request.user
+    error = {}
 
     if request.method == 'POST':
 
@@ -344,7 +438,7 @@ def user_profile(request):
 
         # print(email)
         # Validation patterns
-
+            name_pattern = r"^[A-Za-z\s'-]+$"
             email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
             mobile_pattern = r'^\d{10}$'  # Assuming 10-digit mobile number
 
@@ -354,11 +448,30 @@ def user_profile(request):
         #         request, "Oops! That doesn't look like a valid email. Try again?")
         #     has_error = True
 
-        # Validate mobile number
-            if not re.match(mobile_pattern, phone_no):
-                messages.error(request, "Please enter a valid mobile number.")
+       
+
+            if not re.match(name_pattern, fname):
+                error['fname_pattern']="First name can only contain letters, spaces, hyphens, and apostrophes."
                 has_error = True
 
+            if not re.match(name_pattern, lname):
+                error['lname_pattern']="last name can only contain letters, spaces, hyphens, and apostrophes."
+                has_error = True
+
+            if len(fname) < 2 or len(fname) > 50:
+                error['pattern_length']="First name must be between 2 and 50 characters long."
+                has_error = True
+        
+            if not re.match(mobile_pattern, phone_no):
+                error['mobile_pattern']="Please enter a valid mobile number."
+                has_error = True
+            
+            if profile_pic:
+                valid_extensions = ["jpg", "jpeg", "png"]
+                if not profile_pic.name.split(".")[-1].lower() in valid_extensions:
+                    error['valid_image']="Please enter a valid image extension in jpg, jpeg and png formats."
+                    
+                    has_error = True
 
             if not has_error:
                 user = CustomUser.objects.get(id=request.user.id)
@@ -373,28 +486,142 @@ def user_profile(request):
                 user.save()
                 messages.success(request, "Profile details updated successfully.")
                 return redirect('user_profile')
-        elif form_type == 'password_change':
-            current_pwd = request.POST.get('current_password')
-            new_pwd = request.POST.get('new_password')
-            confirm_pwd = request.POST.get('confirm_password')
+        
 
-            if not user.check_password(current_pwd):
-                messages.error(request, "Current password is incorrect.")
-            elif new_pwd != confirm_pwd:
+
+    return render(request, 'user/user_profile.html', {'error': error} )
+
+
+@login_required
+def profile_password_change(request):
+
+    errors={}
+    user = request.user
+
+    if request.method == 'POST':
+
+        form_type = request.POST.get('form_type')
+        
+
+        if form_type == 'password_change':
+
+            current_password = request.POST.get('current_password', "").strip()
+            new_password = request.POST.get('new_password', "").strip()
+            confirm_password = request.POST.get('confirm_password', "").strip()
+
+            if not current_password:
+                errors['current_password'] = "Current password is required."
+
+            if not new_password:
+                errors['new_password'] = "New password is required."
+
+            if not confirm_password:
+                errors['confirm_password'] = "Please confirm your new password."
+
+             # At least one uppercase, one lowercase, one digit, one special char, and 8+ length
+            strong_password_regex = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,}$'
+
+            if not user.check_password(current_password):
+                errors['current_password']= "Current password is incorrect."
+            
+            elif new_password and not re.match(strong_password_regex, new_password):
+                errors['new_password'] = (
+                "Password must be at least 8 characters long, contain an uppercase letter, "
+                "a lowercase letter, a number, and a special character."
+            )
+                
+            elif current_password == new_password:
+                messages.error(request, "New password matches to current password, Try new.")
+           
+            elif new_password != confirm_password:
                 messages.error(request, "New passwords do not match.")
             else:
-                user.set_password(new_pwd)
+                user.set_password(new_password)
                 user.save()
                 messages.success(request, "Password changed successfully!")
                 update_session_auth_hash(request, user)  # Keep user logged in
+                return redirect('user_profile')
+
+    return render(request, 'user/profile_password_change.html',{'errors':errors} )
 
 
-    return render(request, 'user/user_profile.html' )
+@login_required
+def profile_email_change(request):
+    """
+    Handle email verification with OTP
+    """
+    error={}
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'send_otp':
+            email = request.POST.get('email', '').strip()
 
+            #To check if the entered is email is already exist
+            if not CustomUser.objects.filter(email=email).exists():
+            
+                # Store OTP in session
+                otp_generate_pls = generate_otp()
+                request.session['otp'] = otp_generate_pls
+                request.session['email'] = email
+                request.session['otp_verified'] = False
+
+                try:
+                    send_verification_email(email, otp_generate_pls, 'profile_email_change')
+
+
+                    messages.success(request, 'OTP sent successfully! Check your email.')
+                    return render(request, 'user/profile_email_change.html', {
+                        'otp_sent': True,
+                        'email': email,
+                    })
+
+                except Exception as e:
+                    messages.error(request, f'Failed to send email. Please try again.')
+                    return render(request, 'user/profile_email_change.html')
+                
+            else:
+                error['duplicate_email']='Entered email is already existed. Enter a new valid email.'
+                return render(request, 'user/profile_email_change.html', {"error":error})
+
+        
+        elif action == 'verify_otp':
+            entered_otp = request.POST.get('otp', '').strip()
+            stored_otp = request.session.get('otp')
+            email = request.session.get('email')
+            
+            if not stored_otp or not email:
+                messages.error(request, 'Session expired. Please request a new OTP.')
+                return redirect('profile_email_change')
+            
+            if entered_otp == stored_otp:
+
+                CustomUser.objects.filter(id=request.user.id).update(email=email)
+                # OTP verified successfully
+                request.session['otp_verified'] = True
+                messages.success(request, 'Email id changed Successfully.')
+                
+                # Clear OTP from session
+                del request.session['otp']
+
+                
+                # Redirect to next page (e.g., dashboard, profile, etc.)
+                return redirect('user_profile')  # Change this to your desired redirect
+            else:
+                messages.error(request, 'Invalid OTP. Please try again.')
+                return render(request, 'user/profile_email_change.html', {
+                    'otp_sent': True,
+                    'email': email
+                })
+    
+    
+    return render(request, 'user/profile_email_change.html' )
 
 
 @login_required
 def user_address(request):
+
+    print(request.session.get('address_update'))
 
     address = Address.objects.filter(user=request.user, is_active=True).order_by('-is_default')
     logger.info(f"New address is created: {address}")
@@ -457,14 +684,15 @@ def user_address(request):
 
 @login_required
 def default_address(request, address_id):
+    print(request.user,address_id)
     try:
         with transaction.atomic():
             
-            current_default = Address.objects.get(is_default=True, user=request.user)
-            current_default.is_default = False
-            current_default.save()
+            # Reset all default flags for this user
+            Address.objects.filter(user=request.user, is_default=True).update(is_default=False)
 
-            d_address = Address.objects.get(id=address_id, user=request.user)
+            # Set the selected one as default
+            d_address = get_object_or_404(Address, id=address_id, user=request.user)
             d_address.is_default = True
             d_address.save()
 
@@ -472,6 +700,7 @@ def default_address(request, address_id):
     except Address.DoesNotExist:
         messages.error(request, "Address not found or already unset.")
     except Exception as e:
+        print(e)
         messages.error(request, f"Something went wrong: {str(e)}")
 
     return redirect('user_address')
@@ -673,109 +902,102 @@ def calculate_total(cart_items):
 
 @login_required
 def checkoutpage(request):
-
     request.session['address_update'] = True
-        
 
-    if request.method == 'POST':
-        request.session['address_update'] = False
+    if request.method == "POST":
+        address_id = request.POST.get("shippingAddress")
+        payment_method = request.POST.get("payment_method")
 
-        address_id = request.POST.get('shippingAddress')
-        payment_method = request.POST.get('payment_method')  # maybe later
-
-        # ✅ Check for valid address
+        # Validate address
         try:
             address = Address.objects.get(id=address_id, user=request.user)
         except Address.DoesNotExist:
             messages.error(request, "Invalid address selected.")
-            return redirect('checkoutpage')
+            return redirect("checkoutpage")
 
-        # ✅ Get latest active cart
+        # Validate cart
         try:
-            cart = Cart.objects.filter(user=request.user).latest('created_at')
+            cart = Cart.objects.filter(user=request.user).latest("created_at")
         except Cart.DoesNotExist:
             messages.error(request, "No cart found.")
-            return redirect('cart')
+            return redirect("cart")
 
         cart_items = cart.cart_items.all()
         if not cart_items.exists():
             messages.error(request, "Your cart is empty.")
-            return redirect('cart')
+            return redirect("cart")
 
-        # ✅ Calculate net amount (with discounts)
+        # Calculate net amount
         net_amount = sum(item.get_total_price() for item in cart_items)
+        amount_paise = int(net_amount * 100)
 
-        try:
-            with transaction.atomic():
-                # ✅ Create Order
-                order = Order.objects.create(
-                    user=request.user,
-                    address=address,
-                    net_amount=net_amount,
-                    status='pending',
-                    order_date=timezone.now()
-                )
-            
-                # ✅ Add items to order
-                for item in cart_items:
-                    discounted_price = item.get_discounted_price()
-                    total_amount = item.get_total_price()
-                    logger.info(f'[Order]{discounted_price},{total_amount} kkkkkkkkkkk')
+        # Create local order first
+        order = Order.objects.create(
+            user=request.user,
+            address=address,
+            net_amount=net_amount,
+            status="pending",
+            order_date=timezone.now(),
+        )
 
-                    OrderItem.objects.create(
-                        order=order,
-                        product_variant=item.product_variant,
-                        quantity=item.quantity,
-                        total_amount=total_amount,     
-                        image_url=item.product_variant.image_url if hasattr(item.product_variant, 'image_url') else None
-                    )
-
-                    # ✅ Update stock
-                    item.product_variant.available_quantity -= item.quantity
-                    item.product_variant.save()
-
-                # ✅ Clear cart
-                cart.delete()
-
-            # ✅ Redirect to order confirmation page with order_id
-            return redirect('order_confirm', id=order.id)
-
-        except Exception as e:
-            messages.error(request, f"Something went wrong: {str(e)}")
-
-    
-    # 🟡 Handle GET request
-    try:
-    # ✅ Get latest cart for the user
-        cart = Cart.objects.filter(user=request.user).latest('created_at')
-        cart_items = cart.cart_items.all()
-
-        # ✅ Stock validation
         for item in cart_items:
-            if item.quantity > item.product_variant.available_quantity:
-                messages.error(request, f"Ordered quantity of {item.product_variant.product.book_title} is more than available stock.")
-                return redirect('user_cart')
+            OrderItem.objects.create(
+                order=order,
+                product_variant=item.product_variant,
+                quantity=item.quantity,
+                total_amount=item.get_total_price(),
+            )
+            item.product_variant.available_quantity -= item.quantity
+            item.product_variant.save()
 
+        cart.delete()
+
+        # If Razorpay selected
+        if payment_method == "razorpay":
+            client = razorpay.Client(
+                auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+            )
+
+            razorpay_order = client.order.create({
+                "amount": amount_paise,
+                "currency": "INR",
+                "payment_capture": "1"
+            })
+
+            order.razorpay_order_id = razorpay_order["id"]
+            order.save()
+
+            context = {
+                "order": order,
+                "razorpay_key": settings.RAZORPAY_KEY_ID,
+                "amount": net_amount,
+                "razorpay_order_id": razorpay_order["id"],
+                "callback_url": "/payment/callback/"
+            }
+
+            return render(request, "user/razorpay_payment.html", context)
+
+        # If COD / other methods
+        return redirect("order_confirm", id=order.id)
+
+    # GET request → show checkout page
+    try:
+        cart = Cart.objects.filter(user=request.user).latest("created_at")
+        cart_items = cart.cart_items.all()
     except Cart.DoesNotExist:
         cart_items = []
 
     subtotal = sum(item.get_total_price() for item in cart_items)
-    shipping = 0  
-    total = subtotal + shipping
-    addresses = Address.objects.filter(
-        user=request.user, is_active=True
-    ).order_by('-is_default')
+    total = subtotal
+    addresses = Address.objects.filter(user=request.user, is_active=True)
 
-    return render(request, 'user/checkoutpage.html', {
-        'addresses': addresses,
-        'cart_items': cart_items,
-        'subtotal': subtotal,
-        'shipping': shipping,
-        'total': total,
+    return render(request, "user/checkoutpage.html", {
+        "addresses": addresses,
+        "cart_items": cart_items,
+        "subtotal": subtotal,
+        "shipping": 0,
+        "total": total,
     })
-
-
-
 
 
 @login_required
@@ -900,6 +1122,7 @@ def update_cart_quantity(request):
 @login_required
 @require_POST
 def delete_cart_item(request):
+
     item_id = request.POST.get('item_id')
 
     try:
@@ -1053,6 +1276,7 @@ def otp_page_fg(request):
 
 @never_cache
 def password_change(request):
+    errors={}
 
     # 🚫 If password was changed, don't show this page again
     if request.session.get('password_changed'):
@@ -1074,23 +1298,41 @@ def password_change(request):
 
         new_password = request.POST.get('new_password', '')
         confirm_password = request.POST.get('confirm_password', '')
+
+        if not new_password:
+            errors['new_password'] = "New password is required."
+
+        if not confirm_password:
+            errors['confirm_password'] = "Please confirm your new password."
+        
+        # At least one uppercase, one lowercase, one digit, one special char, and 8+ length
+        strong_password_regex = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,}$'
+
+        if new_password and not re.match(strong_password_regex, new_password):
+            errors['new_password'] = (
+                "Password must be at least 8 characters long, contain an uppercase letter, "
+                "a lowercase letter, a number, and a special character."
+            )
+        
+        if new_password and confirm_password and new_password != confirm_password:
+            errors['confirm_password'] = "Passwords do not match."
         
 
         # Check if passwords match
-        if new_password != confirm_password:
-
-            messages.error(
-                request, "Passwords do not match. Please re-enter the password again.")
-        else:
+        if not errors:
             user.password = make_password(new_password)  # new password saved.
             user.save()
             
             messages.success(request, "Your Password changed sucessfully.")
 
             request.session['password_changed'] = True  # 🧠 Set the flag
-            return redirect('login') 
-
-    return render(request, 'login/password_change.html')
+            return redirect('login')
+            
+        else:
+            
+            errors['confirm_password'] = "Passwords do not match. Please re-enter the password again."
+                
+    return render(request, 'login/password_change.html', {'errors':errors})
 
 
 
@@ -1141,12 +1383,19 @@ def address_edit(request, address_id):
 def address_delete(request, address_id):
 
     status = Address.objects.get(id=address_id)
-    status.is_active = not status.is_active
+    status.is_active = False
     status.save()
 
-    set_default_address = Address.objects.filter(user=request.user, is_active=True).first()
-    set_default_address.is_default = True
-    set_default_address.save()
+    active_addresses = Address.objects.filter(user=request.user, is_active=True)
+
+    if not active_addresses.exists():
+        return redirect('user_address')
+    else:
+        # ✅ ensure there's exactly one default (reset all, then set one)
+        Address.objects.filter(user=request.user).update(is_default=False)
+        set_default_address = active_addresses.first()
+        set_default_address.is_default = True
+        set_default_address.save()
 
     return redirect('user_address')
 
@@ -1249,6 +1498,41 @@ def remove_from_wishlist(request):
 
     except Wishlist.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Item not found'}) 
+    
+
+
+@login_required
+@require_POST
+def create_razorpay_order(request):
+
+    if request.method == "POST":
+        amount = 50000  # amount in paise (50000 = ₹500.00)
+
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+        payment_order = client.order.create({
+            "amount": amount,
+            "currency": "INR",
+            "payment_capture": "1"   # auto capture
+        })
+
+        return JsonResponse({
+            "order_id": payment_order["id"],
+            "key": settings.RAZORPAY_KEY_ID,
+            "amount": amount,
+        })
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
+    
+
+
+
+@login_required
+@require_POST
+def verify_razorpay_payment(request):
+    pass
+
+
+
 
 
 

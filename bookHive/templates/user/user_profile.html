@@ -6,55 +6,71 @@
     <div class="col-lg-3">{% include 'user/UserProfile/sidebar.html' %}</div>
 
     <!-- Main Content Column -->
-    <div class="col-lg-9 py-5">
-      <div>
-        {% include "message.html" %}
-      </div>
-      <div class="content-wrapper bg-white p-4 shadow-sm rounded">
+    <div class="col-lg-9 py-3">
+      {% comment %}
+      <div>{% include "message.html" %}</div>
+      {% endcomment %}
+      <div class="content-wrapper bg-white p-4 shadow-lg rounded">
         <h4 class="mb-4">Personal Information</h4>
         <form method="POST" enctype="multipart/form-data">
           {% csrf_token %}
-          <input type="hidden" name="form_type" value="personal_info">
+          <input type="hidden" name="form_type" value="personal_info" />
           <div class="row mb-3">
             <div class="mb-3 mb-md-0">
               <div class="user-avatar mb-4 text-center">
                 <label for="profilePicInput" style="cursor: pointer">
-                  <img src="{{ user.profile_pic.url }}" alt="User Avatar"
-                  class="rounded-circle shadow" width="100" height="100"
-                  style="object-fit: cover;" />
+                  <img
+                    src="{{ user.profile_pic.url }}"
+                    alt="User Avatar"
+                    class="rounded-circle shadow"
+                    width="100"
+                    height="100"
+                    style="object-fit: cover"
+                  />
                 </label>
                 <input
                   type="file"
                   id="profilePicInput"
                   name="profile_pic"
                   accept="image/*"
-                  class="d-none"
+                  class="d-none {% if error.valid_image %}is-invalid{% endif %}"
                 />
                 <p class="small text-muted mt-1">Click image to change</p>
+                {% if error.valid_image %}
+                <div class="text-danger mt-1">{{ error.valid_image }}</div>
+                {% endif %}
               </div>
-
-              
             </div>
-            
           </div>
-<div class="mb-3">
-              <label for="firstName" class="form-label">First Name</label>
-              <input
-                type="text"
-                class="form-control"
-                id="firstName"
-                name="firstName"
-                value="{{user.first_name}}"
-              />
-              <label for="lastName" class="form-label">Last Name</label>
-              <input
-                type="text"
-                class="form-control"
-                id="lastName"
-                name="lastName"
-                value="{{user.last_name}}"
-              />
-            </div>
+          <div class="mb-3">
+            <label for="firstName" class="form-label">First Name</label>
+            <input
+              type="text"
+              class="form-control {% if error.fname_pattern or error.pattern_length %}is-invalid{% endif %}"
+              id="firstName"
+              name="firstName"
+              value="{{user.first_name}}"
+            />
+
+            {% if error.fname_pattern %}
+            <div class="text-danger mt-1">{{ error.fname_pattern }}</div>
+            {% elif error.pattern_length %}
+            <div class="text-danger mt-1">{{ error.pattern_length }}</div>
+            {% endif %}
+            <label for="lastName" class="form-label">Last Name</label>
+            <input
+              type="text"
+              class="form-control {% if error.empty_lname or error.lname_pattern %}is-invalid{% endif %}"
+              id="lastName"
+              name="lastName"
+              value="{{user.last_name}}"
+            />
+
+            {% if error.lname_pattern %}
+            <div class="text-danger mt-1">{{ error.lname_pattern }}</div>
+
+            {% endif %}
+          </div>
           <div class="mb-3">
             <label for="email" class="form-label">Email Address</label>
             <input
@@ -71,52 +87,27 @@
             <label for="phone" class="form-label">Phone Number</label>
             <input
               type="tel"
-              class="form-control"
+              class="form-control {% if error.mobile_pattern %}is-invalid{% endif %}"
               id="phone"
               name="phone_no"
               value="{{user.phone_no}}"
             />
+            {% if error.mobile_pattern %}
+            <div class="text-danger mt-1">{{ error.mobile_pattern }}</div>
+            {% endif %}
           </div>
-          <div>
-            <button type="submit" class="btn btn-success">Save Changes</button>
-          </div>
-        </form>
-        
-        <form method="post">
-          {% csrf_token %}
-          <input type="hidden" name="form_type" value="password_change">
-          <hr class="my-4" />
-
-          <h4 class="mb-4">Change Password</h4>
-          <div class="mb-3">
-            <label for="currentPassword" class="form-label"
-              >Current Password</label
-            >
-            <input type="password" class="form-control" id="currentPassword" name="current_password"/>
-          </div>
-
-          <div class="row mb-3">
-            <div class="col-md-6 mb-3 mb-md-0">
-              <label for="newPassword" class="form-label">New Password</label>
-              <input type="password" class="form-control" id="newPassword" name="new_password"/>
+          <div class="d-flex gap-3 align-items-center">
+            <div>
+              <button type="submit" class="btn btn-success">
+                Save Changes
+              </button>
             </div>
-            <div class="col-md-6">
-              <label for="confirmPassword" class="form-label" 
-                >Confirm New Password</label
-              >
-              <input
-                type="password"
-                class="form-control"
-                id="confirmPassword"
-                name="confirm_password"
-              />
+            <div>
+              <a href="{% url 'profile_email_change' %}">Change Email</a>
             </div>
-          </div>
-
-          <div class="mt-4">
-            <button type="submit" class="btn btn-primary">
-              Change Password
-            </button>
+            <div>
+              <a href="{% url 'profile_password_change' %}">Change Password</a>
+            </div>
           </div>
         </form>
       </div>

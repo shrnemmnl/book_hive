@@ -1,174 +1,339 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Hive - A Literary Hive</title>
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="format-detection" content="telephone=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="author" content="Book Hive Team">
-  <meta name="keywords" content="books, literature, bookstore, online books">
-  <meta name="description" content="Book Hive - Your ultimate destination for books of all genres.">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book Hive - A Literary Hive</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="author" content="Book Hive Team" />
+    <meta
+      name="keywords"
+      content="books, literature, bookstore, online books"
+    />
+    <meta
+      name="description"
+      content="Book Hive - Your ultimate destination for books of all genres."
+    />
 
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  
-  <!-- Bootstrap Icons -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-  
-  <!-- Google Fonts for better typography -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
 
-  <!-- Toastr CSS -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <!-- Bootstrap Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    />
 
-  <!-- Custom CSS -->
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      font-size: 1rem;
-      line-height: 1.6;
-      color: #333;
-    }
-    .header-area {
-      background-color: #ffffff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .top-header {
-      background-color: #2c3e50;
-      font-size: 0.9rem;
-    }
-    .top-header a, .top-header span {
-      color: #e2e8f0;
-      transition: color 0.2s;
-    }
-    .top-header a:hover {
-      color: #f1c40f;
-    }
-    .logo h1 {
-      font-size: 2.5rem; /* Increased logo size for prominence */
-      font-weight: 700;
-      color: #2c3e50;
-    }
-    .logo h1 span {
-      color: #e67e22;
-    }
-    .search-bar .form-control {
-      border-radius: 20px 0 0 20px;
-      font-size: 1rem;
-      padding: 0.5rem 1rem;
-    }
-    .search-bar .btn {
-      border-radius: 0 20px 20px 0;
-      background-color: #e67e22;
-      border-color: #e67e22;
-    }
-    .search-bar .btn:hover {
-      background-color: #d35400;
-      border-color: #d35400;
-    }
-    .header-action i {
-      font-size: 1.5rem;
-      color: #2c3e50;
-      transition: color 0.2s;
-    }
-    .header-action a:hover i {
-      color: #e67e22;
-    }
-    .header-action .dropdown-toggle, .header-action a {
-      color: #2c3e50;
-      text-decoration: none;
-      font-size: 1rem;
-      display: flex;
-      align-items: center;
-    }
-    .header-action .dropdown-toggle:hover, .header-action a:hover {
-      color: #e67e22;
-    }
-    .navbar {
-      background-color: #f8f9fa;
-    }
-    .navbar-nav .nav-link {
-      font-size: 1rem;
-      font-weight: 500;
-      color: #2c3e50;
-      padding: 0.5rem 1rem;
-      transition: color 0.2s;
-    }
-    .navbar-nav .nav-link:hover {
-      color: #e67e22;
-    }
-    .dropdown-menu {
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .dropdown-item {
-      font-size: 0.95rem;
-    }
-    .dropdown-item:hover {
-      background-color: #e67e22;
-      color: #fff;
-    }
-    @media (max-width: 767px) {
-      .search-bar {
-        margin-top: 1rem;
+    <!-- Google Fonts for better typography -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Toastr CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"
+    />
+
+    <!-- Custom CSS -->
+    <style>
+      body {
+        background-color: #ffe5cfff;
+        font-family: "Roboto", sans-serif;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: #333;
       }
-      .navbar-nav .nav-link {
-        font-size: 1.1rem;
-        padding: 0.75rem 1rem;
+      .header-area {
+        background-color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .top-header {
+        background-color: #2c3e50;
+        font-size: 0.9rem;
+      }
+      .top-header a,
+      .top-header span {
+        color: #e2e8f0;
+        transition: color 0.2s;
+      }
+      .top-header a:hover {
+        color: #f1c40f;
       }
       .logo h1 {
-        font-size: 2rem; /* Slightly smaller on mobile for balance */
+        font-size: 2.5rem; /* Increased logo size for prominence */
+        font-weight: 700;
+        color: #2c3e50;
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5),
+          -3px -3px 6px rgba(255, 255, 255, 0.6);
       }
-    }
-  </style>
+      .logo h1 span {
+        color: #e67e22;
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5),
+          -3px -3px 6px rgba(255, 255, 255, 0.6);
+      }
+      .search-bar .form-control {
+        border-radius: 20px 0 0 20px;
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        border: 0.04rem solid #e67e22;
+      }
+      .search-bar .btn {
+        border-radius: 10px 20px 20px 10px;
+        background-color: #e67e22;
+        border-color: #e67e22;
+      }
+      .search-bar .btn:hover {
+        background-color: #d35400;
+        border-color: #d35400;
+      }
+      .header-action i {
+        font-size: 1.5rem;
+        color: #2c3e50;
+        transition: color 0.2s;
+      }
+      .header-action a:hover i {
+        color: #e67e22;
+      }
+      .header-action .dropdown-toggle,
+      .header-action a {
+        color: #2c3e50;
+        text-decoration: none;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+      }
+      .header-action .dropdown-toggle:hover,
+      .header-action a:hover {
+        color: #e67e22;
+      }
+      .navbar {
+        background-color: #f8f9fa;
+      }
+      .navbar-nav .nav-link {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #2c3e50;
+        padding: 0.5rem 1rem;
+        transition: color 0.2s;
+      }
+      .navbar-nav .nav-link:hover {
+        color: #e67e22;
+      }
+      .dropdown-menu {
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 9999 !important; /* go beyond normal stack */
+        position: absolute !important;
+      }
+      .dropdown-item {
+        font-size: 0.95rem;
+      }
+      .dropdown-item:hover {
+        background-color: #e67e22 !important;
+        color: #ffffffec !important;
+      }
+      .no-underline {
+        text-decoration: none !important;
+      }
 
-  {% block address_css %}
-  {% endblock address_css %}
-</head>
-<body>
-  <!-- HEADER COMPONENT -->
-  <header class="header-area">
-    <!-- Top Header -->
-    <div class="top-header py-2">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-md-6 d-flex gap-3">
-            <span><i class="bi bi-telephone-fill me-1"></i> +1 234 567 8901</span>
-            <span><i class="bi bi-envelope-fill me-1"></i> info@bookhive.com</span>
-          </div>
-          <div class="col-md-6 d-flex justify-content-end gap-3">
-            <div class="social-links">
-              <a href="#" class="me-2"><i class="bi bi-facebook"></i></a>
-              <a href="#" class="me-2"><i class="bi bi-twitter"></i></a>
-              <a href="#" class="me-2"><i class="bi bi-instagram"></i></a>
+      .dropdown {
+        border-radius: 20px 20px 20px 20px;
+      }
+      @media (max-width: 767px) {
+        .search-bar {
+          margin-top: 1rem;
+        }
+        .navbar-nav .nav-link {
+          font-size: 1.1rem;
+          padding: 0.75rem 1rem;
+        }
+        .logo h1 {
+          font-size: 2rem; /* Slightly smaller on mobile for balance */
+        }
+      }
+    </style>
+
+    {% block address_css %} {% endblock address_css %}
+  </head>
+  <body style="background-color: #ffe5cfff">
+    <!-- HEADER COMPONENT -->
+    <header class="header-area">
+      <!-- Top Header -->
+      <div class="top-header py-2">
+        <div class="container">
+          <div class="row align-items-center">
+            <div class="col-md-6 d-flex gap-3">
+              <span
+                ><i class="bi bi-telephone-fill me-1"></i> +1 234 567 8901</span
+              >
+              <span
+                ><i class="bi bi-envelope-fill me-1"></i>
+                info@bookhive.com</span
+              >
+            </div>
+            <div class="col-md-6 d-flex justify-content-end gap-3">
+              <div class="social-links">
+                <a href="#" class="me-2"><i class="bi bi-facebook"></i></a>
+                <a href="#" class="me-2"><i class="bi bi-twitter"></i></a>
+                <a href="#" class="me-2"><i class="bi bi-instagram"></i></a>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Main Header -->
-    <div class="main-header py-3">
-      <div class="container">
-        <div class="row align-items-center">
-          <!-- Logo -->
-          <div class="col-md-3 col-6">
-            <div class="logo">
-              <a href="{% url 'loading_page' %}" class="text-decoration-none">
-                <h1 class="mb-0">Book<span>Hive</span></h1>
-              </a>
+      <!-- Main Header -->
+      <div class="main-header py-3">
+        <div class="container">
+          <div class="row align-items-center">
+            <!-- Logo -->
+            <div class="col-md-3 col-6">
+              <div class="logo">
+                <a href="{% url 'loading_page' %}" class="text-decoration-none">
+                  <h1 class="mb-0">Book<span>Hive</span></h1>
+                </a>
+              </div>
             </div>
-          </div>
 
-          <!-- Search Bar -->
-          <div class="col-md-6 d-none d-md-block">
-            <div class="search-bar">
+            <!-- Search Bar -->
+            <div class="col-md-6 d-none d-md-block">
+              <div class="search-bar shadow-lg rounded">
+                <form
+                  role="search"
+                  method="get"
+                  action="{% url 'search_book' %}"
+                >
+                  <div class="input-group">
+                    <input
+                      type="search"
+                      class="form-control"
+                      placeholder="Search for Books..."
+                      name="search_string"
+                      id="searchInput"
+                    />
+                    <button class="btn btn-primary" type="submit">
+                      <i class="bi bi-search"></i>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="col-md-3 col-6">
+              <div class="header-action d-flex justify-content-end gap-3">
+                <a
+                  {%
+                  if
+                  request.user.is_authenticated
+                  %}
+                  href="{% url 'user_wishlist' %}"
+                  {%
+                  else
+                  %}
+                  href="{% url 'login' %}"
+                  {%
+                  endif
+                  %}
+                  class="text-decoration-none"
+                >
+                  <i class="bi bi-heart"></i>
+                </a>
+                <a
+                  {%
+                  if
+                  request.user.is_authenticated
+                  %}
+                  href="{% url 'user_cart' %}"
+                  {%
+                  else
+                  %}
+                  href="{% url 'login' %}"
+                  {%
+                  endif
+                  %}
+                  class="text-decoration-none"
+                >
+                  <i class="bi bi-cart3"></i>
+                </a>
+                {% if request.user.is_authenticated %}
+                <div class="dropdown shadow-lg mx-2">
+                  <a class="dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-person-circle me-2"></i>Hi {{request.user.first_name }}</a>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="{% url 'user_profile' %}"
+                        >Profile</a
+                      >
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="{% url 'user_address' %}"
+                        >Address</a
+                      >
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="{% url 'user_order' %}"
+                        >Orders</a
+                      >
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="{% url 'user_cart' %}"
+                        >Cart</a
+                      >
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="{% url 'user_wishlist' %}"
+                        >Wishlist</a
+                      >
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="{% url 'user_wallet' %}"
+                        >Wallet</a
+                      >
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="{% url 'user_cust_care' %}"
+                        >Customer Care</a
+                      >
+                    </li>
+                    <li><hr class="dropdown-divider" /></li>
+                    <li>
+                      <a
+                        class="dropdown-item text-danger"
+                        href="{% url 'logout_user' %}"
+                        >Logout</a
+                      >
+                    </li>
+                  </ul>
+                </div>
+                {% else %}
+                <a href="{% url 'login' %}" class="text-decoration-none"
+                  ><i class="bi bi-box-arrow-in-right me-1"></i> Login</a
+                >
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Mobile Search -->
+            <div class="col-12 d-md-none mt-3">
               <form role="search" method="get" action="{% url 'search_book' %}">
                 <div class="input-group">
-                  <input type="search" class="form-control" placeholder="Search for Books..." name="search_string" id="searchInput">
+                  <input
+                    type="search"
+                    class="form-control"
+                    placeholder="Search for books..."
+                    name="search_string"
+                  />
                   <button class="btn btn-primary" type="submit">
                     <i class="bi bi-search"></i>
                   </button>
@@ -176,99 +341,72 @@
               </form>
             </div>
           </div>
+        </div>
+      </div>
 
-          <!-- Action Buttons -->
-          <div class="col-md-3 col-6">
-            <div class="header-action d-flex justify-content-end gap-3">
-              <a {% if request.user.is_authenticated %} href="{% url 'user_wishlist' %}" {% else %} href="{% url 'login' %}" {% endif %} class="text-decoration-none">
-                <i class="bi bi-heart"></i>
-              </a>
-              <a {% if request.user.is_authenticated %} href="{% url 'user_cart' %}" {% else %} href="{% url 'login' %}" {% endif %} class="text-decoration-none">
-                <i class="bi bi-cart3"></i>
-              </a>
-              {% if request.user.is_authenticated %}
-              <div class="dropdown">
-                <a class="dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="bi bi-person-circle me-2"></i>Hi {{ request.user.first_name }}
+      <!-- Navigation -->
+      <nav class="navbar navbar-expand-lg">
+        <div class="container">
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarMain"
+            aria-controls="navbarMain"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav mx-auto">
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'loading_page' %}">Home</a>
+              </li>
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                >
+                  Categories
                 </a>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li><a class="dropdown-item" href="{% url 'user_profile' %}">Profile</a></li>
-                  <li><a class="dropdown-item" href="{% url 'user_address' %}">Address</a></li>
-                  <li><a class="dropdown-item" href="{% url 'user_order' %}">Orders</a></li>
-                  <li><a class="dropdown-item" href="{% url 'user_cart' %}">Cart</a></li>
-                  <li><a class="dropdown-item" href="{% url 'user_wishlist' %}">Wishlist</a></li>
-                  <li><a class="dropdown-item" href="{% url 'user_wallet' %}">Wallet</a></li>
-                  <li><a class="dropdown-item" href="{% url 'user_cust_care' %}">Customer Care</a></li>
-                  <li><hr class="dropdown-divider"></li>
-                  <li><a class="dropdown-item text-danger" href="{% url 'logout_user' %}">Logout</a></li>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#">Fiction</a></li>
+                  <li><a class="dropdown-item" href="#">Non-Fiction</a></li>
+                  <li>
+                    <a class="dropdown-item" href="#">Children's Books</a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="#">Science & Technology</a>
+                  </li>
+                  <li><a class="dropdown-item" href="#">History</a></li>
                 </ul>
-              </div>
-              {% else %}
-              <a href="{% url 'login' %}" class="text-decoration-none"><i class="bi bi-box-arrow-in-right me-1"></i> Login</a>
-              {% endif %}
-            </div>
-          </div>
-
-          <!-- Mobile Search -->
-          <div class="col-12 d-md-none mt-3">
-            <form role="search" method="get" action="{% url 'search_book' %}">
-              <div class="input-group">
-                <input type="search" class="form-control" placeholder="Search for books..." name="search_string">
-                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
-              </div>
-            </form>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#library">Library</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#popular-books">Popular</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#special-offer">Offers</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#latest-blog">Articles</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#contact">Contact</a>
+              </li>
+            </ul>
           </div>
         </div>
-      </div>
-    </div>
+      </nav>
+    </header>
 
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg">
-      <div class="container">
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarMain">
-          <ul class="navbar-nav mx-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'loading_page' %}">Home</a>
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Categories
-              </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#">Fiction</a></li>
-                <li><a class="dropdown-item" href="#">Non-Fiction</a></li>
-                <li><a class="dropdown-item" href="#">Children's Books</a></li>
-                <li><a class="dropdown-item" href="#">Science & Technology</a></li>
-                <li><a class="dropdown-item" href="#">History</a></li>
-              </ul>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#library">Library</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#popular-books">Popular</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#special-offer">Offers</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#latest-blog">Articles</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#contact">Contact</a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
-  </header>
-
-
-
-   <!-- jQuery (needed for toastr) -->
+    <!-- jQuery (needed for toastr) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <!-- Toastr JS -->
@@ -276,27 +414,28 @@
 
     <!-- Toast config & Django messages handler -->
     <script>
-    toastr.options = {
-        "closeButton": true,
-        "progressBar": true,
-        "positionClass": "toast-bottom-center",
-        "timeOut": "3000"
-    };
+      toastr.options = {
+          "closeButton": true,
+          "progressBar": true,
+          "positionClass": "toast-bottom-center",
+          "timeOut": "3000"
+      };
 
-    {% if messages %}
-        {% for message in messages %}
-            {% if message.tags == "error" or message.tags == "danger" %}
-                toastr.error("{{ message|escapejs }}");
-            {% elif message.tags == "success" %}
-                toastr.success("{{ message|escapejs }}");
-            {% elif message.tags == "warning" %}
-                toastr.warning("{{ message|escapejs }}");
-            {% else %}
-                toastr.info("{{ message|escapejs }}");
-            {% endif %}
-        {% endfor %}
-    {% endif %}
-</script>
-
+      {% if messages %}
+          {% for message in messages %}
+              {% if message.tags == "error" or message.tags == "danger" %}
+                  toastr.error("{{ message|escapejs }}");
+              {% elif message.tags == "success" %}
+                  toastr.success("{{ message|escapejs }}");
+              {% elif message.tags == "warning" %}
+                  toastr.warning("{{ message|escapejs }}");
+              {% else %}
+                  toastr.info("{{ message|escapejs }}");
+              {% endif %}
+          {% endfor %}
+      {% endif %}
+    </script>
 
     {% block extra_js %}{% endblock %}
+  </body>
+</html>

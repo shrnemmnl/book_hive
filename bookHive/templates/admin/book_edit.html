@@ -12,7 +12,7 @@
 <div class="container-fluid mt-4">
     <div class="card shadow-sm p-4" style="max-width: 600px; margin: 0 auto; border-radius: 10px; border: none;">
         <div class="card-body" style="padding: 0;">
-            <form method="POST" action="{% url 'book_edit_post' %}" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="book_id" value="{{ book.id }}">
 
@@ -31,7 +31,10 @@
                 <!-- Book Image -->
                 <div class="mb-3">
                     <label for="bookImage" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Image</label>
-                    <input type="file" class="form-control" id="bookImage" name="image" multiple style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="bookImage" name="image" multiple style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {% if error.valid_image %}
+            <div class="text-danger mt-1">{{ error.valid_image }}</div>
+            {% endif %}
                 </div>
 
                 <!-- Genre -->
@@ -60,7 +63,10 @@
 
                 <div class="mb-3">
                     <label for="discount" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Discount (%)</label>
-                    <input type="number" class="form-control" id="discount" name="discount_percentage" value="{{ book.discount_percentage }}" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <input type="number" class="form-control{% if error.discount_percentage %}is-invalid{% endif %}" id="discount" name="discount_percentage" value="{{ book.discount_percentage }}" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {% if error.discount_percentage %}
+            <div class="text-danger mt-1">{{ error.discount_percentage }}</div>
+            {% endif %}
                 </div>
 
                 <!-- Book Description -->

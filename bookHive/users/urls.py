@@ -8,7 +8,10 @@ urlpatterns = [
     path('logout_user', views.logout_user, name='logout_user'),
     path('product_details/<int:id>/', views.product_details, name='product_details'),
     path('search_book', views.search_book, name='search_book'),
+    #user Profile
     path('user-profile',views.user_profile, name='user_profile'),
+    path('profile-password-change',views.profile_password_change, name='profile_password_change'),
+    path('profile-email-change',views.profile_email_change, name='profile_email_change'),
     #user address
     path('user_address',views.user_address, name='user_address'),
     path('default-address/<int:address_id>/',views.default_address, name='default_address'),
@@ -29,7 +32,7 @@ urlpatterns = [
 
     path('user_wallet',views.user_wallet, name='user_wallet'),
     path('user_cust_care',views.user_cust_care, name='user_cust_care'),
-    path('checkoutpage',views.checkoutpage, name='checkoutpage'),
+    
     path('verification',views.verification, name='verification'),
     path('fg_verification',views.fg_verification, name='fg_verification'),
     path('otp_page_fg',views.otp_page_fg, name='otp_page_fg'),
@@ -39,5 +42,12 @@ urlpatterns = [
     path('change_variant/<int:book_id>/',views.change_variant, name='change_variant'),
     
     path('order-confirm/<int:id>/',views.order_confirm, name='order_confirm'),
-    path('download_invoice/<int:id>/',views.download_invoice, name='download_invoice'),     
+    path('download_invoice/<int:id>/',views.download_invoice, name='download_invoice'),
+
+    path('checkoutpage',views.checkoutpage, name='checkoutpage'),
+    path('create-razorpay-order',views.create_razorpay_order, name='create_razorpay_order'),    
+    path('verify-razorpay-payment',views.verify_razorpay_payment, name='verify_razorpay_payment'),    
+       
+
+
 ]

@@ -14,13 +14,13 @@
         <!-- Search Form -->
         <div class="mb-4">
           <form method="GET" action="{% url 'order_search' %}" class="d-flex flex-wrap gap-3">
-            <div class="flex-grow-1">
+            <div class="flex-grow-1 rounded shadow-lg">
               <input type="text" name="search" class="form-control" placeholder="Search by Order ID" value="{{ request.GET.search|default:'' }}">
             
             </div>
             
             <div>
-              <select name="period" class="form-select">
+              <select name="period" class="form-select rounded shadow-lg">
                 <option value="all" {% if request.GET.period == 'all' or not request.GET.period %}selected{% endif %}>All Orders</option>
                 <option value="30days" {% if request.GET.period == '30days' %}selected{% endif %}>Past 30 Days</option>
                 <option value="3months" {% if request.GET.period == '3months' %}selected{% endif %}>Past 3 Months</option>
@@ -30,7 +30,7 @@
               </select>
             </div>
             <div>
-              <select name="status" class="form-select">
+              <select name="status" class="form-select rounded shadow-lg">
                 <option value="" {% if not request.GET.status %}selected{% endif %}>All Statuses</option>
                 <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
                 <option value="shipped" {% if request.GET.status == 'shipped' %}selected{% endif %}>Shipped</option>
@@ -41,8 +41,8 @@
                 <option value="return approved" {% if request.GET.status == 'return approved' %}selected{% endif %}>Returned</option>
               </select>
             </div>
-            <button type="submit" class="btn btn-primary">Search</button>
-            <a href="{% url 'order_search' %}" class="btn btn-outline-secondary">Clear</a>
+            <button type="submit" class="btn btn-primary rounded shadow-lg">Search</button>
+            <a href="{% url 'order_search' %}" class="btn btn-outline-secondary rounded shadow-lg">Clear</a>
           </form>
           {% if period_filter %}
           <div class="mt-2">
@@ -67,7 +67,7 @@
           {% comment %} <div>{% include "message.html" %}</div> {% endcomment %}
 
           {% for order in order_details %}
-          <div class="card mb-4 shadow-sm">
+          <div class="card mb-4 rounded shadow-lg">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
               <div class="row w-100">
                 <div class="col-md-3">
@@ -152,7 +152,7 @@
                   <h6 class="fw-bold mb-3">Items Ordered</h6>
                   {% for item in order.order_items.all %}
                   <div class="row align-items-center mb-3">
-                    <div class="col-md-2">
+                    <div class="col-md-2 shadow-lg">
                       <img src="{{ item.product_variant.product.image.url }}" alt="{{ item.product_variant.product.book_title }}" class="img-fluid rounded" style="max-height: 60px;">
                     </div>
                     <div class="col-md-6">

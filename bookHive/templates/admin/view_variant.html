@@ -58,11 +58,15 @@
                             <td style="font-size: 0.85rem;">{{ variant.page|default:"Not provided" }}</td>
                             <td style="font-size: 0.85rem;">{{ variant.language|default:"Not provided" }}</td>
                             <td>
-                                <form action="{% url 'variant_edit' %}" method="post">
-                                    {% csrf_token %}
+                                <!-- <form action="{% url 'variant_edit' variant.id %}" method="post">
                                     <input type="hidden" name="variant_id" value="{{ variant.id }}">
                                     <button type="submit" class="btn btn-sm btn-primary" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 6px; background-color: #2563eb;">Edit</button>
-                                </form>
+                                </form> -->
+                                <a href="{% url 'variant_edit' variant.id %}" 
+   class="btn btn-sm btn-primary"
+   style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 6px; background-color: #2563eb;">
+   Edit
+</a>
                             </td>
                             <td>
                                 {% if variant.is_active %}

@@ -1,6 +1,7 @@
 {% extends "admin/admin_base.html" %}
 
 {% block head %}
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 {% endblock head %}
 
@@ -13,80 +14,175 @@
     <div class="card shadow-sm p-4" style="max-width: 600px; margin: 0 auto; border-radius: 10px; border: none;">
         <div class="card-body" style="padding: 0;">
             <h5 class="fw-medium mb-4" style="font-size: 1.1rem; color: #1e293b;">Edit Variant</h5>
-            <form method="POST" action="{% url 'variant_edit_post' %}" enctype="multipart/form-data">
+            <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="variant_id" value="{{ variant.id }}">
 
                 <!-- Publisher -->
                 <div class="mb-3">
-                    <label for="publisher" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Publisher</label>
-                    <input type="text" class="form-control" id="publisher" name="publisher" value="{{ variant.publisher }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="publisher" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Publisher</label>
+                    <input type="text" class="form-control" id="publisher" name="publisher"
+                        value="{{ variant.publisher }}" required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+
                 </div>
 
                 <!-- Published Date -->
                 <div class="mb-3">
-                    <label for="publishedDate" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Published Date</label>
-                    <input type="date" class="form-control" id="publishedDate" name="published_date" value="{{ variant.published_date|date:'Y-m-d' }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="publishedDate" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Published Date</label>
+                    <input type="date" class="form-control {% if error.published_date %}is-invalid{% endif %}"
+                        id="publishedDate" name="published_date" value="{{ variant.published_date|date:'Y-m-d' }}"
+                        required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {% if error.published_date %}
+                    <div class="text-danger mt-1">{{ error.published_date }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Price -->
                 <div class="mb-3">
-                    <label for="price" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Price</label>
-                    <input type="number" class="form-control" id="price" name="price" value="{{ variant.price }}" step="0.01" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="price" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Price</label>
+                    <input type="number" class="form-control {% if error.price %}is-invalid{% endif %}" id="price"
+                        name="price" value="{{ variant.price }}" step="0.01" required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {% if error.price %}
+                    <div class="text-danger mt-1">{{ error.price }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Page -->
                 <div class="mb-3">
-                    <label for="page" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Page Count</label>
-                    <input type="number" class="form-control" id="page" name="page" value="{{ variant.page }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="page" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Page
+                        Count</label>
+                    <input type="number" class="form-control {% if error.page %}is-invalid{% endif %}" id="page"
+                        name="page" value="{{ variant.page }}" required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {% if error.page %}
+                    <div class="text-danger mt-1">{{ error.page }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Available Quantity -->
                 <div class="mb-3">
-                    <label for="stock" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Available Quantity</label>
-                    <input type="number" class="form-control" id="stock" name="stock" value="{{ variant.available_quantity }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="stock" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Available
+                        Quantity</label>
+                    <input type="number" class="form-control {% if error.available_quantity %}is-invalid{% endif %}"
+                        id="stock" name="stock" value="{{ variant.available_quantity }}" required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {% if error.available_quantity %}
+                    <div class="text-danger mt-1">{{ error.available_quantity }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Language -->
                 <div class="mb-3">
-                    <label for="language" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Language</label>
-                    <input type="text" class="form-control" id="language" name="language" value="{{ variant.language }}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="language" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Language</label>
+                    <input type="text" class="form-control" id="language" name="language" value="{{ variant.language }}"
+                        required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                 </div>
 
                 <!-- Image 1 -->
                 <div class="mb-3">
-                    <label for="image1" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 1</label>
+                    <label for="image1" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">
+                        Image 1
+                    </label>
+
+                    <!-- Existing Image Preview -->
                     {% if images and images.image1 %}
                     <div class="mb-2">
-                        <img src="{{ images.image1.url }}" alt="Image 1" class="img-fluid rounded" style="max-width: 100px; border-radius: 6px;">
+                        <img src="{{ images.image1.url }}" alt="Image 1" class="img-fluid rounded"
+                            style="max-width: 100px; border-radius: 6px;">
                     </div>
                     {% endif %}
-                    <input type="file" class="form-control" id="image1" name="image1" accept="image/*" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+
+                    <!-- New Cropper Preview -->
+                    <img id="preview1"
+                        style="max-width: 300px; display: none; border-radius: 6px; margin-bottom: 10px;">
+
+                    <!-- File Input -->
+                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="image1"
+                        name="image1" accept="image/*"
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+
+                    <!-- Hidden input to store cropped image -->
+                    <input type="hidden" name="image1_cropped" id="image1_cropped">
+
+                    {% if error.valid_image %}
+                    <div class="text-danger mt-1">{{ error.valid_image }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Image 2 -->
                 <div class="mb-3">
-                    <label for="image2" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 2</label>
+                    <label for="image2" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">
+                        Image 2
+                    </label>
+
+                    <!-- Existing Image Preview -->
                     {% if images and images.image2 %}
                     <div class="mb-2">
-                        <img src="{{ images.image2.url }}" alt="Image 2" class="img-fluid rounded" style="max-width: 100px; border-radius: 6px;">
+                        <img src="{{ images.image2.url }}" alt="Image 2" class="img-fluid rounded"
+                            style="max-width: 100px; border-radius: 6px;">
                     </div>
                     {% endif %}
-                    <input type="file" class="form-control" id="image2" name="image2" accept="image/*" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+
+                    <!-- New Cropper Preview -->
+                    <img id="preview2"
+                        style="max-width: 300px; display: none; border-radius: 6px; margin-bottom: 10px;">
+
+                    <!-- File Input -->
+                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="image2"
+                        name="image2" accept="image/*"
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+
+                    <!-- Hidden input to store cropped image -->
+                    <input type="hidden" name="image2_cropped" id="image2_cropped">
+
+                    {% if error.valid_image %}
+                    <div class="text-danger mt-1">{{ error.valid_image }}</div>
+                    {% endif %}
                 </div>
+
 
                 <!-- Image 3 -->
                 <div class="mb-3">
-                    <label for="image3" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 3</label>
+                    <label for="image3" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">
+                        Image 3
+                    </label>
+
+                    <!-- Existing Image Preview -->
                     {% if images and images.image3 %}
                     <div class="mb-2">
-                        <img src="{{ images.image3.url }}" alt="Image 3" class="img-fluid rounded" style="max-width: 100px; border-radius: 6px;">
+                        <img src="{{ images.image3.url }}" alt="Image 3" class="img-fluid rounded"
+                            style="max-width: 100px; border-radius: 6px;">
                     </div>
                     {% endif %}
-                    <input type="file" class="form-control" id="image3" name="image3" accept="image/*" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+
+                    <!-- New Cropper Preview -->
+                    <img id="preview3"
+                        style="max-width: 300px; display: none; border-radius: 6px; margin-bottom: 10px;">
+
+                    <!-- File Input -->
+                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="image3"
+                        name="image3" accept="image/*"
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+
+                    <!-- Hidden input to store cropped image -->
+                    <input type="hidden" name="image3_cropped" id="image3_cropped">
+
+                    {% if error.valid_image %}
+                    <div class="text-danger mt-1">{{ error.valid_image }}</div>
+                    {% endif %}
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Update Variant</button>
+                <button type="submit" class="btn btn-primary w-100"
+                    style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Update
+                    Variant</button>
             </form>
         </div>
     </div>
@@ -98,29 +194,144 @@
         border: none;
         transition: box-shadow 0.2s ease;
     }
+
     .card:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
+
     .form-control {
         border-radius: 6px;
         border: 1px solid #e2e8f0;
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
+
     .form-control:focus {
         border-color: #2563eb;
         box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
     }
+
     .form-label {
         color: #1e293b;
     }
+
     .btn-primary {
         transition: background-color 0.2s ease;
     }
+
     .btn-primary:hover {
         background-color: #1e40af;
     }
+
     .img-fluid {
         border-radius: 6px;
     }
 </style>
+
+<script>
+    let cropper1;
+
+    document.getElementById('image1').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+            const img = document.getElementById('preview1');
+            img.src = event.target.result;
+            img.style.display = 'block';
+
+            // destroy previous cropper if exists
+            if (cropper1) cropper1.destroy();
+
+            cropper1 = new Cropper(img, {
+                aspectRatio: 1,   // optional: keep square crop
+                viewMode: 1,
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // When form submits, get cropped image
+    document.querySelector('form').addEventListener('submit', function (e) {
+        if (cropper1) {
+            cropper1.getCroppedCanvas().toBlob(function (blob) {
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    // Set Base64 to hidden input
+                    document.getElementById('image1_cropped').value = reader.result;
+                    // submit the form after setting the value
+                    e.target.submit();
+                };
+                reader.readAsDataURL(blob);
+            });
+            // prevent default form submission to wait for crop
+            e.preventDefault();
+        }
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+
+<script>
+function setupCropper(fileInputId, previewId, hiddenInputId) {
+    let cropper;
+
+    const input = document.getElementById(fileInputId);
+    const preview = document.getElementById(previewId);
+    const hiddenInput = document.getElementById(hiddenInputId);
+
+    input.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            preview.src = event.target.result;
+            preview.style.display = 'block';
+
+            if (cropper) cropper.destroy();
+
+            cropper = new Cropper(preview, {
+                aspectRatio: 1, // or any ratio you want
+                viewMode: 1
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    return function getCroppedData(callback) {
+        if (cropper) {
+            cropper.getCroppedCanvas().toBlob(function(blob) {
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    hiddenInput.value = reader.result;
+                    callback();
+                };
+                reader.readAsDataURL(blob);
+            });
+        } else {
+            callback(); // no cropper, just submit
+        }
+    }
+}
+
+// Initialize cropper for each image
+const getCropped1 = setupCropper('image1', 'preview1', 'image1_cropped');
+const getCropped2 = setupCropper('image2', 'preview2', 'image2_cropped');
+const getCropped3 = setupCropper('image3', 'preview3', 'image3_cropped');
+
+// On form submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    getCropped1(() => {
+        getCropped2(() => {
+            getCropped3(() => {
+                e.target.submit(); // finally submit
+            });
+        });
+    });
+});
+</script>
+
+
 {% endblock %}

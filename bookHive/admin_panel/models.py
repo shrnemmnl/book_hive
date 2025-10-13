@@ -1,4 +1,6 @@
+from datetime import timezone
 from django.db import models
+from django.forms import ValidationError
 from django.utils.timezone import now
 
 
@@ -42,6 +44,7 @@ class Variant(models.Model):
     page = models.IntegerField()
     language = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
+
 
     
 

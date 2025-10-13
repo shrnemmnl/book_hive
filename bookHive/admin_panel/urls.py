@@ -8,8 +8,8 @@ urlpatterns = [
     path('admin_logout',views.admin_logout,name='admin_logout'),
     path('genre',views.genre,name='genre'),
     path('change_genre_status',views.change_genre_status,name='change_genre_status'),
-    path('genre_edit',views.genre_edit,name='genre_edit'),
-    path('genre_edit_post',views.genre_edit_post,name='genre_edit_post'),
+    path('genre_edit/<int:genre_id>/',views.genre_edit,name='genre_edit'),
+    
     path('add_new_book',views.add_new_book,name='add_new_book'),
     path('view_variant/<int:book_id>/',views.view_variant,name='view_variant'),
     path('variant_delete',views.variant_delete,name='variant_delete'),
@@ -18,11 +18,11 @@ urlpatterns = [
     path('change_user_status',views.change_user_status,name='change_user_status'),
     path('user_search',views.user_search,name='user_search'),
     path('genre_search',views.genre_search,name='genre_search'),
-    path('book_edit',views.book_edit,name='book_edit'),
-    path('book_edit_post',views.book_edit_post,name='book_edit_post'),
+    path('book_edit/<int:book_id>/',views.book_edit,name='book_edit'),
+    
     path('book_delete',views.book_delete,name='book_delete'),
-    path('variant_edit',views.variant_edit,name='variant_edit'),
-    path('variant_edit_post',views.variant_edit_post,name='variant_edit_post'),
+    path('variant_edit/<int:variant_id>/',views.variant_edit,name='variant_edit'),
+    
     path('admin_order',views.admin_order,name='admin_order'),
     path('update_order_item_status/<int:order_item_id>',views.update_order_item_status,name='update_order_item_status'),
     path('admin_order_details/<int:order_id>/',views.admin_order_details, name='admin_order_details'),

@@ -5,14 +5,22 @@ import random
 def generate_otp():
     return str(random.randint(100000, 999999))
 
+
+
 def send_verification_email(to_email, otp, type):
 
     subject = 'Your Email Verification Code'
     if type=='password':
-        message = f'Hey! Your verification code is: {otp}. Enter this in the verification page to complete Forgot password.'
+        message = f'Hey! Your verification code is: {otp} . Enter this in the verification page to complete Forgot password.'
+    elif type=='profile_email_change':
+        message = f'Hey! Your verification code for Email changing is: {otp} . Enter this in the profile email change page to complete the verification. Thank You.'
     else:
-        message = f'Hey! Your verification code is: {otp}. Enter this in the verification page to complete signup.'
+        message = f'Hey! Your verification code is: {otp} . Enter this in the verification page to complete signup.'
+
     from_email = settings.DEFAULT_FROM_EMAIL
+
     send_mail(subject, message, from_email, [to_email])
+
+    return message
 
 

@@ -9,75 +9,66 @@
     </div>
 
     <!-- Main Content Column -->
-    <div class="col-lg-9 py-5">
-      <div class="content-wrapper bg-white p-4 shadow-sm rounded">
+    <div class="col-lg-9 py-3">
+      <div class="content-wrapper bg-white p-4 shadow-lg rounded">
         <h4 class="mb-4">My Cart</h4>
 
-        <div class="cart-items">
-        
-          {% for item in cart_item %}
-  <div class="card mb-3">
-    <div>{% include "message.html" %}</div>
-    <div class="card-body">
-      <div class="row align-items-center">
-        <div class="col-md-2">
-          <!-- <img
-            src="{{ item.product_variant.productimage.image1.url }}"
-            alt="Book Cover"
-            class="img-fluid"
-          /> -->
-          {% with item.product_variant.productimage_set.first as image %}
-  {% if image %}
-    <img src="{{ image.image1.url }}" alt="Book Cover" class="img-fluid" />
-  {% else %}
-    <img src="{% static 'default_image.jpg' %}" alt="No Image" class="img-fluid" />
-  {% endif %}
-{% endwith %}
-
-        </div>
-        <div class="col-md-4">
-          <h5 class="card-title mb-1">{{ item.product_variant.product.book_title }}</h5>  
-          <p class="text-muted mb-0">by {{ item.product_variant.product.author }}</p>
-        </div>
-        <div class="col-md-2">
-          <div class="quantity-selector d-flex align-items-center">
-            <button class="btn btn-sm btn-outline-secondary btn-decrease" data-id="{{ item.id }}">-</button>
-<input type="text" class="form-control form-control-sm mx-2 text-center quantity" value="{{ item.quantity }}" style="width: 40px" data-id="{{ item.id }}" readonly/>
-<button class="btn btn-sm btn-outline-secondary btn-increase" data-id="{{ item.id }}">+</button>
-
+        <div class="row">
+          <!-- Cart Items Column -->
+          <div class="{% if cart_item %}col-md-8{% else %}col-12{% endif %} cart-items">
+            {% for item in cart_item %}
+            <div class="card mb-2 cart-item-card">
+              <div class="card-body p-3 shadow-lg">
+                <div class="row align-items-center">
+                  <div class="col-md-2 col-3">
+                    {% with item.product_variant.productimage_set.first as image %}
+                    {% if image %}
+                    <img src="{{ image.image1.url }}" alt="Book Cover" class="img-fluid cart-item-image" />
+                    {% else %}
+                    <img src="{% static 'default_image.jpg' %}" alt="No Image" class="img-fluid cart-item-image" />
+                    {% endif %}
+                    {% endwith %}
+                  </div>
+                  <div class="col-md-4 col-3">
+                    <h5 class="card-title mb-1 cart-item-title">{{ item.product_variant.product.book_title }}</h5>
+                    <p class="text-muted mb-0 cart-item-author">by {{ item.product_variant.product.author }}</p>
+                  </div>
+                  <div class="col-md-2 col-2 text-center">
+                    <div class="quantity-selector d-flex align-items-center justify-content-center">
+                      <button class="btn btn-sm btn-outline-secondary btn-decrease cart-btn"
+                        data-id="{{ item.id }}">-</button>
+                      <input type="text" class="form-control form-control-sm mx-1 text-center quantity cart-input"
+                        value="{{ item.quantity }}" style="width: 35px" data-id="{{ item.id }}" readonly />
+                      <button class="btn btn-sm btn-outline-secondary btn-increase cart-btn"
+                        data-id="{{ item.id }}">+</button>
+                    </div>
+                  </div>
+                  <div class="col-md-2 col-2 text-center">
+                    <p class="fw-bold mb-0 cart-item-price" id="item-total-{{ item.id }}">₹{{ item.get_total_price }}
+                    </p>
+                  </div>
+                  <div class="col-md-2 col-2 text-end">
+                    <button class="btn btn-sm btn-outline-danger cart-btn" data-id="{{ item.id }}">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% empty %}
+            <p>Your cart is empty.</p>
+            {% endfor %}
           </div>
-        </div>
-        <div class="col-md-2 text-center">
-          <p class="fw-bold mb-0" id="item-total-{{ item.id }}">₹ {{ item.get_total_price }}</p>
-        </div>
-        <div class="col-md-2 text-end">
-          <button class="btn btn-sm btn-outline-danger">
-            <i class="bi bi-trash" data-id="{{ item.id }}"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-{% empty %}
-  <p>Your cart is empty.</p>
-{% endfor %}
 
-
-        </div>
-
-        <!-- Cart Summary -->
-        <div class="card mt-4">
-          <div class="card-body">
-            <div class="row">
-            <div>
-              
-            </div >
-              
-              <div class="col-md-4">
+          <!-- Cart Summary Column -->
+          {% if cart_item %}
+          <div class="col-md-4">
+            <div class="card cart-summary-card">
+              <div class="card-body p-3 shadow-lg">
                 <div class="cart-summary">
                   <div class="d-flex justify-content-between mb-2">
                     <span>Subtotal:</span>
-                    <span id="cart-subtotal" >₹{{ subtotal }}</span>
+                    <span id="cart-subtotal">₹{{ subtotal }}</span>
                   </div>
                   <div class="d-flex justify-content-between mb-2">
                     <span>Shipping:</span>
@@ -85,21 +76,42 @@
                   </div>
                   <div class="d-flex justify-content-between fw-bold">
                     <span>Total:</span>
-                    <span id="cart-nettotal" >₹{{ subtotal }}</span> 
+                    <span id="cart-nettotal">₹{{ subtotal }}</span>
                   </div>
-                  {% if count > 0 %}
-                  <a href="{% url 'checkoutpage' %}" class="btn btn-primary w-100 mt-3 text-decoration-none" id="checkout-button" >
+                  <a href="{% url 'checkoutpage' %}" class="btn btn-primary w-100 mt-3 text-decoration-none"
+                    id="checkout-button">
                     Proceed to Checkout
                   </a>
-                  {% else %}
-                  <a href="#" class="btn  w-100 mt-3 disabled text-decoration-none" id="checkout-button" >Proceed to Checkout</a>
-
-                  {% endif %}
                 </div>
               </div>
             </div>
           </div>
+          {% endif %}
         </div>
+
+        <!-- Cart Summary Below on Empty Cart -->
+        {% if not cart_item %}
+        <div class="card mt-4 cart-summary-card">
+          <div class="card-body p-3">
+            <div class="cart-summary">
+              <div class="d-flex justify-content-between mb-2">
+                <span>Subtotal:</span>
+                <span id="cart-subtotal">₹{{ subtotal }}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Shipping:</span>
+                <span>Free</span>
+              </div>
+              <div class="d-flex justify-content-between fw-bold">
+                <span>Total:</span>
+                <span id="cart-nettotal">₹{{ subtotal }}</span>
+              </div>
+              <a href="#" class="btn w-100 mt-3 disabled text-decoration-none" id="checkout-button">Proceed to
+                Checkout</a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -108,44 +120,44 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $(document).ready(function () {
-  $(".btn-increase, .btn-decrease").click(function () {
-    const itemId = $(this).data("id");
-    const action = $(this).hasClass("btn-increase") ? "increase" : "decrease";
-    const input = $('input.quantity[data-id="' + itemId + '"]');
-    let currentQty = parseInt(input.val());
+    $(".btn-increase, .btn-decrease").click(function () {
+      const itemId = $(this).data("id");
+      const action = $(this).hasClass("btn-increase") ? "increase" : "decrease";
+      const input = $('input.quantity[data-id="' + itemId + '"]');
+      let currentQty = parseInt(input.val());
 
-    // 👇 Client-side limit
-    if (action === "increase" && currentQty >= 5) {
-      toastr.warning("Maximum quantity is 5"); // ✅ toast instead of alert
-      return;
-    }
-
-    $.ajax({
-      url: "update-quantity",
-      type: "POST",
-      data: {
-        item_id: itemId,
-        action: action,
-        csrfmiddlewaretoken: '{{ csrf_token }}'
-      },
-      success: function (response) {
-        if (response.success) {
-          input.val(response.new_quantity);
-          $('#cart-subtotal').text('₹' + response.cart_total);
-          $('#cart-nettotal').text('₹' + response.cart_total);
-          $('#item-total-' + itemId).text('₹' + response.item_total_price);
-
-
-        } else {
-          alert("Error: " + response.error);
-        }
-      },
-      error: function () {
-        alert("Something went wrong!");
+      // 👇 Client-side limit
+      if (action === "increase" && currentQty >= 5) {
+        toastr.warning("Maximum quantity is 5"); // ✅ toast instead of alert
+        return;
       }
+
+      $.ajax({
+        url: "update-quantity",
+        type: "POST",
+        data: {
+          item_id: itemId,
+          action: action,
+          csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function (response) {
+          if (response.success) {
+            input.val(response.new_quantity);
+            $('#cart-subtotal').text('₹' + response.cart_total);
+            $('#cart-nettotal').text('₹' + response.cart_total);
+            $('#item-total-' + itemId).text('₹' + response.item_total_price);
+
+
+          } else {
+            alert("Error: " + response.error);
+          }
+        },
+        error: function () {
+          alert("Something went wrong!");
+        }
+      });
     });
   });
-});
 
 
 </script>
@@ -183,8 +195,8 @@
                 .addClass('disabled')
                 .removeClass('btn-primary')
                 .attr('href', '#');
-            
-          } 
+
+            }
           }
           else {
             alert("Error: " + response.error);

@@ -10,8 +10,12 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.urls import reverse
 from django.shortcuts import  get_object_or_404
-from datetime import datetime, timezone
+from datetime import datetime
+from django.utils import timezone
 from django.db.models import F
+import base64
+from django.core.files.base import ContentFile
+
 
 
 
@@ -90,7 +94,8 @@ def update_order_item_status(request,order_item_id):
 
 
 def genre(request):
-    genre= Genre.objects.all().order_by('is_active')
+
+    genre= Genre.objects.all().order_by('-is_active')
 
     # Create Paginator object with 5 Genre per page
     paginator = Paginator(genre, 5)  
@@ -100,7 +105,7 @@ def genre(request):
     print(page_obj)
 
     if request.method == 'POST':
-        genre_name = request.POST.get('genre', "").strip()
+        genre_name = request.POST.get('genre', "").strip().lower()
         
         if Genre.objects.filter(genre_name=genre_name).exists():
             messages.error(request, 'Genre already exists.')
@@ -127,27 +132,23 @@ def change_genre_status(request):
 
 
 
-def genre_edit(request):
+def genre_edit(request, genre_id):
+
+    genre = Genre.objects.get(id=genre_id)
+
     if request.method == 'POST':
-        genre_id=request.POST.get('genre_id', "").strip()
+        name=request.POST.get('genre', "").strip().lower()
         genre = Genre.objects.get(id=genre_id)
-        
-        
-    return render(request, 'admin/genre_edit.html', {'genres':genre})
 
-
-
-
-def genre_edit_post(request):
-    if request.method == 'POST':
-        genre_id=request.POST.get('genre_id', "").strip()
-        name=request.POST.get('genre', "").strip()
-
-        genre = Genre.objects.get(id=genre_id)
-        genre.genre_name = name
-        genre.save()
-        return redirect('genre')
-        
+        if Genre.objects.filter(genre_name=name).exists():
+            messages.error(request, 'Genre already exists.')
+            return redirect('genre_edit', genre_id=genre.id)
+        else:   
+            genre.genre_name = name
+            genre.save()
+            messages.success(request, 'Genre Edited Successfully.')
+            return redirect('genre')
+ 
     return render(request, 'admin/genre_edit.html', {'genres':genre})
 
 
@@ -210,18 +211,13 @@ def add_new_book(request):
 
 
 
-def book_edit(request):
+def book_edit(request, book_id):
     
-    book_id=request.POST.get('book_id', "").strip()
     book = Product.objects.get(id=book_id)
     genres = Genre.objects.all()
-    return render(request, 'admin/book_edit.html',{'book':book,'genres':genres })
+    error = {}
 
-
-
-def book_edit_post(request):
     if request.method == 'POST':
-        book_id=request.POST.get('book_id', "").strip()
         book_name = request.POST.get('book_title', "").strip()
         author = request.POST.get('book_author', "").strip()
         description = request.POST.get('book_description', "").strip()
@@ -232,24 +228,43 @@ def book_edit_post(request):
         offer_title = request.POST.get('offer_title', "").strip()
         discount_percentage = request.POST.get('discount_percentage', 0)
 
-        book = Product.objects.get(id=book_id)
-        book.book_title = book_name
-        book.genre =Genre.objects.get(id=genre_id) 
-        print(genre_id)
-        book.author = author
+        is_valid = True
+
+        # discount percentage validation
+        if not discount_percentage.isdigit() and int(discount_percentage) <= 0:
+            error['discount_percentage']="Discount percentage must be a positive integer."
+            is_valid = False
+        
         if image:
-            book.image = image
-        book.description = description
-        book.is_offer = is_offer
-        book.offer_title = offer_title if is_offer else ''
-        book.discount_percentage = int(discount_percentage) if is_offer else 0
-       
-        book.save()
-        messages.success(request, 'Updated successfully!')
+                valid_extensions = ["jpg", "jpeg", "png"]
+                if not image.name.split(".")[-1].lower() in valid_extensions:
+                    error['valid_image']="Please enter a valid image extension in jpg, jpeg and png formats."
+                    is_valid = False
 
-        return render(request, 'admin/book_edit.html', {'redirect': True, 'redirect_url': 'books'})  # Send flag to template
+        if is_valid:
+            book = Product.objects.get(id=book_id)
+            book.book_title = book_name
+            book.genre =Genre.objects.get(id=genre_id) 
+            print(genre_id)
+            book.author = author
 
-    return render(request, 'admin/book_edit.html',{'book':book})
+            if image:
+                book.image = image
+
+            book.description = description
+            book.is_offer = is_offer
+            book.offer_title = offer_title if is_offer else ''
+            book.discount_percentage = int(discount_percentage) if is_offer else 0
+
+            book.save()
+            messages.success(request, f'{book.book_title} Updated successfully!')
+
+            return redirect('books')  
+
+
+    return render(request, 'admin/book_edit.html',{'book':book,'genres':genres ,'error':error})
+
+
 
 
 
@@ -267,6 +282,7 @@ def book_delete(request):
 
 
 def view_variant(request, book_id):
+
     variants = Variant.objects.filter(product=book_id).prefetch_related('productimage_set')
 
     first_variant=book_id
@@ -400,25 +416,12 @@ def user_search(request):
 
 
 
-def variant_edit(request):
+def variant_edit(request, variant_id):
+    error = {}    
+    variant = get_object_or_404(Variant, id=variant_id)
+    images = variant.productimage_set.first()  # set of 3 images per variant
+
     if request.method == 'POST':
-        variant_id = request.POST.get('variant_id', "").strip()
-        variant = get_object_or_404(Variant, id=variant_id)
-        
-        images = variant.productimage_set.first()  # set of 3 images per variant
-
-        return render(request, 'admin/variant_edit.html', {
-            'variant': variant,
-            'images': images
-        })
-
-    return render(request, 'admin/variant_edit.html')  
-
-
-
-def variant_edit_post(request):
-    if request.method == 'POST':
-        variant_id = request.POST.get('variant_id', "").strip()
         publisher = request.POST.get('publisher', "").strip()
         published_date = request.POST.get('published_date', "").strip()
         price = request.POST.get('price', "").strip()
@@ -426,45 +429,98 @@ def variant_edit_post(request):
         available_quantity = request.POST.get('stock', "").strip()
         language = request.POST.get('language', "").strip()
 
+        # Get raw files
         image1 = request.FILES.get('image1')
         image2 = request.FILES.get('image2')
         image3 = request.FILES.get('image3')
 
-        # Get Variant
-        variant = get_object_or_404(Variant, id=variant_id)
-        variant.publisher = publisher
+        # Get cropped base64 images
+        image1_cropped = request.POST.get('image1_cropped')
+        image2_cropped = request.POST.get('image2_cropped')
+        image3_cropped = request.POST.get('image3_cropped')
 
-        # Convert and assign date
-        try:
-            variant.published_date = datetime.strptime(published_date, "%Y-%m-%d").date()
+        is_valid = True
+
+        # --- Validations ---
+
+        # 1️⃣ Published date
+        try:           
+            pub_date = datetime.strptime(published_date, "%Y-%m-%d").date()
+            if pub_date > timezone.now().date():
+                error['published_date'] = "Published date cannot be in the future."
+                is_valid = False
         except ValueError:
-            messages.error(request, "⚠ Invalid date format.")
-            return render(request, 'admin/variant_edit.html', {'variant': variant})
+            error['published_date'] = "Invalid published date format."
+            is_valid = False
 
-        # Other fields
-        variant.price = int(price)
-        variant.page = int(page)
-        variant.available_quantity = int(available_quantity)
-        variant.language = language
-        variant.save()
+        # 2️⃣ Price
+        if not price.replace('.', '', 1).isdigit():
+            error['price'] = "Price must contain only digits."
+            is_valid = False
+        else:
+            price = float(price)
+            if price < 0:
+                error['price'] = "Price cannot be negative."
+                is_valid = False
 
-        # Handle ProductImage
-        product_image, created = ProductImage.objects.get_or_create(variant=variant)
+        # 3️⃣ Page count
+        if not page.isdigit() or int(page) <= 0:
+            error['page'] = "Page count must be a positive integer."
+            is_valid = False
 
-        if image1:
-            product_image.image1 = image1
-        if image2:
-            product_image.image2 = image2
-        if image3:
-            product_image.image3 = image3
+        # 4️⃣ Available quantity
+        if not available_quantity.isdigit() or int(available_quantity) <= 0:
+            error['available_quantity'] = "Available quantity must be a positive integer."
+            is_valid = False
 
-        product_image.save()
+        # 5️⃣ Image validation (raw files)
+        valid_extensions = ["jpg", "jpeg", "png"]
+        for img, name in zip([image1, image2, image3], ['Image 1', 'Image 2', 'Image 3']):
+            if img:
+                ext = img.name.split('.')[-1].lower()
+                if ext not in valid_extensions:
+                    error['valid_image'] = f"{name} must be in jpg, jpeg, or png format."
+                    is_valid = False
 
-        # messages.success(request, '✅ Variant and images updated successfully!')
+        # 6️⃣ Cropped image validation
+        for img_cropped, name in zip([image1_cropped, image2_cropped, image3_cropped],
+                                     ['Image 1', 'Image 2', 'Image 3']):
+            if img_cropped and not img_cropped.startswith("data:image"):
+                error['valid_image'] = f"{name} has invalid cropped image format."
+                is_valid = False
 
-        return redirect('books')
+        # --- Save Variant ---
+        if is_valid:
+            variant.publisher = publisher
+            variant.price = float(price)
+            variant.page = int(page)
+            variant.available_quantity = int(available_quantity)
+            variant.language = language
+            variant.save()
 
-    return render(request, 'admin/variant_edit.html')
+            # Handle ProductImage
+            product_image, _ = ProductImage.objects.get_or_create(variant=variant)
+
+            # Helper to save cropped/base64 image
+            def save_cropped_image(cropped, raw, field_name):
+                if cropped:
+                    format, imgstr = cropped.split(';base64,')
+                    ext = format.split('/')[-1]
+                    setattr(product_image, field_name, ContentFile(base64.b64decode(imgstr), name=f'{field_name}_{variant.id}.{ext}'))
+                elif raw:
+                    setattr(product_image, field_name, raw)
+
+            save_cropped_image(image1_cropped, image1, 'image1')
+            save_cropped_image(image2_cropped, image2, 'image2')
+            save_cropped_image(image3_cropped, image3, 'image3')
+
+            product_image.save()
+            messages.success(request, 'Variants updated successfully!')
+            return redirect('books')
+
+    return render(request, 'admin/variant_edit.html', {'variant': variant, 'images': images, 'error': error})
+
+
 
 
 @login_required

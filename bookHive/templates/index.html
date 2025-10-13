@@ -6,7 +6,7 @@
 {% endblock slider %}
 
 <!-- PRODUCT LISTING COMPONENT WITH SIDEBAR -->
-<section id="library" class="product-listing py-4">
+<section id="library" class="product-listing py-4" style="background-color: rgb(255, 235, 208);">
   <div class="container-fluid px-3">
     <div class="section-header text-center mb-4">
       <h6 class="text-primary text-uppercase fw-bold mb-2" style="font-size: 0.9rem;">Our Collection</h6>
@@ -18,7 +18,7 @@
     <div class="row g-3">
       <!-- Side Panel for Filters and Sorting -->
       <div class="col-lg-3 col-md-4 mb-3">
-        <div class="filter-sidebar bg-white p-3 rounded shadow-sm">
+        <div class="filter-sidebar bg-white p-3 rounded shadow-lg">
           <!-- Sorting Options -->
           <div class="filter-section mb-3">
             <h5 class="fw-bold mb-2" style="font-size: 1rem;">Sort By</h5>
@@ -53,12 +53,12 @@
             <div class="genre-options">
               <div class="form-check mb-2">
                 <input class="form-check-input" type="checkbox" id="genreAll" name="genres" value="allgenres" {% if 'allgenres' in selected_genres or selected_genres|length == 0 %}checked{% endif %}>
-                <label class="form-check-label" for="genreAll" style="font-size: 0.85rem;">All Genres</label>
+                <label class="form-check-label" for="genreAll" style="font-size: 0.85rem;">All GENERS</label>
               </div>
               {% for category in categories %}
               <div class="form-check mb-2">
                 <input class="form-check-input genre-checkbox" type="checkbox" id="genre{{ category|slugify }}" name="genres" value="{{ category }}" {% if category in selected_genres %}checked{% endif %} {% if 'allgenres' in selected_genres %}disabled{% endif %}>
-                <label class="form-check-label" for="genre{{ category|slugify }}" style="font-size: 0.85rem;">{{ category }}</label>
+                <label class="form-check-label" for="genre{{ category|slugify }}" style="font-size: 0.85rem;">{{ category|upper }}</label>
               </div>
               {% endfor %}
             </div>
@@ -100,7 +100,7 @@
           <div class="row g-3">
             {% for book in books %}
             <div class="col-6 col-md-4 col-lg-3">
-              <div class="product-card h-100 bg-white rounded overflow-hidden shadow-sm position-relative">
+              <div class="product-card h-100 bg-white rounded overflow-hidden shadow-lg position-relative">
                 {% if book.is_featured %}
                 <div class="product-badge bg-primary text-white position-absolute py-1 px-2" style="top: 8px; left: 8px; font-size: 0.75rem;">
                   Featured
@@ -131,10 +131,10 @@
                     <small style="font-size: 0.75rem;">by <span class="text-muted">{{ book.author }}</span></small>
                   </div>
                   <div class="d-flex justify-content-between align-items-center">
-                    {% if book.min_price %}
+                    {% if book.min_price and book.is_offer %}
                     <div class="product-price fw-bold" style="font-size: 0.9rem;">₹{{ book.min_price }}</div>
                     {% else %}
-                    <div class="product-price text-muted" style="font-size: 0.9rem;">Price Not Available</div>
+                    <div class="product-price text-muted" style="font-size: 0.9rem;">₹{{ book.min_price }}</div>
                     {% endif %}
                     <div class="product-rating" style="font-size: 0.75rem;">
                       <i class="bi bi-star-fill text-warning"></i>

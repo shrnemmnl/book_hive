@@ -1,0 +1,29 @@
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  var options = {
+      "key": "{{ RAZORPAY_KEY_ID }}",  // ✅ from Django context
+      "amount": "{{ order.amount }}",
+      "currency": "{{ order.currency }}",
+      "name": "Book Hive",
+      "description": "Test Transaction",
+      "order_id": "{{ order.id }}",  // ✅ required
+      "handler": function (response){
+          alert("Payment successful. Payment ID: " + response.razorpay_payment_id);
+      },
+      "prefill": {
+          "name": "Test User",
+          "email": "test@example.com",
+          "contact": "9999999999"
+      },
+      "theme": {
+          "color": "#3399cc"
+      }
+  };
+  var rzp1 = new Razorpay(options);
+  document.getElementById('pay-button').onclick = function(e){
+      rzp1.open();
+      e.preventDefault();
+  }
+</script>
+
+<button id="pay-button">Pay Now</button>

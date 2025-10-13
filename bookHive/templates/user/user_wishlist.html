@@ -7,18 +7,21 @@
 
     <!-- Main Content Column -->
     <div class="col-lg-9 py-5">
-      <h2 class="mb-4">My Wishlist</h2>
+      
 
       <div id="wishlist-container">
+        <h2 class="mb-4">My Wishlist</h2>
         <!-- 👈 add this wrapper -->
         {% for item in wishlist_items %}
-        <div class="card mb-3 shadow-sm border-0" style="border-radius: 10px">
+        <div class="card mb-3 shadow-lg border-0" style="border-radius: 10px">
+          
           <div class="row g-0 align-items-center">
+            
             <div class="col-md-2 p-3">
               <img
                 src="{{ item.variant.product.image.url }}"
                 alt="{{ item.variant.product.book_title }}"
-                class="img-fluid rounded"
+                class="img-fluid rounded shadow-lg"
                 style="max-height: 120px; object-fit: cover"
               />
             </div>
