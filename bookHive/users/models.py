@@ -6,6 +6,7 @@ from admin_panel.models import Variant
 from django.contrib.auth.models import BaseUserManager
 from django.utils import timezone
 from admin_panel.models import Product
+from decimal import Decimal, ROUND_HALF_UP
 import datetime
 import random
 
@@ -142,18 +143,20 @@ class Order(models.Model):
         return order_id
 
     def save(self, *args, **kwargs):
-        """Override save to set order_id and net_amount on creation."""
-        if not self.order_id:  # Only generate if order_id is not set
+        """Ensure order_id is set and monetary total is calculated using Decimal."""
+        if not self.order_id:
             self.order_id = self.generate_order_id()
-        if not self.net_amount:  # Update net_amount if not set
-            self.net_amount = self.calculate_total()
+        # Always compute from current items to avoid stale totals
+        self.net_amount = self.calculate_total()
         super().save(*args, **kwargs)
 
     def calculate_total(self):
-        """Calculate the total order amount including discount and shipping."""
-        total = sum(item.total_amount for item in self.order_items.all())
-        discount = (float(self.discount_percentage) / 100) * float(total)
-        return float(total) - float(discount) + float(self.shipping_charge)
+        """Calculate total using Decimal to avoid floating point errors."""
+        total = sum((item.total_amount for item in self.order_items.all()), Decimal('0.00'))
+        discount_ratio = (Decimal(self.discount_percentage) / Decimal('100'))
+        discount_amount = (total * discount_ratio).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        gross = total - discount_amount + (self.shipping_charge or Decimal('0.00'))
+        return gross.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 
