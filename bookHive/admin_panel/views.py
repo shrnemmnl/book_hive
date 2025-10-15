@@ -226,14 +226,20 @@ def book_edit(request, book_id):
         # Offer Fields
         is_offer = request.POST.get('is_offer') == 'on'
         offer_title = request.POST.get('offer_title', "").strip()
-        discount_percentage = request.POST.get('discount_percentage', 0)
+        discount_percentage = request.POST.get('discount_percentage', '').strip()
 
         is_valid = True
 
-        # discount percentage validation
-        if not discount_percentage.isdigit() and int(discount_percentage) <= 0:
-            error['discount_percentage']="Discount percentage must be a positive integer."
-            is_valid = False
+        # discount percentage validation: require positive integer only when offer enabled
+        if is_offer:
+            if not discount_percentage.isdigit() or int(discount_percentage) <= 0:
+                error['discount_percentage'] = "Discount percentage must be a positive integer."
+                is_valid = False
+            else:
+                discount_percentage = int(discount_percentage)
+        else:
+            # ignore any provided value when offer disabled
+            discount_percentage = 0
         
         if image:
                 valid_extensions = ["jpg", "jpeg", "png"]
@@ -254,7 +260,7 @@ def book_edit(request, book_id):
             book.description = description
             book.is_offer = is_offer
             book.offer_title = offer_title if is_offer else ''
-            book.discount_percentage = int(discount_percentage) if is_offer else 0
+            book.discount_percentage = discount_percentage
 
             book.save()
             messages.success(request, f'{book.book_title} Updated successfully!')

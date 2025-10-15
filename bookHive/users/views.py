@@ -102,7 +102,8 @@ def signup(request):
             request.session['verification_email'] = email
             request.session['otp'] = otp
 
-            send_verification_email(email, otp, type)
+            # Explicitly mark the email context for signup
+            send_verification_email(email, otp, 'signup')
 
             # messages.success(request, f"Account created! A verification code has been sent to {email}.")
 
