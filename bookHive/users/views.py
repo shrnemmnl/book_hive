@@ -1381,10 +1381,10 @@ def address_edit(request, address_id):
 
 @login_required
 def address_delete(request, address_id):
-
-    status = Address.objects.get(id=address_id)
-    status.is_active = False
-    status.save()
+    # Ensure users can delete only their own addresses
+    address = get_object_or_404(Address, id=address_id, user=request.user)
+    address.is_active = False
+    address.save()
 
     active_addresses = Address.objects.filter(user=request.user, is_active=True)
 
@@ -1456,8 +1456,15 @@ def change_variant(request, book_id):
 
 @login_required
 def download_invoice(request, id):
-    
-    order = Order.objects.get(id=id)
+    # Only allow the authenticated owner of the order to download the invoice
+    # Eager-load related items to avoid N+1 queries in the template
+    order = get_object_or_404(
+        Order.objects.select_related('user', 'address').prefetch_related(
+            'order_items', 'order_items__product_variant', 'order_items__product_variant__product'
+        ),
+        id=id,
+        user=request.user,
+    )
     order_items = order.order_items.all()  
     template_path = 'invoices/invoice_template.html'
     context = {

@@ -4,6 +4,7 @@ from django.contrib import messages
 from users.models import CustomUser,Order,OrderItem,Review, Wallet# Import your user model
 from .models import Genre, Product, Variant, ProductImage
 from django.contrib.auth.decorators import user_passes_test
+from django.views.decorators.http import require_POST
 from django.views.decorators.cache import never_cache, cache_control
 from functools import wraps
 from django.contrib.auth.decorators import login_required
@@ -83,12 +84,19 @@ def admin_order(request):
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @login_required(login_url='admin_signin')  
+@require_POST
 def update_order_item_status(request,order_item_id):
-    status=request.POST.get('status')
-    order_item=OrderItem.objects.get(id=order_item_id)
-    order_item.status=status
+    # Only superusers/staff should be able to update order item statuses
+    if not request.user.is_superuser:
+        messages.error(request, 'You do not have permission to perform this action.')
+        return redirect('admin_signin')
+
+    status = request.POST.get('status', '').strip()
+    order_item = get_object_or_404(OrderItem, id=order_item_id)
+    order_item.status = status
     order_item.save()
 
+    messages.success(request, 'Order item status updated successfully.')
     return redirect('order')
 
 
