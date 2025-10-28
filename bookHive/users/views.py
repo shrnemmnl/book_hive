@@ -1,5 +1,6 @@
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+import datetime as dt
 import random
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -55,6 +56,7 @@ def signup(request):
         mobile = request.POST.get('mobile', '').strip()
         password = request.POST.get('password', '').strip()
         confirmPassword = request.POST.get('confirmPassword', '').strip()
+        referral_code = request.POST.get('referral_code', '').strip().upper()
 
         # Validation patterns
         name_pattern = r'^[A-Za-z]+(?: [A-Za-z]+)?$'
@@ -88,6 +90,14 @@ def signup(request):
         # Check if Mobile number is already registered
         if CustomUser.objects.filter(phone_no=mobile).exists():
             errors['mobile'] = "Phone is already registered. Plaese enter another contact number."
+        
+        # Validate referral code if provided
+        referrer = None
+        if referral_code:
+            try:
+                referrer = CustomUser.objects.get(referral_code=referral_code)
+            except CustomUser.DoesNotExist:
+                errors['referral_code'] = "Invalid referral code."
 
         if not errors:
             request.session['userdata'] = {
@@ -96,6 +106,7 @@ def signup(request):
                 'email': email,
                 'phone_no': mobile,
                 'password': make_password(password),
+                'referrer_id': referrer.id if referrer else None,
             }
             otp = generate_otp()
             request.session['verification_email'] = email
@@ -901,11 +912,24 @@ def wallet_payment(request):
                 except Exception as e:
                     return JsonResponse({"error": e}, status=500)
                 
+                # Calculate subtotal from cart
+                subtotal = sum(item.get_total_price() for item in cart_items)
+                
+                # Get coupon discount from session
+                coupon_code = request.session.get('applied_coupon_code', '')
+                coupon_discount = float(request.session.get('coupon_discount', 0))
+                
+                # Calculate final amount after discount
+                net_amount = subtotal - coupon_discount
+                
                 # Create local order first
                 order = Order.objects.create(
                 user=request.user,
                 address=address,
-                net_amount=total_amount,
+                subtotal=subtotal,
+                coupon_code=coupon_code,
+                coupon_discount=coupon_discount,
+                net_amount=net_amount,
                 status="pending",
                 order_date=timezone.now(),
                 payment_method='wallet')   
@@ -927,6 +951,15 @@ def wallet_payment(request):
                 
                 # Clear cart
                 cart.delete()
+                
+                # Clear coupon from session after successful order
+                if 'applied_coupon_code' in request.session:
+                    del request.session['applied_coupon_code']
+                if 'applied_coupon_id' in request.session:
+                    del request.session['applied_coupon_id']
+                if 'coupon_discount' in request.session:
+                    del request.session['coupon_discount']
+                
                 logger.debug(f"The order amount: {total_amount} is deducted from the wallet {prev_amount}rs. Balance wallet amount {user_wallet.wallet_amount}.")
                 return JsonResponse({
                     "status": "success",
@@ -1110,14 +1143,23 @@ def cod_payment(request):
             
             return JsonResponse({"error": "Your cart is empty."}, status=400)
 
-        # Calculate net amount
-        net_amount = sum(item.get_total_price() for item in cart_items)
+        # Calculate net amount (subtotal before coupon)
+        subtotal = sum(item.get_total_price() for item in cart_items)
+        
+        # Get coupon discount from session
+        coupon_code = request.session.get('applied_coupon_code', '')
+        coupon_discount = float(request.session.get('coupon_discount', 0))
+        
+        # Calculate final amount after discount
+        net_amount = subtotal - coupon_discount
             
-            
-            # Create local order first
+        # Create local order first
         order = Order.objects.create(
                 user=request.user,
                 address=address,
+                subtotal=subtotal,
+                coupon_code=coupon_code,
+                coupon_discount=coupon_discount,
                 net_amount=net_amount,
                 status="pending",
                 order_date=timezone.now(),
@@ -1136,6 +1178,14 @@ def cod_payment(request):
             item.product_variant.save()
 
         cart.delete()
+        
+        # Clear coupon from session after successful order
+        if 'applied_coupon_code' in request.session:
+            del request.session['applied_coupon_code']
+        if 'applied_coupon_id' in request.session:
+            del request.session['applied_coupon_id']
+        if 'coupon_discount' in request.session:
+            del request.session['coupon_discount']
 
 
     return JsonResponse({
@@ -1204,14 +1254,24 @@ def create_order_after_failed_payment(request):
         except Cart.DoesNotExist:
             return JsonResponse({"error": "No cart found"}, status=400)
 
-        # Calculate net amount from cart
-        net_amount = sum(item.get_total_price() for item in cart_items)
+        # Calculate subtotal from cart
+        subtotal = sum(item.get_total_price() for item in cart_items)
+        
+        # Get coupon discount from session
+        coupon_code = request.session.get('applied_coupon_code', '')
+        coupon_discount = float(request.session.get('coupon_discount', 0))
+        
+        # Calculate final amount after discount
+        net_amount = subtotal - coupon_discount
 
         # Create order with payment pending
         with transaction.atomic():
             order = Order.objects.create(
                 user=request.user,
                 address=address,
+                subtotal=subtotal,
+                coupon_code=coupon_code,
+                coupon_discount=coupon_discount,
                 net_amount=net_amount,
                 status='pending',
                 is_paid=False,
@@ -1407,14 +1467,44 @@ def verification(request):
                 # You can mark user as verified here (maybe add `is_verified` field to model)
                 user_session_data = request.session.get('userdata')
                 try:
+                    # Get referrer if exists
+                    referrer = None
+                    referrer_id = user_session_data.get('referrer_id')
+                    if referrer_id:
+                        try:
+                            referrer = CustomUser.objects.get(id=referrer_id)
+                        except CustomUser.DoesNotExist:
+                            pass
+                    
+                    # Create new user
                     user = CustomUser.objects.create(
                         first_name=user_session_data['first_name'],
                         last_name=user_session_data['last_name'],
                         email=user_session_data['email'],
                         phone_no=user_session_data['phone_no'],
-                        password=user_session_data['password']
-
+                        password=user_session_data['password'],
+                        referred_by=referrer
                     )
+                    
+                    # Create referral reward coupon for the referrer
+                    if referrer:
+                        # Generate unique coupon code
+                        coupon_code = f"REF{referrer.referral_code[:4]}{user.id}"
+                        
+                        # Create coupon valid for 90 days
+                        Coupon.objects.create(
+                            code=coupon_code,
+                            description=f"Referral reward for referring {user.first_name} {user.last_name}",
+                            discount_type='fixed',
+                            discount_value=300,
+                            minimum_amount=0,
+                            valid_from=timezone.now(),
+                            valid_until=timezone.now() + timedelta(days=90),
+                            is_active=True,
+                            specific_user=referrer,
+                            is_referral_reward=True
+                        )
+                        logger.info(f"Referral coupon {coupon_code} created for user {referrer.email}")
 
                 except Exception as e:
                     messages.error(request, f'Error - {e}')
@@ -1817,13 +1907,23 @@ def verify_razorpay_payment(request):
                 if not cart_items.exists():
                     return JsonResponse({"error": "Cart is empty"}, status=400)
 
-                # Recalculate net amount from cart (don't trust client)
-                net_amount = sum(item.get_total_price() for item in cart_items)
+                # Recalculate subtotal from cart (don't trust client)
+                subtotal = sum(item.get_total_price() for item in cart_items)
+                
+                # Get coupon discount from session
+                coupon_code = request.session.get('applied_coupon_code', '')
+                coupon_discount = float(request.session.get('coupon_discount', 0))
+                
+                # Calculate final amount after discount
+                net_amount = subtotal - coupon_discount
 
                 # Create order
                 order = Order.objects.create(
                     user=request.user,
                     address=address,
+                    subtotal=subtotal,
+                    coupon_code=coupon_code,
+                    coupon_discount=coupon_discount,
                     net_amount=net_amount,
                     status="pending",
                     order_date=timezone.now(),
@@ -1851,9 +1951,13 @@ def verify_razorpay_payment(request):
                 # Clear cart
                 cart.delete()
                 
-                # Mark confirmed after successful item creation
-                order.status = "confirmed"
-                order.save(update_fields=["status"])
+                # Clear coupon from session after successful order
+                if 'applied_coupon_code' in request.session:
+                    del request.session['applied_coupon_code']
+                if 'applied_coupon_id' in request.session:
+                    del request.session['applied_coupon_id']
+                if 'coupon_discount' in request.session:
+                    del request.session['coupon_discount']
 
                 return JsonResponse({
                     "status": "success",
@@ -1903,20 +2007,10 @@ def apply_coupon(request):
         except Coupon.DoesNotExist:
             return JsonResponse({"success": False, "error": "Invalid or inactive coupon code"}, status=400)
         
-        # Check validity dates
-        now = timezone.now()
-        if coupon.valid_from > now:
-            return JsonResponse({"success": False, "error": "Coupon not yet valid"}, status=400)
-        
-        if coupon.valid_until < now:
-            return JsonResponse({"success": False, "error": "Coupon has expired"}, status=400)
-        
-        # Check minimum amount
-        if subtotal < coupon.minimum_amount:
-            return JsonResponse({
-                "success": False, 
-                "error": f"Minimum order amount of ₹{coupon.minimum_amount} required"
-            }, status=400)
+        # Use the is_valid method which checks user-specific coupons
+        is_valid, error_message = coupon.is_valid(user=request.user, cart_total=subtotal)
+        if not is_valid:
+            return JsonResponse({"success": False, "error": error_message}, status=400)
         
         # Calculate discount
         if coupon.discount_type == 'percentage':
@@ -1974,7 +2068,10 @@ def get_available_coupons(request):
     try:
         # Get all active coupons that are currently valid
         now = timezone.now()
+        # Include general coupons (specific_user=None) and user-specific coupons for this user
+        from django.db.models import Q
         coupons = Coupon.objects.filter(
+            Q(specific_user=None) | Q(specific_user=request.user),
             is_active=True,
             valid_from__lte=now,
             valid_until__gte=now
@@ -1982,15 +2079,18 @@ def get_available_coupons(request):
         
         coupons_data = []
         for coupon in coupons:
-            coupons_data.append({
+            coupon_dict = {
                 'code': coupon.code,
                 'description': coupon.description or '',
                 'discount_type': coupon.discount_type,
                 'discount_value': float(coupon.discount_value),
                 'minimum_amount': float(coupon.minimum_amount),
                 'maximum_discount': float(coupon.maximum_discount) if coupon.maximum_discount else None,
-                'valid_until': coupon.valid_until.isoformat()
-            })
+                'valid_until': coupon.valid_until.isoformat(),
+                'is_exclusive': coupon.specific_user is not None,
+                'is_referral_reward': coupon.is_referral_reward
+            }
+            coupons_data.append(coupon_dict)
         
         return JsonResponse({
             "success": True,

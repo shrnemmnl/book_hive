@@ -77,7 +77,11 @@
                   <p class="mb-0"><strong>Placed On:</strong> {{ order.created_at|date:"d M Y" }}</p>
                 </div>
                 <div class="col-md-3">
-                  <p class="mb-0"><strong>Total:</strong> ₹{{ order.net_amount }}</p>
+                  <p class="mb-0"><strong>Total:</strong> ₹{{ order.net_amount|floatformat:2 }}
+                    {% if order.coupon_discount and order.coupon_discount > 0 %}
+                      <span class="badge bg-success ms-1" style="font-size: 0.65rem;"><i class="bi bi-tag-fill"></i> {{ order.coupon_code }}</span>
+                    {% endif %}
+                  </p>
                 </div>
                 <div class="col-md-3 text-md-end">
                   <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'request to cancel' %}dark{% elif order.status == 'request to return' %}dark
@@ -171,9 +175,12 @@
                       <p><strong>Shipping Address:</strong><br>{{ order.address }}</p>
                     </div>
                     <div class="col-md-6 text-md-end">
-                      <p><strong>Subtotal:</strong> ₹{{ order.net_amount }}</p>
+                      <p><strong>Subtotal:</strong> ₹{{ order.subtotal|floatformat:2 }}</p>
+                      {% if order.coupon_discount and order.coupon_discount > 0 %}
+                      <p class="text-success"><strong>Coupon Discount ({{ order.coupon_code }}):</strong> -₹{{ order.coupon_discount|floatformat:2 }}</p>
+                      {% endif %}
                       <p><strong>Shipping:</strong> Free</p>
-                      <p><strong>Total:</strong> ₹{{ order.net_amount }}</p>
+                      <p class="fw-bold text-primary"><strong>Total:</strong> ₹{{ order.net_amount|floatformat:2 }}</p>
                     </div>
                   </div>
                 </div>

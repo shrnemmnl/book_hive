@@ -1,7 +1,6 @@
-from datetime import timezone
 from django.db import models
 from django.forms import ValidationError
-from django.utils.timezone import now
+from django.utils import timezone
 
 
 # Create your models here.
@@ -26,7 +25,7 @@ class Product(models.Model):
     discount_percentage = models.PositiveIntegerField(default=0, help_text="Enter % discount (e.g., 10 for 10%)")
     is_offer = models.BooleanField(default=False, help_text="Is there an active offer?")
     offer_title = models.CharField(max_length=100, blank=True, null=True, help_text="Offer name like 'Summer Sale'")
-    created_at = models.DateTimeField(default=now)  # Auto timestamp
+    created_at = models.DateTimeField(default=timezone.now())  # Auto timestamp
     updated_at = models.DateTimeField(auto_now=True)  # Auto-updated on modification
 
     def __str__(self):
@@ -71,6 +70,9 @@ class Coupon(models.Model):
     valid_from = models.DateTimeField()
     valid_until = models.DateTimeField()
     is_active = models.BooleanField(default=True)
+    # User-specific coupon (null means it's available for everyone)
+    specific_user = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, null=True, blank=True, related_name='exclusive_coupons')
+    is_referral_reward = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -84,6 +86,13 @@ class Coupon(models.Model):
         # Check if coupon is active
         if not self.is_active:
             return False, "This coupon is not active."
+        
+        # Check if coupon is user-specific
+        if self.specific_user and user:
+            if self.specific_user != user:
+                return False, "This coupon is not available for you."
+        elif self.specific_user and not user:
+            return False, "This coupon requires authentication."
         
         # Check date validity
         if now < self.valid_from:

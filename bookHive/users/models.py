@@ -8,10 +8,7 @@ from django.utils import timezone
 from admin_panel.models import Product
 import datetime
 import random
-
-# import uuid
-# import random
-# import string
+import string
 
 
 
@@ -36,6 +33,11 @@ class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)  # Make email unique
     phone_no = models.BigIntegerField(unique=True, null=True, blank=True)  
     is_verified = models.BooleanField(default=False)
+    
+    # Referral system fields
+    referral_code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    referred_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='referrals')
+
     profile_pic = models.ImageField(
         upload_to='profile_pics/',  # where it stores in media/
         default='profile_pics/default.jpg',  # this should exist in your media folder!
@@ -51,6 +53,19 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email 
+
+    def generate_referral_code(self):
+        """Generate a unique referral code"""
+        while True:
+            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            if not CustomUser.objects.filter(referral_code=code).exists():
+                return code
+    
+    def save(self, *args, **kwargs):
+        # Generate referral code if it doesn't exist
+        if not self.referral_code:
+            self.referral_code = self.generate_referral_code()
+        super().save(*args, **kwargs)
     
 class Address(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='addresses')
@@ -120,6 +135,9 @@ class Order(models.Model):
     razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
     razorpay_signature = models.CharField(max_length=200, blank=True, null=True)
     payment_method = models.CharField(max_length=100, default='None')
+    coupon_code = models.CharField(max_length=50, blank=True, null=True)
+    coupon_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f"Order #{self.order_id} - {self.user.username}"
@@ -127,7 +145,7 @@ class Order(models.Model):
     def generate_order_id(self):
         """Generate a unique order_id in the format BKDDMMYYYYHHMMSSmmm."""
         prefix = "BK"
-        timestamp = datetime.datetime.now()
+        timestamp = timezone.now()
 
         base_id = f"{prefix}{timestamp.strftime('%d%m%Y%H%M%S')}{str(timestamp.microsecond)[:3]}"
 

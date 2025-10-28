@@ -680,13 +680,24 @@
 
               const isEligible = parseFloat({{ subtotal }}) >= parseFloat(coupon.minimum_amount);
               
+              // Determine badge styling for exclusive/referral coupons
+              const exclusiveBadge = coupon.is_exclusive 
+                ? `<span class="badge bg-warning text-dark ms-2" style="font-size: 0.7rem;"><i class="bi bi-star-fill"></i> Exclusive</span>` 
+                : '';
+              
+              const referralBadge = coupon.is_referral_reward 
+                ? `<span class="badge bg-success ms-2" style="font-size: 0.7rem;"><i class="bi bi-gift-fill"></i> Referral Reward</span>` 
+                : '';
+              
               html += `
-                <div class="coupon-card mb-3 p-3 border rounded ${!isEligible ? 'opacity-50' : ''}" style="cursor: ${isEligible ? 'pointer' : 'not-allowed'};">
+                <div class="coupon-card mb-3 p-3 border rounded ${!isEligible ? 'opacity-50' : ''} ${coupon.is_exclusive ? 'border-warning' : ''}" style="cursor: ${isEligible ? 'pointer' : 'not-allowed'};">
                   <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
-                      <div class="d-flex align-items-center mb-2">
+                      <div class="d-flex align-items-center mb-2 flex-wrap">
                         <span class="badge bg-primary me-2">${coupon.code}</span>
                         <span class="fw-bold text-success">${discountText}</span>
+                        ${exclusiveBadge}
+                        ${referralBadge}
                       </div>
                       <p class="text-muted mb-2 small">${coupon.description || 'Special discount offer'}</p>
                       <div class="small text-muted">

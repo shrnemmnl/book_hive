@@ -60,6 +60,19 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label for="referral_code" class="form-label">Referral Code <span class="text-muted">(Optional)</span></label>
+                        <input type="text" class="form-control {% if errors.referral_code %}is-invalid{% endif %}" 
+                               id="referral_code" name="referral_code" value="{{ request.POST.referral_code|default:'' }}" 
+                               placeholder="Enter referral code if you have one"
+                               style="border-radius: 20px; text-transform: uppercase;">
+                        {% if errors.referral_code %}
+                            <div class="text-danger small">{{ errors.referral_code }}</div>
+                        {% else %}
+                            <small class="text-muted">Have a referral code? Enter it to help your friend earn rewards!</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control {% if errors.password %}is-invalid{% endif %}" 
                                id="password" name="password" required
