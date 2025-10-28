@@ -1,0 +1,210 @@
+{% extends 'admin/admin_base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h4 class="mb-0"><i class="bi bi-graph-up me-2"></i>Sales Report</h4>
+          <span class="badge bg-light text-primary">{{ filter_label }}</span>
+        </div>
+        <div class="card-body">
+          <!-- Filter Section -->
+          <form method="GET" action="{% url 'sales_report' %}" class="mb-4">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Filter By</label>
+                <select name="filter" class="form-select" id="filterType">
+                  <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All Time</option>
+                  <option value="today" {% if filter_type == 'today' %}selected{% endif %}>Today</option>
+                  <option value="week" {% if filter_type == 'week' %}selected{% endif %}>Past 7 Days</option>
+                  <option value="month" {% if filter_type == 'month' %}selected{% endif %}>Past 30 Days</option>
+                  <option value="custom" {% if filter_type == 'custom' %}selected{% endif %}>Custom Range</option>
+                </select>
+              </div>
+              
+              <div class="col-md-3" id="startDateDiv" style="display: {% if filter_type == 'custom' %}block{% else %}none{% endif %};">
+                <label class="form-label fw-semibold">Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+              </div>
+              
+              <div class="col-md-3" id="endDateDiv" style="display: {% if filter_type == 'custom' %}block{% else %}none{% endif %};">
+                <label class="form-label fw-semibold">End Date</label>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+              </div>
+              
+              <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                  <i class="bi bi-funnel me-1"></i> Apply Filter
+                </button>
+                <a href="{% url 'sales_report' %}" class="btn btn-outline-secondary">
+                  <i class="bi bi-x-circle me-1"></i> Clear
+                </a>
+              </div>
+            </div>
+          </form>
+
+          <!-- Summary Cards -->
+          <div class="row mb-4">
+            <div class="col-md-3">
+              <div class="card border-primary">
+                <div class="card-body text-center">
+                  <i class="bi bi-cart-check fs-1 text-primary mb-2"></i>
+                  <h6 class="text-muted mb-1">Total Orders</h6>
+                  <h3 class="mb-0 text-primary fw-bold">{{ summary.total_orders }}</h3>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-3">
+              <div class="card border-info">
+                <div class="card-body text-center">
+                  <i class="bi bi-currency-rupee fs-1 text-info mb-2"></i>
+                  <h6 class="text-muted mb-1">Subtotal</h6>
+                  <h3 class="mb-0 text-info fw-bold">₹{{ summary.total_subtotal|floatformat:2 }}</h3>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-3">
+              <div class="card border-warning">
+                <div class="card-body text-center">
+                  <i class="bi bi-tag fs-1 text-warning mb-2"></i>
+                  <h6 class="text-muted mb-1">Total Discount</h6>
+                  <h3 class="mb-0 text-warning fw-bold">₹{{ summary.total_discount|floatformat:2 }}</h3>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-3">
+              <div class="card border-success">
+                <div class="card-body text-center">
+                  <i class="bi bi-cash-stack fs-1 text-success mb-2"></i>
+                  <h6 class="text-muted mb-1">Net Amount</h6>
+                  <h3 class="mb-0 text-success fw-bold">₹{{ summary.total_amount|floatformat:2 }}</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Download Buttons -->
+          <div class="mb-3 d-flex justify-content-end gap-2">
+            <a href="{% url 'download_sales_report_pdf' %}?filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+               class="btn btn-danger">
+              <i class="bi bi-file-pdf me-1"></i> Download PDF
+            </a>
+            <a href="{% url 'download_sales_report_excel' %}?filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+               class="btn btn-success">
+              <i class="bi bi-file-earmark-excel me-1"></i> Download Excel
+            </a>
+          </div>
+
+          <!-- Orders Table -->
+          <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle">
+              <thead class="table-dark">
+                <tr>
+                  <th>Order ID</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Subtotal</th>
+                  <th>Discount</th>
+                  <th>Coupon</th>
+                  <th>Net Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for order in orders %}
+                <tr>
+                  <td class="fw-semibold">{{ order.order_id }}</td>
+                  <td>{{ order.created_at|date:"d M Y, H:i" }}</td>
+                  <td>{{ order.user.first_name }} {{ order.user.last_name }}</td>
+                  <td>₹{{ order.subtotal|floatformat:2 }}</td>
+                  <td class="text-success">
+                    {% if order.coupon_discount > 0 %}
+                      -₹{{ order.coupon_discount|floatformat:2 }}
+                    {% else %}
+                      ₹0.00
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if order.coupon_code %}
+                      <span class="badge bg-success">{{ order.coupon_code }}</span>
+                    {% else %}
+                      <span class="text-muted">N/A</span>
+                    {% endif %}
+                  </td>
+                  <td class="fw-bold text-primary">₹{{ order.net_amount|floatformat:2 }}</td>
+                  <td>
+                    <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'shipped' %}info{% elif order.status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                      {{ order.status|title }}
+                    </span>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="8" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    No orders found for the selected period
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          {% if orders.has_other_pages %}
+          <nav>
+            <ul class="pagination justify-content-center">
+              {% if orders.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ orders.previous_page_number }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">
+                  Previous
+                </a>
+              </li>
+              {% endif %}
+              
+              {% for num in orders.paginator.page_range %}
+                {% if orders.number == num %}
+                  <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > orders.number|add:'-3' and num < orders.number|add:'3' %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">
+                      {{ num }}
+                    </a>
+                  </li>
+                {% endif %}
+              {% endfor %}
+              
+              {% if orders.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ orders.next_page_number }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">
+                  Next
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </nav>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('filterType').addEventListener('change', function() {
+  const customDivs = ['startDateDiv', 'endDateDiv'];
+  if (this.value === 'custom') {
+    customDivs.forEach(id => document.getElementById(id).style.display = 'block');
+  } else {
+    customDivs.forEach(id => document.getElementById(id).style.display = 'none');
+  }
+});
+</script>
+{% endblock %}
+

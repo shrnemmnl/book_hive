@@ -10,12 +10,22 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.urls import reverse
 from django.shortcuts import  get_object_or_404
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils import timezone
-from django.db.models import F,Q
+from django.db.models import F,Q, Sum, Count, DecimalField
+from django.db.models.functions import TruncDate
 import base64
 import re
 from django.core.files.base import ContentFile
+from django.http import HttpResponse
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from io import BytesIO
 
 
 
@@ -930,3 +940,363 @@ def toggle_coupon_status(request, coupon_id):
         'coupon': coupon,
         'usage_count': usage_count,
     })
+
+
+# Sales Report Views
+def sales_report(request):
+    """Generate sales report with filtering options"""
+    # Get filter parameters
+    filter_type = request.GET.get('filter', 'all')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    # Base query - only completed/delivered orders
+    orders = Order.objects.filter(
+        status__in=['pending', 'shipped', 'delivered'],
+        is_active=True
+    ).select_related('user', 'address').prefetch_related('order_items__product_variant__product')
+    
+    # Apply filters
+    now = timezone.now()
+    filter_label = "All Time"
+    
+    if filter_type == 'today':
+        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        orders = orders.filter(created_at__gte=start_of_day)
+        filter_label = "Today"
+    elif filter_type == 'week':
+        start_of_week = now - timedelta(days=7)
+        orders = orders.filter(created_at__gte=start_of_week)
+        filter_label = "Past 7 Days"
+    elif filter_type == 'month':
+        start_of_month = now - timedelta(days=30)
+        orders = orders.filter(created_at__gte=start_of_month)
+        filter_label = "Past 30 Days"
+    elif filter_type == 'custom' and start_date and end_date:
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            end = end.replace(hour=23, minute=59, second=59)
+            orders = orders.filter(created_at__range=[start, end])
+            filter_label = f"{start_date} to {end_date}"
+        except ValueError:
+            messages.error(request, "Invalid date format")
+    
+    # Calculate summary statistics
+    summary = orders.aggregate(
+        total_orders=Count('id'),
+        total_amount=Sum('net_amount'),
+        total_discount=Sum('coupon_discount'),
+        total_subtotal=Sum('subtotal')
+    )
+    
+    # Handle None values
+    summary['total_orders'] = summary['total_orders'] or 0
+    summary['total_amount'] = summary['total_amount'] or 0
+    summary['total_discount'] = summary['total_discount'] or 0
+    summary['total_subtotal'] = summary['total_subtotal'] or 0
+    
+    # Get detailed order list
+    orders_list = orders.order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(orders_list, 20)
+    page = request.GET.get('page', 1)
+    
+    try:
+        orders_page = paginator.page(page)
+    except PageNotAnInteger:
+        orders_page = paginator.page(1)
+    except EmptyPage:
+        orders_page = paginator.page(paginator.num_pages)
+    
+    context = {
+        'orders': orders_page,
+        'summary': summary,
+        'filter_type': filter_type,
+        'filter_label': filter_label,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+    
+    return render(request, 'admin/sales_report.html', context)
+
+
+def download_sales_report_pdf(request):
+    """Download sales report as PDF"""
+    # Get same filters as main report
+    filter_type = request.GET.get('filter', 'all')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    # Apply same filtering logic
+    orders = Order.objects.filter(
+        status__in=['pending', 'shipped', 'delivered'],
+        is_active=True
+    ).select_related('user')
+    
+    now = timezone.now()
+    filter_label = "All Time"
+    
+    if filter_type == 'today':
+        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        orders = orders.filter(created_at__gte=start_of_day)
+        filter_label = "Today"
+    elif filter_type == 'week':
+        start_of_week = now - timedelta(days=7)
+        orders = orders.filter(created_at__gte=start_of_week)
+        filter_label = "Past 7 Days"
+    elif filter_type == 'month':
+        start_of_month = now - timedelta(days=30)
+        orders = orders.filter(created_at__gte=start_of_month)
+        filter_label = "Past 30 Days"
+    elif filter_type == 'custom' and start_date and end_date:
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            end = end.replace(hour=23, minute=59, second=59)
+            orders = orders.filter(created_at__range=[start, end])
+            filter_label = f"{start_date} to {end_date}"
+        except ValueError:
+            pass
+    
+    # Calculate summary
+    summary = orders.aggregate(
+        total_orders=Count('id'),
+        total_amount=Sum('net_amount'),
+        total_discount=Sum('coupon_discount'),
+        total_subtotal=Sum('subtotal')
+    )
+    
+    # Create PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#2563eb'),
+        spaceAfter=30,
+        alignment=1  # Center
+    )
+    elements.append(Paragraph("Book Hive - Sales Report", title_style))
+    elements.append(Paragraph(f"Period: {filter_label}", styles['Normal']))
+    elements.append(Paragraph(f"Generated: {now.strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Summary table
+    summary_data = [
+        ['Metric', 'Value'],
+        ['Total Orders', str(summary['total_orders'] or 0)],
+        ['Subtotal', f"₹{summary['total_subtotal'] or 0:.2f}"],
+        ['Total Discount', f"₹{summary['total_discount'] or 0:.2f}"],
+        ['Net Amount', f"₹{summary['total_amount'] or 0:.2f}"],
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[3*inch, 3*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 30))
+    
+    # Orders table
+    elements.append(Paragraph("Order Details", styles['Heading2']))
+    elements.append(Spacer(1, 12))
+    
+    orders_data = [['Order ID', 'Date', 'Customer', 'Subtotal', 'Discount', 'Net Amount']]
+    
+    for order in orders.order_by('-created_at')[:50]:  # Limit to 50 orders for PDF
+        orders_data.append([
+            order.order_id,
+            order.created_at.strftime('%Y-%m-%d'),
+            f"{order.user.first_name} {order.user.last_name}",
+            f"₹{order.subtotal:.2f}",
+            f"₹{order.coupon_discount:.2f}",
+            f"₹{order.net_amount:.2f}",
+        ])
+    
+    orders_table = Table(orders_data, colWidths=[1.2*inch, 1*inch, 1.5*inch, 1*inch, 1*inch, 1*inch])
+    orders_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+    ]))
+    elements.append(orders_table)
+    
+    # Build PDF
+    doc.build(elements)
+    
+    # Return response
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="sales_report_{filter_label.replace(" ", "_")}.pdf"'
+    
+    return response
+
+
+def download_sales_report_excel(request):
+    """Download sales report as Excel"""
+    # Get same filters as main report
+    filter_type = request.GET.get('filter', 'all')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    # Apply same filtering logic
+    orders = Order.objects.filter(
+        status__in=['pending', 'shipped', 'delivered'],
+        is_active=True
+    ).select_related('user')
+    
+    now = timezone.now()
+    filter_label = "All Time"
+    
+    if filter_type == 'today':
+        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        orders = orders.filter(created_at__gte=start_of_day)
+        filter_label = "Today"
+    elif filter_type == 'week':
+        start_of_week = now - timedelta(days=7)
+        orders = orders.filter(created_at__gte=start_of_week)
+        filter_label = "Past 7 Days"
+    elif filter_type == 'month':
+        start_of_month = now - timedelta(days=30)
+        orders = orders.filter(created_at__gte=start_of_month)
+        filter_label = "Past 30 Days"
+    elif filter_type == 'custom' and start_date and end_date:
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            end = end.replace(hour=23, minute=59, second=59)
+            orders = orders.filter(created_at__range=[start, end])
+            filter_label = f"{start_date} to {end_date}"
+        except ValueError:
+            pass
+    
+    # Calculate summary
+    summary = orders.aggregate(
+        total_orders=Count('id'),
+        total_amount=Sum('net_amount'),
+        total_discount=Sum('coupon_discount'),
+        total_subtotal=Sum('subtotal')
+    )
+    
+    # Create Excel workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Sales Report"
+    
+    # Styling
+    header_fill = PatternFill(start_color="2563eb", end_color="2563eb", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Title
+    ws['A1'] = "Book Hive - Sales Report"
+    ws['A1'].font = Font(bold=True, size=16, color="2563eb")
+    ws.merge_cells('A1:F1')
+    
+    ws['A2'] = f"Period: {filter_label}"
+    ws['A3'] = f"Generated: {now.strftime('%Y-%m-%d %H:%M')}"
+    
+    # Summary section
+    ws['A5'] = "Summary"
+    ws['A5'].font = Font(bold=True, size=14)
+    
+    summary_headers = ['Metric', 'Value']
+    for col, header in enumerate(summary_headers, 1):
+        cell = ws.cell(row=6, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = border
+        cell.alignment = Alignment(horizontal='center')
+    
+    summary_data = [
+        ['Total Orders', summary['total_orders'] or 0],
+        ['Subtotal', f"₹{summary['total_subtotal'] or 0:.2f}"],
+        ['Total Discount', f"₹{summary['total_discount'] or 0:.2f}"],
+        ['Net Amount', f"₹{summary['total_amount'] or 0:.2f}"],
+    ]
+    
+    for row_idx, (metric, value) in enumerate(summary_data, 7):
+        ws.cell(row=row_idx, column=1, value=metric).border = border
+        ws.cell(row=row_idx, column=2, value=value).border = border
+    
+    # Orders section
+    ws['A12'] = "Order Details"
+    ws['A12'].font = Font(bold=True, size=14)
+    
+    # Headers for orders
+    headers = ['Order ID', 'Date', 'Customer', 'Email', 'Subtotal', 'Discount', 'Coupon Code', 'Net Amount', 'Status']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=13, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = border
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Orders data
+    row_num = 14
+    for order in orders.order_by('-created_at'):
+        ws.cell(row=row_num, column=1, value=order.order_id).border = border
+        ws.cell(row=row_num, column=2, value=order.created_at.strftime('%Y-%m-%d %H:%M')).border = border
+        ws.cell(row=row_num, column=3, value=f"{order.user.first_name} {order.user.last_name}").border = border
+        ws.cell(row=row_num, column=4, value=order.user.email).border = border
+        ws.cell(row=row_num, column=5, value=f"₹{order.subtotal:.2f}").border = border
+        ws.cell(row=row_num, column=6, value=f"₹{order.coupon_discount:.2f}").border = border
+        ws.cell(row=row_num, column=7, value=order.coupon_code or 'N/A').border = border
+        ws.cell(row=row_num, column=8, value=f"₹{order.net_amount:.2f}").border = border
+        ws.cell(row=row_num, column=9, value=order.status.title()).border = border
+        row_num += 1
+    
+    # Adjust column widths
+    for column_cells in ws.columns:
+        max_length = 0
+        column_letter = None
+        
+        for cell in column_cells:
+            # Skip merged cells
+            if hasattr(cell, 'column_letter'):
+                column_letter = cell.column_letter
+                try:
+                    if cell.value and len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+        
+        if column_letter:
+            adjusted_width = min(max_length + 2, 50)  # Cap at 50 to avoid too wide columns
+            ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save to response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="sales_report_{filter_label.replace(" ", "_")}.xlsx"'
+    
+    wb.save(response)
+    return response
