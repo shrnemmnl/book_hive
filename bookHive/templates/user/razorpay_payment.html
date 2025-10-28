@@ -1,12 +1,12 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
   var options = {
-      "key": "{{ RAZORPAY_KEY_ID }}",  // ✅ from Django context
-      "amount": "{{ order.amount }}",
-      "currency": "{{ order.currency }}",
+      "key": "{{ razorpay_key }}",  // from Django context
+      "amount": "{{ amount }}",
+      "currency": "{{ razorpay_order.currency }}",
       "name": "Book Hive",
       "description": "Test Transaction",
-      "order_id": "{{ order.id }}",  // ✅ required
+      "order_id": "{{ order.id }}",  // required
       "handler": function (response){
           alert("Payment successful. Payment ID: " + response.razorpay_payment_id);
       },

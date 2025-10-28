@@ -3,60 +3,49 @@
 {% include 'includes/header.html' %}
 
 {% block address_css %}
-  <link rel="stylesheet" href="{% static 'css/address_style.css' %}">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<link rel="stylesheet" href="{% static 'css/address_style.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
+  integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 {% endblock address_css %}
 
 <!-- Checkout Section -->
 <section class="checkout-section py-3" style="background-color: #ffefdd;">
   <div class="container">
-    <!-- Checkout Progress -->
-    <!-- <div class="checkout-progress mb-5 rounded shadow-lg">
-      <div class="row justify-content-center">
-        <div class="col-lg-10">
-          <div class="progress-container d-flex justify-content-between position-relative">
-            <div class="progress-bar-bg"></div>
-            <div class="progress-step active">
-              <div class="step-icon"><i class="bi bi-cart-check"></i></div>
-              <div class="step-label">Cart</div>
-            </div>
-            <div class="progress-step active">
-              <div class="step-icon"><i class="bi bi-credit-card"></i></div>
-              <div class="step-label">Checkout</div>
-            </div>
-            <div class="progress-step">
-              <div class="step-icon"><i class="bi bi-check-circle"></i></div>
-              <div class="step-label">Confirmation</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div> -->
-
     <div class="row">
       <!-- Checkout Form -->
       <div class="col-lg-5 mb-4 mb-lg-0">
         <div class="checkout-form bg-white p-4 shadow-lg rounded">
           <!-- Shipping Information -->
           <div class="checkout-section mb-4">
-            <h4 class="section-title"><span class="section-number">1</span> Shipping Information</h4>
+            <h4 class="section-title">
+              <span class="section-number">1</span> Shipping Information
+            </h4>
+
             <form method="POST" id="checkoutForm">
               {% csrf_token %}
+
               <!-- Default Address Display -->
               <div id="defaultAddressSection" class="default-address-display p-4 mb-4 rounded" style="background-color: #f8f9fa;">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                   <h6 class="mb-0 fw-semibold">Delivery Address</h6>
                   <button type="button" class="btn btn-link text-primary p-0" id="changeAddressBtn">Change</button>
                 </div>
+
                 {% if addresses %}
                   {% with addresses|first as default_address %}
                     <div class="default-address-card">
                       <input type="hidden" name="shippingAddress" value="{{ default_address.id }}" id="selectedAddressId">
                       <div class="address-info">
-                        <h6 class="fw-bold mb-2">{{ default_address.user.first_name }} {{ default_address.user.last_name }}</h6>
+                        <h6 class="fw-bold mb-2">
+                          {{ default_address.user.first_name }} {{ default_address.user.last_name }}
+                        </h6>
                         <h6 class="fw-bold mb-2">{{ default_address.address_type|title }}</h6>
-                        <p class="address-details mb-0 text-muted">{{ default_address.street }}<br>{{ default_address.city }}, {{ default_address.state }} {{ default_address.postal_code }}<br>Phone: {{ default_address.phone }}</p>
+                        <p class="address-details mb-0 text-muted">
+                          {{ default_address.street }}<br>
+                          {{ default_address.city }}, {{ default_address.state }} {{ default_address.postal_code }}<br>
+                          Phone: {{ default_address.phone }}
+                        </p>
                       </div>
                     </div>
                   {% endwith %}
@@ -77,19 +66,36 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="cancelChangeBtn">Cancel</button>
                   </div>
                 </div>
+
                 <div class="addresses-grid">
                   {% for address in addresses %}
                     <div class="address-selection-card border rounded p-3 mb-3 position-relative" data-address-id="{{ address.id }}">
                       <div class="form-check mb-3">
-                        <input class="form-check-input me-2" type="radio" name="shippingAddressTemp" id="tempAddress{{ forloop.counter }}" value="{{ address.id }}" {% if forloop.first %}checked{% endif %}>
-                        <label class="form-check-label fw-bold fs-6" for="tempAddress{{ forloop.counter }}">{{ address.address_type|title }}</label>
+                        <input class="form-check-input me-2" type="radio" name="shippingAddressTemp"
+                               id="tempAddress{{ forloop.counter }}" value="{{ address.id }}"
+                               {% if forloop.first %}checked{% endif %}>
+                        <label class="form-check-label fw-bold fs-6" for="tempAddress{{ forloop.counter }}">
+                          {{ address.address_type|title }}
+                        </label>
                       </div>
+
                       <div class="address-details mb-3">
-                        <h6 class="fw-bold mb-2">{{ address.user.first_name }} {{ address.user.last_name }}</h6>
-                        <p class="mb-0 text-muted">{{ address.street }}<br>{{ address.city }}, {{ address.state }} {{ default_address.postal_code }}<br>Phone: {{ address.phone }}</p>
+                        <h6 class="fw-bold mb-2">
+                          {{ address.user.first_name }} {{ address.user.last_name }}
+                        </h6>
+                        <p class="mb-0 text-muted">
+                          {{ address.street }}<br>
+                          {{ address.city }}, {{ address.state }} {{ default_address.postal_code }}<br>
+                          Phone: {{ address.phone }}
+                        </p>
                       </div>
+
                       <div class="address-actions d-flex gap-2">
-                        <a href="{% url 'address_edit' address.id %}" class="btn btn-sm btn-outline-primary edit-address-btn" data-address-id="{{ address.id }}" data-bs-toggle="tooltip" title="Edit Address"><i class="bi bi-pencil"></i> Edit</a>
+                        <a href="{% url 'address_edit' address.id %}"
+                           class="btn btn-sm btn-outline-primary edit-address-btn"
+                           data-address-id="{{ address.id }}" data-bs-toggle="tooltip" title="Edit Address">
+                          <i class="bi bi-pencil"></i> Edit
+                        </a>
                       </div>
                     </div>
                   {% empty %}
@@ -99,34 +105,54 @@
                     </div>
                   {% endfor %}
                 </div>
+
                 {% if addresses %}
                   <div class="text-center mt-3">
-                    <button type="button" class="btn btn-primary" id="confirmAddressBtn">Deliver to this Address</button>
+                    <button type="button" class="btn btn-primary" id="confirmAddressBtn">
+                      Deliver to this Address
+                    </button>
                   </div>
                 {% endif %}
               </div>
 
+              <hr>
+
               <!-- Payment Information -->
               <div class="checkout-section p-4 rounded" style="background-color: #f8f9fa;">
-                <h4 class="section-title mb-4"><span class="section-number">2</span> Payment Method</h4>
+                <h4 class="section-title mb-4">
+                  <span class="section-number">2</span> Payment Method
+                </h4>
+
                 <div class="form-check mb-3 d-flex align-items-center">
                   <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentRazorpay" value="razorpay" required>
-                  <label class="form-check-label fs-5" for="paymentRazorpay"><i class="bi bi-credit-card me-2"></i> Razorpay</label>
+                  <label class="form-check-label fs-5" for="paymentRazorpay">
+                    <i class="bi bi-credit-card me-2"></i> Razorpay
+                  </label>
                 </div>
+
                 <div class="form-check mb-3 d-flex align-items-center">
                   <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentWallet" value="wallet">
-                  <label class="form-check-label fs-5" for="paymentWallet"><i class="bi bi-wallet2 me-2"></i> Wallet</label>
+                  <label class="form-check-label fs-5" for="paymentWallet">
+                    <i class="bi bi-wallet2 me-2"></i> Wallet
+                  </label>
                 </div>
+
                 <div class="form-check mb-3 d-flex align-items-center">
                   <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentCOD" value="cod">
-                  <label class="form-check-label fs-5" for="paymentCOD"><i class="bi bi-cash-coin me-2"></i> Cash on Delivery</label>
+                  <label class="form-check-label fs-5" for="paymentCOD">
+                    <i class="bi bi-cash-coin me-2"></i> Cash on Delivery
+                  </label>
                 </div>
               </div>
 
               <div class="text-center mt-3">
-                <small class="text-muted">By placing your order, you agree to our <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a></small>
+                <small class="text-muted">
+                  By placing your order, you agree to our
+                  <a href="#" class="text-decoration-none">Terms of Service</a> and
+                  <a href="#" class="text-decoration-none">Privacy Policy</a>
+                </small>
               </div>
-            
+
           </div>
         </div>
       </div>
@@ -135,6 +161,7 @@
       <div class="col-lg-7">
         <div class="order-summary bg-white p-4 shadow-lg rounded sticky-top" style="top: 20px;">
           <h4 class="mb-4 fw-semibold">Order Summary</h4>
+
           <div class="cart-items mb-4">
             {% for item in cart_items %}
               <div class="card mb-3 border-0 shadow-lg">
@@ -149,15 +176,20 @@
                         {% endif %}
                       {% endwith %}
                     </div>
+
                     <div class="col-9">
                       <h6 class="mb-1 fw-semibold">{{ item.product_variant.product.book_title }}</h6>
                       <small class="text-muted d-block mb-1">{{ item.product_variant.product.author }}</small>
                       <div class="d-flex justify-content-between align-items-center">
                         <div class="quantity-info">
                           <span class="badge bg-light text-dark">Qty: {{ item.quantity }}</span>
-                          {% if item.product_variant.format %}<small class="text-muted ms-1">({{ item.product_variant.format }})</small>{% endif %}
+                          {% if item.product_variant.format %}
+                            <small class="text-muted ms-1">({{ item.product_variant.format }})</small>
+                          {% endif %}
                         </div>
-                        <div class="price-info text-end fw-bold">₹{{ item.get_total_price }}</div>
+                        <div class="price-info text-end fw-bold">
+                          ₹{{ item.get_total_price }}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -170,42 +202,94 @@
               </div>
             {% endfor %}
           </div>
+
           <hr class="my-3">
+
+          <!-- Coupon Section -->
+          <div class="coupon-section mb-3 p-3 bg-light rounded">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-semibold mb-0">Have a Coupon?</h6>
+              {% if not applied_coupon %}
+                <button type="button" class="btn btn-sm btn-link text-primary p-0" data-bs-toggle="modal" data-bs-target="#couponsModal">
+                  <i class="bi bi-ticket-perforated"></i> Browse Coupons
+                </button>
+              {% endif %}
+            </div>
+            {% if applied_coupon %}
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <span class="badge bg-success">{{ applied_coupon.code }}</span>
+                  <small class="text-muted ms-2">-₹{{ coupon_discount|floatformat:2 }} saved</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="removeCouponBtn">Remove</button>
+              </div>
+            {% else %}
+              <div class="input-group">
+                <input type="text" class="form-control" id="couponCode" placeholder="Enter coupon code" style="text-transform: uppercase;">
+                <button class="btn btn-outline-primary" type="button" id="applyCouponBtn">Apply</button>
+              </div>
+              <small class="text-muted" id="couponMessage"></small>
+            {% endif %}
+          </div>
+
           <div class="order-totals">
             <div class="d-flex justify-content-between mb-2">
               <span>Subtotal ({{ cart_items|length }} item{{ cart_items|length|pluralize }})</span>
-              <span class="fw-medium">₹{{ subtotal|floatformat:2 }}</span>
+              <span class="fw-medium" id="subtotalAmount">₹{{ subtotal|floatformat:2 }}</span>
             </div>
+
             <div class="d-flex justify-content-between mb-2">
               <span>Shipping</span>
               <span class="text-success fw-medium">Free</span>
             </div>
-            {% if discount_amount %}
-              <div class="d-flex justify-content-between mb-2">
-                <span class="text-success">Discount {% if coupon_code %}<small>({{ coupon_code }})</small>{% endif %}</span>
-                <span class="text-success fw-medium">-₹{{ discount_amount|floatformat:2 }}</span>
+
+            {% if coupon_discount %}
+              <div class="d-flex justify-content-between mb-2" id="couponDiscountRow">
+                <span class="text-success">
+                  Coupon Discount 
+                  {% if applied_coupon %}
+                    <small>({{ applied_coupon.code }})</small>
+                  {% endif %}
+                </span>
+                <span class="text-success fw-medium" id="couponDiscountAmount">
+                  -₹{{ coupon_discount|floatformat:2 }}
+                </span>
               </div>
             {% endif %}
+
             <input type="hidden" name="total_amount" value="{{ total }}">
             <input type="hidden" name="tax_amount" value="{{ tax_amount }}">
             <input type="hidden" name="subtotal" value="{{ subtotal }}">
+
             <hr class="my-3">
+
             <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded">
               <span class="fw-bold fs-5">Total</span>
-              <span class="total-price fs-4 mb-0 text-primary fw-bold">₹ {{ total|floatformat:2 }}</span>
+              <span class="total-price fs-4 mb-0 text-primary fw-bold" id="grandTotal">
+                ₹ {{ total|floatformat:2 }}
+              </span>
             </div>
-            {% if total_savings %}
+
+            {% if coupon_discount %}
               <div class="text-center mb-3">
-                <small class="text-success"><i class="bi bi-tag-fill me-1"></i> You saved ₹{{ total_savings|floatformat:2 }} on this order!</small>
+                <small class="text-success">
+                  <i class="bi bi-tag-fill me-1"></i>
+                  You saved ₹{{ coupon_discount|floatformat:2 }} with coupon!
+                </small>
               </div>
             {% endif %}
           </div>
+
           <button type="submit" class="btn btn-primary w-100 mt-3 text-decoration-none shadow-lg" id="checkout-button">
             <i class="bi bi-cart-check-fill me-2"></i> Proceed to Checkout
           </button>
+
           </form>
+
           <div class="text-center mt-3">
-            <small class="text-muted"><i class="bi bi-shield-lock-fill me-1"></i> Secure checkout powered by SSL encryption</small>
+            <small class="text-muted">
+              <i class="bi bi-shield-lock-fill me-1"></i> Secure checkout powered by SSL encryption
+            </small>
           </div>
         </div>
       </div>
@@ -213,459 +297,793 @@
   </div>
 </section>
 
+
+<!-- Coupons Modal -->
+<div class="modal fade" id="couponsModal" tabindex="-1" aria-labelledby="couponsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="couponsModalLabel">
+          <i class="bi bi-ticket-perforated me-2"></i>Available Coupons
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="couponsContainer">
+          <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading available coupons...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Footer Placeholder -->
 {% include 'includes/footer.html' %}
 
 <style>
-/* Global Styles */
-.checkout-section {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #f5f6f5;
-}
-
-.container {
-  max-width: 1200px;
-}
-
-/* Progress Bar */
-.checkout-progress {
-  padding: 1px 0;
-}
-
-.progress-container {
-  padding: 15px 0 40px;
-}
-
-.progress-bar-bg {
-  position: absolute;
-  top: 28px;
-  left: 60px;
-  right: 60px;
-  height: 4px;
-  background-color: #e5e7eb;
-  z-index: 0;
-}
-
-.progress-step {
-  z-index: 1;
-  text-align: center;
-  width: 33.333%;
-}
-
-.progress-step .step-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  background-color: #fff;
-  border: 3px solid #e5e7eb;
-  border-radius: 50%;
-  margin: 0 auto 12px;
-  font-size: 24px;
-  color: #6b7280;
-  transition: all 0.3s ease;
-}
-
-.progress-step .step-label {
-  font-size: 16px;
-  font-weight: 600;
-  color: #6b7280;
-  transition: all 0.3s ease;
-}
-
-.progress-step.active .step-icon {
-  border-color: #2563eb;
-  background-color: #eff6ff;
-  color: #2563eb;
-}
-
-.progress-step.active .step-label {
-  color: #2563eb;
-  font-weight: 700;
-}
-
-/* Section Title */
-.section-title {
-  font-size: 22px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-  color: #1f2937;
-}
-
-.section-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background-color: #2563eb;
-  color: #fff;
-  border-radius: 50%;
-  font-size: 18px;
-  margin-right: 12px;
-}
-
-/* Address Cards */
-.default-address-display, .address-selection-card {
-  background-color: #f9fafb;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.address-selection-card {
-  cursor: pointer;
-  border: 2px solid #e5e7eb !important;
-}
-
-.address-selection-card:hover, .address-selection-card.selected {
-  border-color: #2563eb !important;
-  background-color: #f0f9ff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.address-info h6, .address-details h6 {
-  color: #1f2937;
-  font-weight: 600;
-}
-
-.address-details {
-  font-size: 14px;
-  line-height: 1.7;
-  color: #4b5563;
-}
-
-/* Buttons */
-.btn-primary {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  border: none;
-  font-weight: 600;
-  padding: 10px 20px;
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
-}
-
-#confirmAddressBtn {
-  background-color: #f59e0b;
-  border-color: #f59e0b;
-  color: #1f2937;
-  font-weight: 600;
-}
-
-#confirmAddressBtn:hover {
-  background-color: #d97706;
-  border-color: #d97706;
-}
-
-/* Order Summary */
-.order-summary {
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.cart-items .card {
-  border-radius: 8px;
-  transition: transform 0.2s ease;
-}
-
-.cart-items .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.order-totals .bg-light {
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-.total-price {
-  color: #2563eb;
-  font-weight: 700;
-}
-
-/* Payment Methods */
-.form-check-label {
-  font-weight: 500;
-  color: #1f2937;
-}
-
-.form-check-input:checked {
-  background-color: #2563eb;
-  border-color: #2563eb;
-}
-
-/* Responsive Adjustments */
-@media (max-width: 991px) {
-  .order-summary {
-    margin-top: 24px;
+  /* Global Styles */
+  .checkout-section {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #f5f6f5;
   }
-}
 
-@media (max-width: 767px) {
+  .container {
+    max-width: 1200px;
+  }
+
+  /* Progress Bar */
+  .checkout-progress {
+    padding: 1px 0;
+  }
+
+  .progress-container {
+    padding: 15px 0 40px;
+  }
+
   .progress-bar-bg {
-    left: 40px;
-    right: 40px;
-    top: 24px;
+    position: absolute;
+    top: 28px;
+    left: 60px;
+    right: 60px;
+    height: 4px;
+    background-color: #e5e7eb;
+    z-index: 0;
+  }
+
+  .progress-step {
+    z-index: 1;
+    text-align: center;
+    width: 33.333%;
   }
 
   .progress-step .step-icon {
-    width: 48px;
-    height: 48px;
-    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background-color: #fff;
+    border: 3px solid #e5e7eb;
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    font-size: 24px;
+    color: #6b7280;
+    transition: all 0.3s ease;
   }
 
   .progress-step .step-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: #6b7280;
+    transition: all 0.3s ease;
+  }
+
+  .progress-step.active .step-icon {
+    border-color: #2563eb;
+    background-color: #eff6ff;
+    color: #2563eb;
+  }
+
+  .progress-step.active .step-label {
+    color: #2563eb;
+    font-weight: 700;
+  }
+
+  /* Section Title */
+  .section-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    color: #1f2937;
+  }
+
+  .section-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: #2563eb;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 18px;
+    margin-right: 12px;
+  }
+
+  /* Address Cards */
+  .default-address-display,
+  .address-selection-card {
+    background-color: #f9fafb;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .address-selection-card {
+    cursor: pointer;
+    border: 2px solid #e5e7eb !important;
+  }
+
+  .address-selection-card:hover,
+  .address-selection-card.selected {
+    border-color: #2563eb !important;
+    background-color: #f0f9ff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .address-info h6,
+  .address-details h6 {
+    color: #1f2937;
+    font-weight: 600;
+  }
+
+  .address-details {
     font-size: 14px;
+    line-height: 1.7;
+    color: #4b5563;
   }
 
-  .cart-items .col-3 {
-    flex: 0 0 20%;
-    max-width: 20%;
+  /* Buttons */
+  .btn-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border: none;
+    font-weight: 600;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
   }
 
-  .cart-items .col-9 {
-    flex: 0 0 80%;
-    max-width: 80%;
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
   }
-}
 
-/* Animations */
-#defaultAddressSection, #addressSelectionSection {
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
+  #confirmAddressBtn {
+    background-color: #f59e0b;
+    border-color: #f59e0b;
+    color: #1f2937;
+    font-weight: 600;
+  }
 
-.fade-in {
-  animation: fadeIn 0.3s ease-in;
-}
+  #confirmAddressBtn:hover {
+    background-color: #d97706;
+    border-color: #d97706;
+  }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  /* Order Summary */
+  .order-summary {
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .cart-items .card {
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+  }
+
+  .cart-items .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .order-totals .bg-light {
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .total-price {
+    color: #2563eb;
+    font-weight: 700;
+  }
+
+  /* Payment Methods */
+  .form-check-label {
+    font-weight: 500;
+    color: #1f2937;
+  }
+
+  .form-check-input:checked {
+    background-color: #2563eb;
+    border-color: #2563eb;
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 991px) {
+    .order-summary {
+      margin-top: 24px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .progress-bar-bg {
+      left: 40px;
+      right: 40px;
+      top: 24px;
+    }
+
+    .progress-step .step-icon {
+      width: 48px;
+      height: 48px;
+      font-size: 20px;
+    }
+
+    .progress-step .step-label {
+      font-size: 14px;
+    }
+
+    .cart-items .col-3 {
+      flex: 0 0 20%;
+      max-width: 20%;
+    }
+
+    .cart-items .col-9 {
+      flex: 0 0 80%;
+      max-width: 80%;
+    }
+  }
+
+  /* Animations */
+  #defaultAddressSection,
+  #addressSelectionSection {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Coupon Modal Styles */
+  .coupon-card {
+    transition: all 0.3s ease;
+    background-color: #fff;
+  }
+
+  .coupon-card:not(.opacity-50):hover {
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    transform: translateY(-2px);
+    border-color: #2563eb !important;
+  }
+
+  .coupon-card .badge {
+    font-size: 0.9rem;
+    padding: 0.4em 0.8em;
+    letter-spacing: 0.5px;
+  }
 </style>
 
-<!-- <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script> -->
+
 <script defer>
-document.addEventListener('DOMContentLoaded', function () {
-  // Initialize tooltips
-  if (typeof bootstrap !== 'undefined') {
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltipTriggerList.forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-  } else {
-    console.warn('Bootstrap JavaScript not loaded; tooltips will not be initialized.');
-  }
 
-  // Address section elements
-  const defaultAddressSection = document.getElementById('defaultAddressSection');
-  const addressSelectionSection = document.getElementById('addressSelectionSection');
-  const changeAddressBtn = document.getElementById('changeAddressBtn');
-  const cancelChangeBtn = document.getElementById('cancelChangeBtn');
-  const confirmAddressBtn = document.getElementById('confirmAddressBtn');
-  const selectedAddressId = document.getElementById('selectedAddressId');
-  const checkoutForm = document.getElementById('checkoutForm');
-  const addressCards = document.querySelectorAll('.address-selection-card');
+  function showToast(message, type = 'info') {
+  const toastContainer = document.getElementById('toastContainer');
 
-  // Debug logging
-  console.log('Address section elements:', {
-    changeAddressBtn: !!changeAddressBtn,
-    defaultAddressSection: !!defaultAddressSection,
-    addressSelectionSection: !!addressSelectionSection,
-    confirmAddressBtn: !!confirmAddressBtn,
-    selectedAddressId: !!selectedAddressId,
-    addressCards: addressCards.length
-  });
+  // Create toast wrapper
+  const toast = document.createElement('div');
+  toast.className = `toast align-items-center text-white border-0 show`;
+  toast.role = 'alert';
+  toast.ariaLive = 'assertive';
+  toast.ariaAtomic = 'true';
 
-  // Change address button
-  changeAddressBtn?.addEventListener('click', () => {
-    console.log('Change address button clicked');
-    if (defaultAddressSection && addressSelectionSection) {
-      defaultAddressSection.classList.add('d-none');
-      addressSelectionSection.classList.remove('d-none');
-      addressSelectionSection.classList.add('fade-in');
-      defaultAddressSection.classList.remove('fade-in');
+  // Pick color based on type
+  let bgColor = '#0d6efd'; // default (blue/info)
+  if (type === 'success') bgColor = '#198754';
+  else if (type === 'error') bgColor = '#dc3545';
+  else if (type === 'warning') bgColor = '#ffc107';
+  
+  toast.style.backgroundColor = bgColor;
+  toast.style.marginBottom = '10px';
+  toast.style.minWidth = '250px';
+  toast.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
+
+  toast.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center px-3 py-2">
+      <div>${message}</div>
+      <button type="button" class="btn-close btn-close-white ms-2 mb-1" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  `;
+
+  toastContainer.appendChild(toast);
+
+  // Auto remove after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    if (typeof bootstrap !== 'undefined') {
+      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+      tooltipTriggerList.forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    } else {
+      console.warn('Bootstrap JavaScript not loaded; tooltips will not be initialized.');
     }
-  });
 
-  // Cancel change button
-  cancelChangeBtn?.addEventListener('click', () => {
-    console.log('Cancel change button clicked');
-    if (addressSelectionSection && defaultAddressSection) {
-      addressSelectionSection.classList.add('d-none');
-      defaultAddressSection.classList.remove('d-none');
-      defaultAddressSection.classList.add('fade-in');
-      addressSelectionSection.classList.remove('fade-in');
+    // Coupon functionality
+    const applyCouponBtn = document.getElementById('applyCouponBtn');
+    const removeCouponBtn = document.getElementById('removeCouponBtn');
+    const couponCodeInput = document.getElementById('couponCode');
+    const couponMessage = document.getElementById('couponMessage');
+    const couponsModal = document.getElementById('couponsModal');
+
+    // Load available coupons when modal opens
+    if (couponsModal) {
+      couponsModal.addEventListener('show.bs.modal', async function() {
+        const container = document.getElementById('couponsContainer');
+        
+        try {
+          const response = await fetch('{% url "get_available_coupons" %}', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const data = await response.json();
+          
+          if (data.success && data.coupons.length > 0) {
+            let html = '';
+            data.coupons.forEach(coupon => {
+              const discountText = coupon.discount_type === 'percentage' 
+                ? `${coupon.discount_value}% OFF` 
+                : `₹${coupon.discount_value} OFF`;
+              
+              const minAmountText = coupon.minimum_amount > 0 
+                ? `Min. order: ₹${coupon.minimum_amount}` 
+                : 'No minimum';
+              
+              const maxDiscountText = coupon.maximum_discount 
+                ? `Max discount: ₹${coupon.maximum_discount}` 
+                : '';
+
+              const isEligible = parseFloat({{ subtotal }}) >= parseFloat(coupon.minimum_amount);
+              
+              html += `
+                <div class="coupon-card mb-3 p-3 border rounded ${!isEligible ? 'opacity-50' : ''}" style="cursor: ${isEligible ? 'pointer' : 'not-allowed'};">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                      <div class="d-flex align-items-center mb-2">
+                        <span class="badge bg-primary me-2">${coupon.code}</span>
+                        <span class="fw-bold text-success">${discountText}</span>
+                      </div>
+                      <p class="text-muted mb-2 small">${coupon.description || 'Special discount offer'}</p>
+                      <div class="small text-muted">
+                        <div>${minAmountText}</div>
+                        ${maxDiscountText ? `<div>${maxDiscountText}</div>` : ''}
+                        <div>Valid till: ${new Date(coupon.valid_until).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                    <div>
+                      ${isEligible 
+                        ? `<button class="btn btn-sm btn-outline-primary apply-coupon-modal" data-code="${coupon.code}">Apply</button>`
+                        : `<button class="btn btn-sm btn-outline-secondary" disabled>Not Eligible</button>`
+                      }
+                    </div>
+                  </div>
+                </div>
+              `;
+            });
+            container.innerHTML = html;
+
+            // Add event listeners to apply buttons
+            document.querySelectorAll('.apply-coupon-modal').forEach(btn => {
+              btn.addEventListener('click', async function() {
+                const code = this.getAttribute('data-code');
+                await applyCouponFromModal(code);
+              });
+            });
+          } else {
+            container.innerHTML = `
+              <div class="text-center py-5">
+                <i class="bi bi-ticket-perforated fs-1 text-muted mb-3"></i>
+                <p class="text-muted">No coupons available at this time</p>
+              </div>
+            `;
+          }
+        } catch (error) {
+          console.error('Error loading coupons:', error);
+          container.innerHTML = `
+            <div class="text-center py-5">
+              <i class="bi bi-exclamation-circle fs-1 text-danger mb-3"></i>
+              <p class="text-muted">Failed to load coupons. Please try again.</p>
+            </div>
+          `;
+        }
+      });
     }
-  });
 
-  // Address card selection
-  addressCards.forEach(card => {
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.address-actions')) return;
-      const radioInput = card.querySelector('input[type="radio"]');
-      if (radioInput) {
-        radioInput.checked = true;
-        addressCards.forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        console.log(`Selected address ID: ${radioInput.value}`);
+    // Apply coupon from modal
+    async function applyCouponFromModal(code) {
+      try {
+        const response = await fetch('{% url "apply_coupon" %}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+          },
+          body: JSON.stringify({ code: code })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          showToast('Coupon applied successfully!', 'success');
+          // Close modal
+          const modal = bootstrap.Modal.getInstance(couponsModal);
+          modal.hide();
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          showToast(data.error || 'Failed to apply coupon', 'error');
+        }
+      } catch (error) {
+        console.error('Error applying coupon:', error);
+        showToast('Failed to apply coupon', 'error');
+      }
+    }
+
+    if (applyCouponBtn) {
+      applyCouponBtn.addEventListener('click', async function() {
+        const code = couponCodeInput.value.trim().toUpperCase();
+        if (!code) {
+          showToast('Please enter a coupon code', 'warning');
+          return;
+        }
+
+        try {
+          const response = await fetch('{% url "apply_coupon" %}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ code: code })
+          });
+
+          const data = await response.json();
+          
+          if (data.success) {
+            showToast('Coupon applied successfully!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            showToast(data.error || 'Invalid coupon code', 'error');
+          }
+        } catch (error) {
+          console.error('Error applying coupon:', error);
+          showToast('Failed to apply coupon', 'error');
+        }
+      });
+    }
+
+    if (removeCouponBtn) {
+      removeCouponBtn.addEventListener('click', async function() {
+        try {
+          const response = await fetch('{% url "remove_coupon" %}', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': '{{ csrf_token }}'
+            }
+          });
+
+          const data = await response.json();
+          
+          if (data.success) {
+            showToast('Coupon removed', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+          } else {
+            showToast('Failed to remove coupon', 'error');
+          }
+        } catch (error) {
+          console.error('Error removing coupon:', error);
+          showToast('Failed to remove coupon', 'error');
+        }
+      });
+    }
+
+    // Address section elements
+    const defaultAddressSection = document.getElementById('defaultAddressSection');
+    const addressSelectionSection = document.getElementById('addressSelectionSection');
+    const changeAddressBtn = document.getElementById('changeAddressBtn');
+    const cancelChangeBtn = document.getElementById('cancelChangeBtn');
+    const confirmAddressBtn = document.getElementById('confirmAddressBtn');
+    const selectedAddressId = document.getElementById('selectedAddressId');
+    const checkoutForm = document.getElementById('checkoutForm');
+    const addressCards = document.querySelectorAll('.address-selection-card');
+    // Debug logging
+    console.log('Address section elements:', {
+      changeAddressBtn: !!changeAddressBtn,
+      defaultAddressSection: !!defaultAddressSection,
+      addressSelectionSection: !!addressSelectionSection,
+      confirmAddressBtn: !!confirmAddressBtn,
+      selectedAddressId: !!selectedAddressId,
+      addressCards: addressCards.length
+    });
+    // Change address button
+    changeAddressBtn?.addEventListener('click', () => {
+      console.log('Change address button clicked');
+      if (defaultAddressSection && addressSelectionSection) {
+        defaultAddressSection.classList.add('d-none');
+        addressSelectionSection.classList.remove('d-none');
+        addressSelectionSection.classList.add('fade-in');
+        defaultAddressSection.classList.remove('fade-in');
       }
     });
-  });
-
-  // Confirm address selection
-  confirmAddressBtn?.addEventListener('click', () => {
-    console.log('Confirm address button clicked');
-    const selectedRadio = document.querySelector('input[name="shippingAddressTemp"]:checked');
-    if (selectedRadio && defaultAddressSection) {
-      const addressId = selectedRadio.value;
-      const selectedCard = selectedRadio.closest('.address-selection-card');
-      if (selectedCard) {
-        const addressName = selectedCard.querySelector('.address-details h6').textContent;
-        const addressType = selectedCard.querySelector('.form-check-label').textContent;
-        const addressDetails = selectedCard.querySelector('.address-details p').innerHTML;
-        const defaultAddressCard = defaultAddressSection.querySelector('.default-address-card');
-        if (defaultAddressCard) {
-          defaultAddressCard.querySelector('h6:nth-of-type(1)').textContent = addressName;
-          defaultAddressCard.querySelector('h6:nth-of-type(2)').textContent = addressType;
-          defaultAddressCard.querySelector('.address-details').innerHTML = addressDetails;
-          if (selectedAddressId) {
-            selectedAddressId.value = addressId;
-            console.log(`Updated selected address ID: ${addressId}`);
-          }
-        }
+    // Cancel change button
+    cancelChangeBtn?.addEventListener('click', () => {
+      console.log('Cancel change button clicked');
+      if (addressSelectionSection && defaultAddressSection) {
         addressSelectionSection.classList.add('d-none');
         defaultAddressSection.classList.remove('d-none');
         defaultAddressSection.classList.add('fade-in');
         addressSelectionSection.classList.remove('fade-in');
       }
-    }
-  });
-
-  // Prevent card click when clicking edit button
-  const editButtons = document.querySelectorAll('.edit-address-btn');
-  editButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
     });
-  });
-
-  // Handle form submission
-  checkoutForm.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    console.log('Checkout form submitted');
-
-    const formData = new FormData(checkoutForm);
-    const paymentMethod = formData.get('payment_method');
-    const addressId = formData.get('shippingAddress');
-    const totalAmount = formData.get('total_amount');
-
-    if (!addressId) {
-      toastr.danger('Please select a delivery address.');
-      return;
-    }
-
-    if (!paymentMethod) {
-      toastr.danger('Please select a payment method.');
-      return;
-    }
-
-    if (paymentMethod === 'razorpay') {
-      try {
-        // Create Razorpay order
-        const response = await fetch("{% url 'create_razorpay_order' %}", {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-          },
-          body: JSON.stringify({
-            amount: totalAmount,
-            address_id: addressId
-          })
-        });
-
-        const order = await response.json();
-        if (order.error) {
-          toastr.danger('Error creating order: ' + order.error);
-          return;
+    // Address card selection
+    addressCards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.address-actions')) return;
+        const radioInput = card.querySelector('input[type="radio"]');
+        if (radioInput) {
+          radioInput.checked = true;
+          addressCards.forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          console.log(`Selected address ID: ${radioInput.value}`);
         }
-
-        // Open Razorpay checkout
-        const options = {
-          key: '{{ razorpay_key_id }}', // Set in Django settings or context
-          amount: order.amount,
-          currency: 'INR',
-          name: 'Your E-commerce Store',
-          description: 'Order Payment',
-          image: '{% static "images/logo.png" %}',
-          order_id: order.order_id,
-          handler: function (response) {
-            // Handle successful payment
-            fetch("{% url 'verify_razorpay_payment' %}", {
+      });
+    });
+    // Confirm address selection
+    confirmAddressBtn?.addEventListener('click', () => {
+      console.log('Confirm address button clicked');
+      const selectedRadio = document.querySelector('input[name="shippingAddressTemp"]:checked');
+      if (selectedRadio && defaultAddressSection) {
+        const addressId = selectedRadio.value;
+        const selectedCard = selectedRadio.closest('.address-selection-card');
+        if (selectedCard) {
+          const addressName = selectedCard.querySelector('.address-details h6').textContent;
+          const addressType = selectedCard.querySelector('.form-check-label').textContent;
+          const addressDetails = selectedCard.querySelector('.address-details p').innerHTML;
+          const defaultAddressCard = defaultAddressSection.querySelector('.default-address-card');
+          if (defaultAddressCard) {
+            defaultAddressCard.querySelector('h6:nth-of-type(1)').textContent = addressName;
+            defaultAddressCard.querySelector('h6:nth-of-type(2)').textContent = addressType;
+            defaultAddressCard.querySelector('.address-details').innerHTML = addressDetails;
+            if (selectedAddressId) {
+              selectedAddressId.value = addressId;
+              console.log(`Updated selected address ID: ${addressId}`);
+            }
+          }
+          addressSelectionSection.classList.add('d-none');
+          defaultAddressSection.classList.remove('d-none');
+          defaultAddressSection.classList.add('fade-in');
+          addressSelectionSection.classList.remove('fade-in');
+        }
+      }
+    });
+    // Prevent card click when clicking edit button
+    const editButtons = document.querySelectorAll('.edit-address-btn');
+    editButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    });
+    // Handle form submission
+    checkoutForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      console.log('Checkout form submitted');
+      const formData = new FormData(checkoutForm);
+      const paymentMethod = formData.get('payment_method');
+      const addressId = formData.get('shippingAddress');
+      const totalAmount = formData.get('total_amount');
+      if (!addressId) {
+        
+        showToast('Please select a delivery address.', 'warning');
+        return;
+      }
+      if (!paymentMethod) {
+        showToast('Please select a payment method.', 'warning');
+        
+        return;
+      }
+      if (paymentMethod === 'razorpay') {
+        try {
+          // Create Razorpay order
+          const response = await fetch("{% url 'create_razorpay_order' %}", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            },
+            body: JSON.stringify({
+              amount: totalAmount,
+              address_id: addressId
+            })
+          });
+          const order = await response.json();
+          if (order.error) {
+            showToast(order.error || 'Error creating order', 'error');
+            
+            return;
+          }
+          // Open Razorpay checkout
+          const options = {
+            key: '{{ razorpay_key_id }}', // Razorpay key from context
+            amount: order.amount,
+            currency: 'INR',
+            name: 'Book Hive',
+            description: 'Order Payment',
+            image: '{% static "images/main-bh-logo.png" %}',
+            order_id: order.order_id,
+            handler: function(response) {
+              // Handle successful payment
+              fetch("{% url 'verify_razorpay_payment' %}", {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                },
+                body: JSON.stringify({
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature,
+                  address_id: addressId,
+                  total_amount: totalAmount
+                })
+              }).then(res => res.json()).then(data => {
+                if (data.status === 'success') {
+                  window.location.href = "/order-confirm/" + data.order_id + "/";
+                } else {
+                  const failUrl = new URL('{% url "order_failed" %}', window.location.origin);
+                  window.location.href = failUrl.toString();
+                }
+              }).catch(error => {
+                console.error('Payment verification error: ', error);
+                const failUrl = new URL('{% url "order_failed" %}', window.location.origin);
+                window.location.href = failUrl.toString();
+              });
+            },
+            prefill: {
+              name: '{{ request.user.first_name }} {{ request.user.last_name }}',
+              email: '{{ request.user.email }}',
+              contact: '{{ request.user.phone_no }}'
+            },
+            theme: {
+              color: '#2563eb'
+            },
+            modal: {
+              ondismiss: function(){
+                console.log('Payment cancelled by user');
+              }
+            }
+          };
+          const rzp = new Razorpay(options);
+          rzp.on('payment.failed', function (response){
+            console.error('Payment failed:', response.error);
+            // Create order with payment pending, then redirect to failure page
+            fetch('{% url "create_order_after_failed_payment" %}', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': formData.get('csrfmiddlewaretoken')
               },
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                address_id: addressId,
-                total_amount: totalAmount
-              })
+              body: JSON.stringify({ address_id: addressId })
             }).then(res => res.json()).then(data => {
-              if (data.status === 'success') {
-                window.location.href = "/order-confirm/" + data.order_id + "/";
-              } else {
-                alert('Payment verification failed: ' + data.error);
+              const failUrl = new URL('{% url "order_failed" %}', window.location.origin);
+              if (data.order_id) {
+                failUrl.searchParams.set('order_id', data.order_id);
               }
+              window.location.href = failUrl.toString();
+            }).catch(() => {
+              const failUrl = new URL('{% url "order_failed" %}', window.location.origin);
+              window.location.href = failUrl.toString();
             });
-          },
-          prefill: {
-            name: '{{ request.user.first_name }} {{ request.user.last_name }}',
-            email: '{{ request.user.email }}',
-            contact: '{{ request.user.phone_no }}'
-          },
-          theme: {
-            color: '#2563eb' // Matches --primary-color
-          }
-        };
+          });
+          rzp.open();
+        } catch (error) {
+          console.error('Error initiating payment: ', error);
+          showToast('Failed to initiate payment. Please try again.', 'error');
+        }
 
-        const rzp = new Razorpay(options);
-        rzp.open();
-      } catch (error) {
-        console.error('Error initiating payment:', error);
-        toastr.danger('Failed to initiate payment. Please try again.');
-      }
-    } else if (paymentMethod === 'wallet') {
-      // Handle wallet payment (submit form to backend)
-      checkoutForm.action = "{% url 'user_wallet' %}";
-      checkoutForm.submit();
-    } 
-    
+      } else if (paymentMethod === 'wallet') {
+  try {
+    const response = await fetch("{% url 'wallet_payment' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+      },
+      body: JSON.stringify({
+        address_id: addressId,
+        total_amount: totalAmount
+      })
+    });
+    const data = await response.json();
+    if (data.status === 'success') {
+      window.location.href = "/order-confirm/" + data.order_id + "/";
+    } else {
+      console.error('Wallet payment error:', data.error);
+      
+      showToast(data.error || 'Payment failed', 'error');
+    }
+  } catch (error) {
+  console.error('Wallet payment error:', error);
+  // alert('Something went wrong with wallet payment.');  
+  showToast(data.error || 'Payment failed', 'error');
+}
+}
+      else if (paymentMethod === 'cod') {
+        
+  try {
+    const response = await fetch("{% url 'cod_payment' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+      },
+      
+      body: JSON.stringify({
+        address_id: addressId,
+        total_amount: totalAmount,
+        payment_method:paymentMethod,
+      })
+    });
+    const data = await response.json();
+
+    if (data.status === 'success') {
+      window.location.href = "/order-confirm/" + data.order_id + "/";
+    } else {
+      // alert(data.error || 'Payment failed');
+      showToast('Payment failed', 'error');
+    }
+  } catch (error) {
+    console.error('Wallet payment error:', error);
+    showToast('Something went wrong with COD payment.', 'error');
+  }
+}
+    });
   });
-});
 </script>
+<script src="{% static 'js/checkout.js' %}"></script>
 
-<form id="razorpay-form" method="POST">
-  {% csrf_token %}
-  <script src="https://checkout.razorpay.com/v1/checkout.js"
-          data-key="{{ razorpay_key }}"
-          data-amount="{{ amount }}"
-          data-currency="INR"
-          data-order_id="{{ razorpay_order_id }}"
-          data-buttontext="Pay Now"
-          data-name="My Shop"
-          data-description="Order #{{ order.order_id }}"
-          data-prefill.name="{{ order.user.username }}"
-          data-prefill.email="{{ order.user.email }}"
-          data-theme.color="#F37254"></script>
-</form>
+

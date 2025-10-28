@@ -119,6 +119,7 @@ class Order(models.Model):
     razorpay_order_id = models.CharField(max_length=100, blank=True, null=True)
     razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
     razorpay_signature = models.CharField(max_length=200, blank=True, null=True)
+    payment_method = models.CharField(max_length=100, default='None')
 
     def __str__(self):
         return f"Order #{self.order_id} - {self.user.username}"
@@ -151,7 +152,7 @@ class Order(models.Model):
 
     def calculate_total(self):
         """Calculate the total order amount including discount and shipping."""
-        total = sum(item.total_amount for item in self.order_items.all())
+        total = sum(item.total_amount() for item in self.order_items.all())
         discount = (float(self.discount_percentage) / 100) * float(total)
         return float(total) - float(discount) + float(self.shipping_charge)
 
@@ -161,13 +162,20 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
     product_variant = models.ForeignKey(Variant, on_delete=models.CASCADE, related_name='order_items')
     quantity = models.PositiveIntegerField(default=1)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     status = models.CharField(max_length=50, default='pending')
     image_url = models.URLField(max_length=500, null=True, blank=True)
     shipping_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f"Item #{self.id} - {self.product_variant}"
+    
+    def total_amount(self):
+        # discount price is neither unit price or after discounted price
+        return self.discount_price*self.quantity
+        
+        
     
 
 class Review(models.Model):

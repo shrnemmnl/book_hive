@@ -53,6 +53,15 @@
         line-height: 1.6;
         color: #333;
       }
+
+      body {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+body.fade-in {
+  opacity: 1;
+}
+  
       .header-area {
         background-color: #ffffff;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -126,6 +135,7 @@
         padding: 0.5rem 1rem;
         transition: color 0.2s;
       }
+      
       .navbar-nav .nav-link:hover {
         color: #e67e22;
       }
@@ -166,6 +176,10 @@
     {% block address_css %} {% endblock address_css %}
   </head>
   <body style="background-color: #ffe5cfff">
+    <!-- Toast Container -->
+<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+</div>
+
     <!-- HEADER COMPONENT -->
     <header class="header-area">
       <!-- Top Header -->
@@ -233,35 +247,21 @@
             <div class="col-md-3 col-6">
               <div class="header-action d-flex justify-content-end gap-3">
                 <a
-                  {%
-                  if
-                  request.user.is_authenticated
-                  %}
+                  {% if request.user.is_authenticated %}
                   href="{% url 'user_wishlist' %}"
-                  {%
-                  else
-                  %}
+                  {% else %}
                   href="{% url 'login' %}"
-                  {%
-                  endif
-                  %}
+                  {% endif %}
                   class="text-decoration-none"
                 >
                   <i class="bi bi-heart"></i>
                 </a>
                 <a
-                  {%
-                  if
-                  request.user.is_authenticated
-                  %}
+                  {% if request.user.is_authenticated %}
                   href="{% url 'user_cart' %}"
-                  {%
-                  else
-                  %}
+                  {% else %}
                   href="{% url 'login' %}"
-                  {%
-                  endif
-                  %}
+                  {% endif %}
                   class="text-decoration-none"
                 >
                   <i class="bi bi-cart3"></i>
@@ -435,6 +435,33 @@
           {% endfor %}
       {% endif %}
     </script>
+ <script>   
+document.addEventListener("DOMContentLoaded", () => {
+  document.body.classList.add('fade-in');
+
+  document.querySelectorAll("a[href]").forEach(link => {
+    const href = link.getAttribute("href");
+    if (
+      link.target === "_blank" || 
+      href.startsWith("#") || 
+      href === "" || 
+      href === "javascript:void(0)"
+    ) return;
+
+    link.addEventListener("click", e => {
+      // only fade if link goes to another page
+      if (link.hostname === window.location.hostname && link.pathname !== window.location.pathname) {
+        e.preventDefault();
+        document.body.classList.remove('fade-in');
+        document.body.style.opacity = 0;
+        setTimeout(() => {
+          window.location.href = href;
+        }, 200); // slightly longer for smoother fade
+      }
+    });
+  });
+});
+</script>
 
     {% block extra_js %}{% endblock %}
   </body>

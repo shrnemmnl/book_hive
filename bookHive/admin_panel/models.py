@@ -4,8 +4,6 @@ from django.forms import ValidationError
 from django.utils.timezone import now
 
 
-
-
 # Create your models here.
 class Genre(models.Model):
     
@@ -58,6 +56,69 @@ class ProductImage(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     
-
-
+class Coupon(models.Model):
+    DISCOUNT_TYPES = [
+        ('percentage', 'Percentage'),
+        ('fixed', 'Fixed Amount'),
+    ]
     
+    code = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True, null=True)
+    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPES, default='percentage')
+    discount_value = models.DecimalField(max_digits=10, decimal_places=2)
+    minimum_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    maximum_discount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    valid_from = models.DateTimeField()
+    valid_until = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.code} - {self.discount_value}{'%' if self.discount_type == 'percentage' else '₹'}"
+
+    def is_valid(self, user=None, cart_total=0):
+        """Check if coupon is valid for use"""
+        now = timezone.now()
+        
+        # Check if coupon is active
+        if not self.is_active:
+            return False, "This coupon is not active."
+        
+        # Check date validity
+        if now < self.valid_from:
+            return False, "This coupon is not yet valid."
+        
+        if now > self.valid_until:
+            return False, "This coupon has expired."
+        
+        # Check minimum amount
+        if cart_total < self.minimum_amount:
+            return False, f"Minimum order amount of ₹{self.minimum_amount} required."
+        
+        
+        return True, "Coupon is valid."
+
+    def calculate_discount(self, cart_total):
+        """Calculate discount amount for given cart total"""
+        if self.discount_type == 'percentage':
+            discount = (float(cart_total) * float(self.discount_value)) / 100
+            if self.maximum_discount:
+                discount = min(discount, self.maximum_discount)
+        else:
+            discount = self.discount_value
+        
+        # Ensure discount doesn't exceed cart total
+        return min(discount, cart_total)
+    
+class CouponUsage(models.Model):
+    user = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    order = models.ForeignKey('users.Order', on_delete=models.CASCADE, null=True, blank=True)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'coupon']
+
+    def __str__(self):
+        return f"{self.user.email} used {self.coupon.code}"

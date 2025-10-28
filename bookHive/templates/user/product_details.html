@@ -114,11 +114,11 @@
 
       <!-- Action Buttons -->
       <div class="d-flex gap-2 mb-3">
-        <button class="btn btn-primary flex-fill add-to-cart-btn shadow-lg {% if is_sold_out %}disabled{% endif %}" 
+        <button class="btn btn-primary flex-fill add-to-cart-btn shadow-lg {% if not is_sold_out %}disabled{% endif %}" 
                 data-book-id="{{ book.id }}" type="button" style="font-size: 0.9rem;">
           Add to Cart
         </button>
-        <button class="btn btn-danger flex-fill buy-now-btn shadow-lg {% if is_sold_out %}disabled{% endif %}" 
+        <button class="btn btn-danger flex-fill buy-now-btn shadow-lg {% if not is_sold_out %}disabled{% endif %}" 
                 data-book-id="{{ book.id }}" type="button" style="font-size: 0.9rem;">
           Buy Now
         </button>
@@ -336,6 +336,7 @@ document.addEventListener('DOMContentLoaded', function () {
   setupQtyButtons();
   setupImageZoom();
   setupAddToCartAjax();
+  setupBuyNowAjax();
   highlightDefaultThumbnail();
 });
 
@@ -348,7 +349,7 @@ function setupQtyButtons() {
 
     if (!qtyInput || !increaseBtn || !decreaseBtn) return;
 
-    // ✅ First, remove any previous event listeners to avoid duplication
+    // First, remove any previous event listeners to avoid duplication
     increaseBtn.replaceWith(increaseBtn.cloneNode(true));
     decreaseBtn.replaceWith(decreaseBtn.cloneNode(true));
 
@@ -381,7 +382,7 @@ function setupQtyButtons() {
     updateButtons();
   }
 
-  // ✅ Make sure it runs only once
+  //  Make sure it runs only once
   document.addEventListener('DOMContentLoaded', () => {
     setupQtyButtons();
   });
@@ -631,7 +632,7 @@ function addToCartAjax(bookId, variantId, quantity, isBuyNow = false) {
           }, 1000);
         }
       } else {
-        showSuccessMessage('✅ Added to cart successfully!');
+        showSuccessMessage('Added to cart successfully!');
       }
     } else {
       showErrorMessage(data.message || 'Failed to add to cart');
@@ -647,6 +648,20 @@ function addToCartAjax(bookId, variantId, quantity, isBuyNow = false) {
       btn.innerText = originalTexts[index];
     });
   });
+}
+
+function setupBuyNowAjax() {
+  const buyNowBtn = document.querySelector('.buy-now-btn');
+  if (buyNowBtn) {
+    buyNowBtn.addEventListener('click', function() {
+      const bookId = this.dataset.bookId;
+      const variantId = document.getElementById('variantSelector')?.value;
+      const quantity = document.getElementById('quantity')?.value || 1;
+
+      // Reuse the same function, but with buy-now flag set
+      addToCartAjax(bookId, variantId, quantity, true);
+    });
+  }
 }
 
 function getCsrfToken() {

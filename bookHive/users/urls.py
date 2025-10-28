@@ -29,8 +29,10 @@ urlpatterns = [
     path('user-wishlist',views.user_wishlist, name='user_wishlist'),
     path('remove-from-wishlist',views.remove_from_wishlist, name='remove_from_wishlist'),
     path('wishlist/toggle/', views.wishlist_toggle, name='wishlist-toggle'),
-
+    #wallet
     path('user_wallet',views.user_wallet, name='user_wallet'),
+    path('wallet/payment/',views.wallet_payment, name='wallet_payment'),
+    
     path('user_cust_care',views.user_cust_care, name='user_cust_care'),
     
     path('verification',views.verification, name='verification'),
@@ -45,9 +47,15 @@ urlpatterns = [
     path('download_invoice/<int:id>/',views.download_invoice, name='download_invoice'),
 
     path('checkoutpage',views.checkoutpage, name='checkoutpage'),
+    path('checkoutpage/cod/',views.cod_payment, name='cod_payment'),
     path('create-razorpay-order',views.create_razorpay_order, name='create_razorpay_order'),    
     path('verify-razorpay-payment',views.verify_razorpay_payment, name='verify_razorpay_payment'),    
-       
-
+    path('order-failed/', views.order_failed, name='order_failed'),
+    path('order/create-after-failed', views.create_order_after_failed_payment, name='create_order_after_failed_payment'),
+    
+    # Coupon URLs
+    path('apply-coupon/', views.apply_coupon, name='apply_coupon'),
+    path('remove-coupon/', views.remove_coupon, name='remove_coupon'),
+    path('get-available-coupons/', views.get_available_coupons, name='get_available_coupons'),
 
 ]

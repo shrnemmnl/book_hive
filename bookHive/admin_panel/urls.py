@@ -28,4 +28,10 @@ urlpatterns = [
     path('admin_order_details/<int:order_id>/',views.admin_order_details, name='admin_order_details'),
     path('admin_review',views.admin_review, name='admin_review'),
     path('toggle_review_status/<int:review_id>/',views.toggle_review_status, name='toggle_review_status'),
+
+    # Coupons
+    path('coupons', views.coupon_list, name='coupon_list'),
+    path('coupons/add', views.add_coupon, name='add_coupon'),
+    path('coupons/edit/<int:coupon_id>/', views.edit_coupon, name='edit_coupon'),
+    path('coupons/toggle/<int:coupon_id>/', views.toggle_coupon_status, name='toggle_coupon_status'),
 ]

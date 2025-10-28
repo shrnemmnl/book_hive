@@ -142,7 +142,7 @@
                       {% endif %}
                     </div>
                     <div class="col-md-6 text-md-end">
-                      <p><strong>Status:</strong> <span class="badge bg-{% if order.status == 'delivered' %}success
+                      <p><strong>Status:</strong> <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'shipped' %}info
                         {% elif order.status == 'request to cancel' %}dark{% elif order.status == 'request to return' %}dark
                   {% elif order.status == 'cancelled' %}danger{% elif order.status == 'return approved' %}primary{% else %}warning{% endif %}">{{ order.status|capfirst }}</span></p>
                       <p><strong>Total Amount:</strong> ₹{{ order.net_amount }}</p>
@@ -152,8 +152,8 @@
                   <h6 class="fw-bold mb-3">Items Ordered</h6>
                   {% for item in order.order_items.all %}
                   <div class="row align-items-center mb-3">
-                    <div class="col-md-2 shadow-lg">
-                      <img src="{{ item.product_variant.product.image.url }}" alt="{{ item.product_variant.product.book_title }}" class="img-fluid rounded" style="max-height: 60px;">
+                    <div class="col-md-2 rounded">
+                      <img src="{{ item.product_variant.productimage_set.first.image1.url }}" alt="{{ item.product_variant.product.book_title }}" class="img-fluid rounded" style="max-height: 60px;">
                     </div>
                     <div class="col-md-6">
                       <p class="mb-1 fw-bold">{{ item.product_variant.product.book_title }}</p>
@@ -161,7 +161,7 @@
                       <p class="small mb-0">Quantity: {{ item.quantity }}</p>
                     </div>
                     <div class="col-md-4 text-md-end">
-                      <p class="mb-0">₹{{ item.product_variant.price }} x {{ item.quantity }} = ₹{{ item.total_amount|floatformat:2 }}</p>
+                      <p class="mb-0">₹{{ item.discount_price }} x {{ item.quantity }} = ₹{{ item.total_amount|floatformat:2 }}</p>
                     </div>
                   </div>
                   {% endfor %}
