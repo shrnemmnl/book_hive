@@ -118,12 +118,26 @@ def genre(request):
 
     if request.method == 'POST':
         genre_name = request.POST.get('genre', "").strip().lower()
+        is_offer = request.POST.get('is_offer') == 'on'
+        offer_title = request.POST.get('offer_title', "").strip()
+        discount_percentage = request.POST.get('discount_percentage', 0)
         
         if Genre.objects.filter(genre_name=genre_name).exists():
             messages.error(request, 'Genre already exists.')
             return redirect('genre')  # Redirect to avoid form resubmission
         
-        Genre.objects.create(genre_name=genre_name,is_active=True)
+        try:
+            discount_percentage = int(discount_percentage) if discount_percentage else 0
+        except ValueError:
+            discount_percentage = 0
+        
+        Genre.objects.create(
+            genre_name=genre_name,
+            is_active=True,
+            is_offer=is_offer,
+            offer_title=offer_title if is_offer else '',
+            discount_percentage=discount_percentage if is_offer else 0
+        )
         messages.success(request, 'Genre added successfully.')
         return redirect('genre')  # Redirect after successful creation
     
@@ -149,14 +163,26 @@ def genre_edit(request, genre_id):
     genre = Genre.objects.get(id=genre_id)
 
     if request.method == 'POST':
-        name=request.POST.get('genre', "").strip().lower()
+        name = request.POST.get('genre', "").strip().lower()
+        is_offer = request.POST.get('is_offer') == 'on'
+        offer_title = request.POST.get('offer_title', "").strip()
+        discount_percentage = request.POST.get('discount_percentage', 0)
+        
         genre = Genre.objects.get(id=genre_id)
 
-        if Genre.objects.filter(genre_name=name).exists():
+        if Genre.objects.filter(genre_name=name).exclude(id=genre_id).exists():
             messages.error(request, 'Genre already exists.')
             return redirect('genre_edit', genre_id=genre.id)
-        else:   
+        else:
+            try:
+                discount_percentage = int(discount_percentage) if discount_percentage else 0
+            except ValueError:
+                discount_percentage = 0
+                
             genre.genre_name = name
+            genre.is_offer = is_offer
+            genre.offer_title = offer_title if is_offer else ''
+            genre.discount_percentage = discount_percentage if is_offer else 0
             genre.save()
             messages.success(request, 'Genre Edited Successfully.')
             return redirect('genre')

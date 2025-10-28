@@ -1,4 +1,5 @@
 {% load static %}
+{% load price_filters %}
 {% include 'includes/header.html' %}
 
 
@@ -46,7 +47,15 @@
 			<h3>{{ book.book_title }}</h3>
 			<span>{{ book.author }}</span>
 			{% if book.min_price %}
-				<div class="item-price">₹{{ book.min_price }}</div>
+				{% if book.has_active_offer %}
+					<div class="item-price">
+						<span class="text-success fw-bold">₹{{ book.min_price|calculate_discount:book }}</span>
+						<span class="text-muted text-decoration-line-through ms-2" style="font-size: 0.9rem;">₹{{ book.min_price|floatformat:0 }}</span>
+						<span class="badge bg-warning text-dark ms-2">{{ book.get_best_discount_percentage }}% OFF</span>
+					</div>
+				{% else %}
+					<div class="item-price">₹{{ book.min_price }}</div>
+				{% endif %}
 			{% else %}
 				<div class="item-price">Price Not Available</div>
 			{% endif %}

@@ -8,6 +8,10 @@ class Genre(models.Model):
     
     genre_name = models.CharField(max_length=255)  # Ensures name is not null and unique
     is_active = models.BooleanField()
+    discount_percentage = models.PositiveIntegerField(default=0, help_text="Enter % discount (e.g., 10 for 10%)")
+    is_offer = models.BooleanField(default=False, help_text="Is there an active offer?")
+    offer_title = models.CharField(max_length=100, blank=True, null=True, help_text="Offer name like 'Summer Sale'")
+    
 
     def __str__(self):
         return self.genre_name
@@ -25,11 +29,53 @@ class Product(models.Model):
     discount_percentage = models.PositiveIntegerField(default=0, help_text="Enter % discount (e.g., 10 for 10%)")
     is_offer = models.BooleanField(default=False, help_text="Is there an active offer?")
     offer_title = models.CharField(max_length=100, blank=True, null=True, help_text="Offer name like 'Summer Sale'")
-    created_at = models.DateTimeField(default=timezone.now())  # Auto timestamp
+    created_at = models.DateTimeField(default=timezone.now)  # Auto timestamp (callable, not called)
     updated_at = models.DateTimeField(auto_now=True)  # Auto-updated on modification
 
     def __str__(self):
         return self.book_title
+    
+    def get_best_discount_percentage(self):
+        """
+        Returns the higher discount between product offer and genre offer.
+        Returns 0 if no offers are active.
+        """
+        product_discount = self.discount_percentage if self.is_offer else 0
+        genre_discount = self.genre.discount_percentage if (self.genre and self.genre.is_offer) else 0
+        return max(product_discount, genre_discount)
+    
+    def get_active_offer_title(self):
+        """
+        Returns the title of the active offer with higher discount.
+        Returns None if no offers are active.
+        """
+        product_discount = self.discount_percentage if self.is_offer else 0
+        genre_discount = self.genre.discount_percentage if (self.genre and self.genre.is_offer) else 0
+        
+        if product_discount >= genre_discount and product_discount > 0:
+            return self.offer_title or f"{product_discount}% OFF"
+        elif genre_discount > 0:
+            return self.genre.offer_title or f"{genre_discount}% OFF"
+        return None
+    
+    def has_active_offer(self):
+        """Returns True if either product or genre has an active offer."""
+        return (self.is_offer and self.discount_percentage > 0) or \
+               (self.genre and self.genre.is_offer and self.genre.discount_percentage > 0)
+    
+    def get_discounted_price(self, original_price):
+        """
+        Calculates the discounted price based on the best available discount.
+        Args:
+            original_price: The original price to apply discount on
+        Returns:
+            The discounted price
+        """
+        discount_percentage = self.get_best_discount_percentage()
+        if discount_percentage > 0:
+            discount_amount = (original_price * discount_percentage) / 100
+            return original_price - discount_amount
+        return original_price
     
 
 class Variant(models.Model):

@@ -1,4 +1,5 @@
 {% load static %}
+{% load price_filters %}
 {% include 'includes/header.html' %}
 
 {% block slider %}
@@ -106,6 +107,11 @@
                   Featured
                 </div>
                 {% endif %}
+                {% if book.has_active_offer %}
+                <div class="product-badge bg-warning text-dark position-absolute py-1 px-2" style="top: {% if book.is_featured %}38px{% else %}8px{% endif %}; left: 8px; font-size: 0.75rem;">
+                  {{ book.get_best_discount_percentage }}% OFF
+                </div>
+                {% endif %}
 
                 <!-- Book Image -->
                 <div class="product-img position-relative">
@@ -131,11 +137,18 @@
                     <small style="font-size: 0.75rem;">by <span class="text-muted">{{ book.author }}</span></small>
                   </div>
                   <div class="d-flex justify-content-between align-items-center">
-                    {% if book.min_price and book.is_offer %}
-                    <div class="product-price fw-bold" style="font-size: 0.9rem;">₹{{ book.min_price }}</div>
-                    {% else %}
-                    <div class="product-price text-muted" style="font-size: 0.9rem;">₹{{ book.min_price }}</div>
-                    {% endif %}
+                    <div>
+                      {% if book.has_active_offer %}
+                        <div class="product-price fw-bold text-success" style="font-size: 0.9rem;">
+                          ₹{{ book.min_price|calculate_discount:book }}
+                        </div>
+                        <div class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">
+                          ₹{{ book.min_price|floatformat:0 }}
+                        </div>
+                      {% else %}
+                        <div class="product-price text-muted" style="font-size: 0.9rem;">₹{{ book.min_price|floatformat:0 }}</div>
+                      {% endif %}
+                    </div>
                     <div class="product-rating" style="font-size: 0.75rem;">
                       <i class="bi bi-star-fill text-warning"></i>
                       <span class="ms-1">{{ book.rating|default:"4.5" }}</span>
