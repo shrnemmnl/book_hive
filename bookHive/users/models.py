@@ -102,12 +102,15 @@ class CartItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
 
     def get_discounted_price(self):
+        """Get the price with the best available discount (product or genre)"""
         price = self.product_variant.price
-        if self.product_variant.product.is_offer:
-            price = round(price - (price * self.product_variant.product.discount_percentage / 100))
+        product = self.product_variant.product
+        if product.has_active_offer():
+            price = round(product.get_discounted_price(price))
         return price
 
     def get_total_price(self):
+        """Get total price for this cart item (discounted price * quantity)"""
         return self.get_discounted_price() * self.quantity
 
 

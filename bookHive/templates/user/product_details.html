@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% load custom_filters %}
+{% load price_filters %}
 {% load static %}
 
 {% block page_content %}
@@ -82,10 +83,13 @@
       <!-- Variant Price -->
       <div class="mb-3">
         <h3 id="variantPriceBlock" class="fw-bold" style="font-size: 1.25rem;">
-          {% if book.is_offer %}
+          {% if book.has_active_offer %}
           <span style="text-decoration: line-through;">₹{{ default_variant.price }}</span>
-          <strong style="color: green;">₹{{ discount_price }}</strong>
-          <span style="color: red;">({{ book.discount_percentage }}% OFF)</span>
+          <strong style="color: green;">₹{{ default_variant.price|calculate_discount:book }}</strong>
+          <span style="color: red;">({{ book.get_best_discount_percentage }}% OFF)</span>
+          {% if book.get_active_offer_title %}
+            <span class="badge bg-warning text-dark ms-2" style="font-size: 0.75rem;">{{ book.get_active_offer_title }}</span>
+          {% endif %}
           {% else %}
           <span>₹{{ default_variant.price }}</span>
           {% endif %}
@@ -270,8 +274,8 @@
           <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid rounded" style="width: 100%; height: 200px; object-fit: cover;">
           <h4 class="fw-bold mt-2" style="font-size: 0.9rem;">{{ book.book_title }}</h4>
           <p class="text-muted" style="font-size: 0.8rem;">by {{ book.author }}</p>
-          {% if book.discount_percentage > 0 %}
-          <span class="text-danger no-underline" style="font-size: 0.8rem;">{{ book.discount_percentage }}% OFF</span>
+          {% if book.has_active_offer %}
+          <span class="badge bg-warning text-dark" style="font-size: 0.75rem;">{{ book.get_best_discount_percentage }}% OFF</span>
           {% endif %} 
         </a>
       </div>
@@ -498,11 +502,16 @@ function changeImage(imageUrl) {
 function updateVariantDetails(variant) {
   const priceBlock = document.getElementById('variantPriceBlock');
   if (priceBlock) {
-    if (variant.is_offer) {
+    if (variant.has_active_offer) {
+      let offerBadge = '';
+      if (variant.offer_title) {
+        offerBadge = `<span class="badge bg-warning text-dark ms-2" style="font-size: 0.75rem;">${variant.offer_title}</span>`;
+      }
       priceBlock.innerHTML = `
         <span style="text-decoration: line-through;">₹${variant.original_price}</span>
-        <strong style="color: green;">₹${variant.price}</strong>
-        <span style="color: red;">(${variant.discount_percentage}% OFF)</span>
+        <strong style="color: green;">₹${variant.discounted_price}</strong>
+        <span style="color: red;">(${variant.best_discount_percentage}% OFF)</span>
+        ${offerBadge}
       `;
     } else {
       priceBlock.innerHTML = `<span>₹${variant.price}</span>`;

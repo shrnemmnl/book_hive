@@ -1,4 +1,5 @@
 {% load static %}
+{% load price_filters %}
 
 {% include 'includes/header.html' %}
 
@@ -183,12 +184,26 @@
                       <div class="d-flex justify-content-between align-items-center">
                         <div class="quantity-info">
                           <span class="badge bg-light text-dark">Qty: {{ item.quantity }}</span>
+                          {% if item.product_variant.product.has_active_offer %}
+                            <span class="badge bg-warning text-dark ms-1">{{ item.product_variant.product.get_best_discount_percentage }}% OFF</span>
+                          {% endif %}
                           {% if item.product_variant.format %}
                             <small class="text-muted ms-1">({{ item.product_variant.format }})</small>
                           {% endif %}
                         </div>
-                        <div class="price-info text-end fw-bold">
-                          ₹{{ item.get_total_price }}
+                        <div class="price-info text-end">
+                          {% if item.product_variant.product.has_active_offer %}
+                            <div class="fw-bold text-success">
+                              ₹{{ item.product_variant.price|calculate_discount:item.product_variant.product|floatformat:0 }}
+                            </div>
+                            <div class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">
+                              ₹{{ item.product_variant.price }}
+                            </div>
+                          {% else %}
+                            <div class="fw-bold">
+                              ₹{{ item.get_total_price }}
+                            </div>
+                          {% endif %}
                         </div>
                       </div>
                     </div>

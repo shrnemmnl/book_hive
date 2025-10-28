@@ -299,11 +299,11 @@ def product_details(request, id):
     is_sold_out = default_variant.available_quantity
     print("is variant sold out: ",is_sold_out)
 
-    if book.is_offer and default_variant:
-        discount_price = round(
-            default_variant.price - (default_variant.price * book.discount_percentage / 100))
+    # Use the best discount from product or genre
+    if default_variant:
+        discount_price = round(book.get_discounted_price(default_variant.price))
     else:
-        discount_price = default_variant.price
+        discount_price = 0
 
     # fetches the entire reviews related to the particular book and reviewed user.
     review_content = Review.objects.filter(product=book).select_related('user')
@@ -333,11 +333,23 @@ def get_variant_details(request, variant_id):
     """API endpoint to get variant details via AJAX"""
     variant = get_object_or_404(Variant, id=variant_id)
     variant_image = variant.productimage_set.first()
+    product = variant.product
+
+    # Calculate best discount
+    has_active_offer = product.has_active_offer()
+    best_discount_percentage = product.get_best_discount_percentage()
+    discounted_price = round(product.get_discounted_price(variant.price))
+    offer_title = product.get_active_offer_title()
 
     # Prepare response data
     data = {
         'id': variant.id,
         'price': variant.price,
+        'original_price': variant.price,
+        'discounted_price': discounted_price,
+        'has_active_offer': has_active_offer,
+        'best_discount_percentage': best_discount_percentage,
+        'offer_title': offer_title,
         'available_quantity': variant.available_quantity,
         'published_date': variant.published_date.strftime('%d-%m-%Y'),
         'publisher': variant.publisher,
@@ -1731,13 +1743,12 @@ def change_variant(request, book_id):
             if img.image3:
                 images.append(img.image3.url)
         print(images)
-        if book.is_offer and variant:
-            discount_price = round(
-                variant.price - (variant.price * book.discount_percentage / 100))
-            is_offer = True
-        else:
-            discount_price = variant.price
-            is_offer = False
+        # Use best discount from product or genre
+        has_active_offer = book.has_active_offer()
+        best_discount_percentage = book.get_best_discount_percentage()
+        discounted_price = round(book.get_discounted_price(variant.price))
+        offer_title = book.get_active_offer_title()
+        
         # Format the variant data
         variant_data = {
             'id': variant.id,
@@ -1745,12 +1756,15 @@ def change_variant(request, book_id):
             'publisher': variant.publisher,
             'published_date': variant.published_date.strftime('%d %b %Y') if variant.published_date else '',
             'page': variant.page,
-            'price': discount_price,
+            'price': discounted_price,
             'original_price': variant.price,
-            'discount_percentage': book.discount_percentage or None,
+            'discounted_price': discounted_price,
+            'best_discount_percentage': best_discount_percentage,
+            'has_active_offer': has_active_offer,
+            'offer_title': offer_title,
             'available_quantity': variant.available_quantity,
             'images': images,
-            'is_offer':  is_offer,
+            'is_offer': has_active_offer,  # For backward compatibility
         }
         print(variant_data)
         return JsonResponse({'success': True, 'variant': variant_data})

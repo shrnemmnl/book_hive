@@ -1,4 +1,5 @@
 {% load static %}
+{% load price_filters %}
 {% include 'includes/header.html' %}
 
 <div class="container-fluid">
@@ -32,6 +33,9 @@
                   <div class="col-md-4 col-3">
                     <h5 class="card-title mb-1 cart-item-title">{{ item.product_variant.product.book_title }}</h5>
                     <p class="text-muted mb-0 cart-item-author">by {{ item.product_variant.product.author }}</p>
+                    {% if item.product_variant.product.has_active_offer %}
+                      <small class="badge bg-warning text-dark">{{ item.product_variant.product.get_best_discount_percentage }}% OFF</small>
+                    {% endif %}
                   </div>
                   <div class="col-md-2 col-2 text-center">
                     <div class="quantity-selector d-flex align-items-center justify-content-center">
@@ -44,8 +48,17 @@
                     </div>
                   </div>
                   <div class="col-md-2 col-2 text-center">
-                    <p class="fw-bold mb-0 cart-item-price" id="item-total-{{ item.id }}">₹{{ item.get_total_price }}
-                    </p>
+                    {% if item.product_variant.product.has_active_offer %}
+                      <p class="fw-bold mb-0 text-success cart-item-price" id="item-total-{{ item.id }}">
+                        ₹{{ item.product_variant.price|calculate_discount:item.product_variant.product|floatformat:0 }}
+                      </p>
+                      <p class="text-muted text-decoration-line-through mb-0" style="font-size: 0.75rem;">
+                        ₹{{ item.product_variant.price }}
+                      </p>
+                    {% else %}
+                      <p class="fw-bold mb-0 cart-item-price" id="item-total-{{ item.id }}">₹{{ item.get_total_price }}
+                      </p>
+                    {% endif %}
                   </div>
                   <div class="col-md-2 col-2 text-end">
                     <button class="btn btn-sm btn-outline-danger cart-btn" data-id="{{ item.id }}">
