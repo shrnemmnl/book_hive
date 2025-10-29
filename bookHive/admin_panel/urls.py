@@ -36,7 +36,7 @@ urlpatterns = [
     path('coupons/toggle/<int:coupon_id>/', views.toggle_coupon_status, name='toggle_coupon_status'),
     
     # Sales Report
-    path('sales-report', views.sales_report, name='sales_report'),
+    
     path('sales-report/download-pdf', views.download_sales_report_pdf, name='download_sales_report_pdf'),
     path('sales-report/download-excel', views.download_sales_report_excel, name='download_sales_report_excel'),
 ]

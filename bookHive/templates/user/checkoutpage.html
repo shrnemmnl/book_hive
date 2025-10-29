@@ -1026,24 +1026,12 @@
           const rzp = new Razorpay(options);
           rzp.on('payment.failed', function (response){
             console.error('Payment failed:', response.error);
-            // Create order with payment pending, then redirect to failure page
-            fetch('{% url "create_order_after_failed_payment" %}', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-              },
-              body: JSON.stringify({ address_id: addressId })
-            }).then(res => res.json()).then(data => {
-              const failUrl = new URL('{% url "order_failed" %}', window.location.origin);
-              if (data.order_id) {
-                failUrl.searchParams.set('order_id', data.order_id);
-              }
-              window.location.href = failUrl.toString();
-            }).catch(() => {
-              const failUrl = new URL('{% url "order_failed" %}', window.location.origin);
-              window.location.href = failUrl.toString();
-            });
+            // Don't create order - just redirect to failure page
+            // Cart items will be preserved for retry
+            showToast('Payment failed. Your cart has been preserved.', 'error');
+            setTimeout(() => {
+              window.location.href = '{% url "order_failed" %}';
+            }, 1500);
           });
           rzp.open();
         } catch (error) {

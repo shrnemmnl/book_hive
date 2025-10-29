@@ -47,7 +47,9 @@ def signup(request):
 
     if request.user.is_authenticated:
         return redirect('loading_page')  # already logged in → go to home
+    
     errors = {}  # Dictionary to store field-specific errors
+    has_error = False
 
     if request.method == 'POST':
         firstName = request.POST.get('firstName', '').strip()
@@ -66,30 +68,37 @@ def signup(request):
         # Validate first name
         if not re.match(name_pattern, firstName):
             errors['firstName'] = "First name should contain only letters and at most one space."
+            has_error = True
 
         # Validate last name
         if not re.match(name_pattern, lastName):
             errors['lastName'] = "Last name should contain only letters and at most one space."
+            has_error = True
 
         # Validate email
         if not re.match(email_pattern, email):
             errors['email'] = "Invalid email format."
+            has_error = True
 
         # Validate mobile number
         if not re.match(mobile_pattern, mobile):
             errors['mobile'] = "Mobile number must be 10 digits."
+            has_error = True
 
         # Check if passwords match
         if password != confirmPassword:
             errors['password'] = "Passwords do not match."
+            has_error = True
 
         # Check if email is already registered
         if CustomUser.objects.filter(email=email).exists():
             errors['email'] = "Email is already registered."
+            has_error = True
 
         # Check if Mobile number is already registered
         if CustomUser.objects.filter(phone_no=mobile).exists():
             errors['mobile'] = "Phone is already registered. Plaese enter another contact number."
+            has_error = True
         
         # Validate referral code if provided
         referrer = None
@@ -98,8 +107,14 @@ def signup(request):
                 referrer = CustomUser.objects.get(referral_code=referral_code)
             except CustomUser.DoesNotExist:
                 errors['referral_code'] = "Invalid referral code."
+                has_error = True
+        
+        # STOP EXECUTION IF ANY ERRORS
 
-        if not errors:
+        if has_error:
+            return render(request, 'signup.html', {'errors': errors})
+
+        else:
             request.session['userdata'] = {
                 'first_name': firstName.capitalize(),
                 'last_name': lastName.capitalize(),
@@ -113,13 +128,7 @@ def signup(request):
             request.session['otp'] = otp
 
             send_verification_email(email, otp, type)
-
-            # messages.success(request, f"Account created! A verification code has been sent to {email}.")
-
-            # Show success message
-            # messages.success(request, f"Welcome, {firstName} {lastName}! Your account is ready. Log in now.")
-
-            # Redirect to login page after signup
+            
             return redirect('verification')
 
     # Send errors dictionary to template
@@ -451,20 +460,15 @@ def user_profile(request):
             profile_pic = request.FILES.get('profile_pic')
             fname = request.POST.get('firstName', '').strip()
             lname = request.POST.get('lastName', '').strip()
-            # email = request.POST.get('email', '').strip()
             phone_no = request.POST.get('phone_no', '').strip()
 
-        # print(email)
+        
         # Validation patterns
             name_pattern = r"^[A-Za-z\s'-]+$"
             email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
             mobile_pattern = r'^\d{10}$'  # Assuming 10-digit mobile number
 
-        # Validate email
-        # if not re.match(email_pattern, email):
-        #     messages.error(
-        #         request, "Oops! That doesn't look like a valid email. Try again?")
-        #     has_error = True
+        
 
             if not re.match(name_pattern, fname):
                 error['fname_pattern'] = "First name can only contain letters, spaces, hyphens, and apostrophes."
@@ -486,7 +490,6 @@ def user_profile(request):
                 valid_extensions = ["jpg", "jpeg", "png"]
                 if not profile_pic.name.split(".")[-1].lower() in valid_extensions:
                     error['valid_image'] = "Please enter a valid image extension in jpg, jpeg and png formats."
-
                     has_error = True
 
             if not has_error:
@@ -837,10 +840,12 @@ def cancel_order(request, order_id):
     if request.method == 'POST':
 
         reason = request.POST.get('reason')
-
+        
         try:
 
             order = Order.objects.get(id=order_id)
+            logger.info(f"oder status: {order.status}")
+
             if order.status == 'delivered':
                 order.status = 'request to return'
             else:
@@ -944,7 +949,8 @@ def wallet_payment(request):
                 net_amount=net_amount,
                 status="pending",
                 order_date=timezone.now(),
-                payment_method='wallet')   
+                payment_method='wallet',
+                is_paid=True)   
 
                 
                 # Create order items and update stock
@@ -1001,8 +1007,6 @@ def calculate_total(cart_items):
 
 @login_required
 def checkoutpage(request):
-
-    
 
     request.session['address_update'] = True
 
@@ -1224,98 +1228,23 @@ def order_confirm(request, id):
 
 @login_required
 def order_failed(request):
-
-    order = None
-    order_id = request.GET.get('order_id')
-    try:
-        if order_id:
-            order = Order.objects.get(id=order_id, user=request.user)
-            # Do not overwrite status here; it should remain 'pending' for payment retry flow
-            # Ensure payment flag reflects pending
-            if order.is_paid:
-                order.is_paid = False
-                order.save(update_fields=["is_paid"]) 
-    except Order.DoesNotExist:
-        order = None
-
-    return render(request, 'user/order_failed.html', {'order': order})
+    """
+    Display payment failure page without creating an order.
+    Cart items are preserved for retry.
+    """
+    return render(request, 'user/order_failed.html')
 
 
-@login_required
-@require_POST
-def create_order_after_failed_payment(request):
-    try:
-        data = json.loads(request.body)
-        address_id = data.get('address_id')
-
-        if not address_id:
-            return JsonResponse({"error": "Address ID is required"}, status=400)
-
-        # Validate address
-        try:
-            address = Address.objects.get(id=address_id, user=request.user)
-        except Address.DoesNotExist:
-            return JsonResponse({"error": "Invalid address"}, status=400)
-
-        # Validate cart
-        try:
-            cart = Cart.objects.filter(user=request.user).latest("created_at")
-            cart_items = cart.cart_items.all()
-            if not cart_items.exists():
-                return JsonResponse({"error": "Cart is empty"}, status=400)
-        except Cart.DoesNotExist:
-            return JsonResponse({"error": "No cart found"}, status=400)
-
-        # Calculate subtotal from cart
-        subtotal = sum(item.get_total_price() for item in cart_items)
-        
-        # Get coupon discount from session
-        coupon_code = request.session.get('applied_coupon_code', '')
-        coupon_discount = float(request.session.get('coupon_discount', 0))
-        
-        # Calculate final amount after discount
-        net_amount = subtotal - coupon_discount
-
-        # Create order with payment pending
-        with transaction.atomic():
-            order = Order.objects.create(
-                user=request.user,
-                address=address,
-                subtotal=subtotal,
-                coupon_code=coupon_code,
-                coupon_discount=coupon_discount,
-                net_amount=net_amount,
-                status='pending',
-                is_paid=False,
-                payment_method='razorpay',
-                order_date=timezone.now(),
-            )
-
-            # Create order items and update stock (mirroring COD logic)
-            for item in cart_items:
-                OrderItem.objects.create(
-                    order=order,
-                    product_variant=item.product_variant,
-                    quantity=item.quantity,
-                    unit_price=item.product_variant.price,
-                    discount_price=item.get_discounted_price()
-                )
-                item.product_variant.available_quantity -= item.quantity
-                item.product_variant.save()
-
-            # Clear cart
-            cart.delete()
-
-        return JsonResponse({
-            "status": "success",
-            "order_id": order.id
-        })
-
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-    except Exception as e:
-        logger.error(f"Error creating pending order after payment failure: {str(e)}")
-        return JsonResponse({"error": "Failed to create order"}, status=500)
+# DEPRECATED: No longer used - orders are only created after successful payment
+# @login_required
+# @require_POST
+# def create_order_after_failed_payment(request):
+#     """
+#     This function is no longer used. Orders are now only created after
+#     successful payment verification. On payment failure, cart is preserved
+#     and user can retry from cart page.
+#     """
+#     pass
 
 
 @login_required

@@ -18,7 +18,7 @@
 
     <div class="row g-3">
       <!-- Side Panel for Filters and Sorting -->
-      <div class="col-lg-3 col-md-4 mb-3">
+      <div class="col-lg-2 col-md-4 mb-3">
         <div class="filter-sidebar bg-white p-3 rounded shadow-lg">
           <!-- Sorting Options -->
           <div class="filter-section mb-3">
@@ -96,11 +96,11 @@
       </div>
 
       <!-- Product Grid -->
-      <div class="col-lg-9 col-md-8">
+      <div class="col-lg-10 col-md-8">
         <div class="product-grid">
           <div class="row g-3">
             {% for book in books %}
-            <div class="col-6 col-md-4 col-lg-3">
+            <div class="col-6 col-md-6 col-lg-4">
               <div class="product-card h-100 bg-white rounded overflow-hidden shadow-lg position-relative">
                 {% if book.is_featured %}
                 <div class="product-badge bg-primary text-white position-absolute py-1 px-2" style="top: 8px; left: 8px; font-size: 0.75rem;">
@@ -142,11 +142,11 @@
                         <div class="product-price fw-bold text-success" style="font-size: 0.9rem;">
                           ₹{{ book.min_price|calculate_discount:book }}
                         </div>
-                        <div class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">
+                        <div class="text-dark text-decoration-line-through" style="font-size: 0.75rem;">
                           ₹{{ book.min_price|floatformat:0 }}
                         </div>
                       {% else %}
-                        <div class="product-price text-muted" style="font-size: 0.9rem;">₹{{ book.min_price|floatformat:0 }}</div>
+                        <div class="product-price text-dark" style="font-size: 0.9rem;">₹{{ book.min_price|floatformat:0 }}</div>
                       {% endif %}
                     </div>
                     <div class="product-rating" style="font-size: 0.75rem;">

@@ -31,7 +31,7 @@ class CustomUserManager(BaseUserManager):
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)  # Make email unique
-    phone_no = models.BigIntegerField(unique=True, null=True, blank=True)  
+    phone_no = models.CharField(unique=True, null=True, blank=True)  
     is_verified = models.BooleanField(default=False)
     
     # Referral system fields

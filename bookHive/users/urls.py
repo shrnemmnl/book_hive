@@ -51,7 +51,7 @@ urlpatterns = [
     path('create-razorpay-order',views.create_razorpay_order, name='create_razorpay_order'),    
     path('verify-razorpay-payment',views.verify_razorpay_payment, name='verify_razorpay_payment'),    
     path('order-failed/', views.order_failed, name='order_failed'),
-    path('order/create-after-failed', views.create_order_after_failed_payment, name='create_order_after_failed_payment'),
+    # DEPRECATED: path('order/create-after-failed', views.create_order_after_failed_payment, name='create_order_after_failed_payment'),
     
     # Coupon URLs
     path('apply-coupon/', views.apply_coupon, name='apply_coupon'),

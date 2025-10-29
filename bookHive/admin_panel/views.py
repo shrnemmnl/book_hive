@@ -26,7 +26,13 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from io import BytesIO
+import logging
 
+
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+logger = logging.getLogger(__name__)  # Create logger
 
 
 
@@ -36,6 +42,10 @@ from io import BytesIO
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 def admin_signin(request):
+
+    if request.user.is_authenticated:
+        return redirect('admin_dashboard')
+    
     if request.method == 'POST':
         email=request.POST.get('email', "").strip()
         password=request.POST.get('password', "").strip()
@@ -52,11 +62,92 @@ def admin_signin(request):
     return render(request, 'admin/admin_signin.html')
 
 
+
+
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @login_required(login_url='admin_signin')  # Redirect to login page if not authenticated
 def admin_dashboard(request):
-    return render(request, 'admin/dashboard.html', {'heading': {'name': 'DASHBOARD'}})
+
+
+    
+    """Generate sales report with filtering options"""
+    # Get filter parameters
+    filter_type = request.GET.get('filter', 'all')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    # Base query - only completed/delivered orders
+    orders = Order.objects.filter(
+        status__in=['pending', 'shipped', 'delivered'],
+        is_active=True
+    ).select_related('user', 'address').prefetch_related('order_items__product_variant__product')
+    
+    # Apply filters
+    now = timezone.now()
+    filter_label = "All Time"
+    
+    if filter_type == 'today':
+        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        orders = orders.filter(created_at__gte=start_of_day)
+        filter_label = "Today"
+    elif filter_type == 'week':
+        start_of_week = now - timedelta(days=7)
+        orders = orders.filter(created_at__gte=start_of_week)
+        filter_label = "Past 7 Days"
+    elif filter_type == 'month':
+        start_of_month = now - timedelta(days=30)
+        orders = orders.filter(created_at__gte=start_of_month)
+        filter_label = "Past 30 Days"
+    elif filter_type == 'custom' and start_date and end_date:
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            end = end.replace(hour=23, minute=59, second=59)
+            orders = orders.filter(created_at__range=[start, end])
+            filter_label = f"{start_date} to {end_date}"
+        except ValueError:
+            messages.error(request, "Invalid date format")
+    
+    # Calculate summary statistics
+    summary = orders.aggregate(
+        total_orders=Count('id'),
+        total_amount=Sum('net_amount'),
+        total_discount=Sum('coupon_discount'),
+        total_subtotal=Sum('subtotal')
+    )
+    
+    # Handle None values
+    summary['total_orders'] = summary['total_orders'] or 0
+    summary['total_amount'] = summary['total_amount'] or 0
+    summary['total_discount'] = summary['total_discount'] or 0
+    summary['total_subtotal'] = summary['total_subtotal'] or 0
+    
+    # Get detailed order list
+    orders_list = orders.order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(orders_list, 10)
+    page = request.GET.get('page', 1)
+    
+    try:
+        orders_page = paginator.page(page)
+    except PageNotAnInteger:
+        orders_page = paginator.page(1)
+    except EmptyPage:
+        orders_page = paginator.page(paginator.num_pages)
+    
+    context = {
+        'orders': orders_page,
+        'summary': summary,
+        'filter_type': filter_type,
+        'filter_label': filter_label,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+    
+    return render(request, 'admin/admin_dashboard.html', context)
+    
 
 
 
@@ -566,13 +657,16 @@ def admin_order_details(request, order_id):
 
     order = get_object_or_404(Order, id=order_id)
     
-    
+    logger.info(f"admin side status: {order.status} and order status : {"Paid" if order.is_paid else "Not Paid."}")
+
     if request.method == 'POST':
         
         new_status = request.POST.get('status')
+        logger.info(f"admin side status: {new_status} and order status : {"Paid" if order.is_paid else "Not Paid."}")
         
         valid_statuses = ['pending', 'shipped', 'delivered', 'cancelled', 'request to cancel','return approved','request to return']
         
+        # for cod
         if new_status == 'delivered':
             order.is_paid = True
 
@@ -581,7 +675,7 @@ def admin_order_details(request, order_id):
             messages.error(request, "Invalid status selected.")
             return redirect('admin_order_details', order_id=order.id)
         
-        #If item cancelled stock needs to update.    
+        #If item cancelled stock needs to update. mainly in cash on delivery.    
         elif new_status == 'cancelled' and not order.is_paid:
 
             #Stock need to update
@@ -594,6 +688,7 @@ def admin_order_details(request, order_id):
         elif new_status in ['return approved','cancelled'] and order.is_paid:
 
             user = order.user
+            print("hiiiiiiiiiiiiiiiiiii")
 
             #Stock need to update
             for item in order.order_items.all():
@@ -1119,9 +1214,9 @@ def download_sales_report_pdf(request):
     summary_data = [
         ['Metric', 'Value'],
         ['Total Orders', str(summary['total_orders'] or 0)],
-        ['Subtotal', f"₹{summary['total_subtotal'] or 0:.2f}"],
-        ['Total Discount', f"₹{summary['total_discount'] or 0:.2f}"],
-        ['Net Amount', f"₹{summary['total_amount'] or 0:.2f}"],
+        ['Subtotal', f"{summary['total_subtotal'] or 0:.2f} Rs."],
+        ['Total Discount', f"{summary['total_discount'] or 0:.2f} Rs."],
+        ['Net Amount', f"{summary['total_amount'] or 0:.2f} Rs."],
     ]
     
     summary_table = Table(summary_data, colWidths=[3*inch, 3*inch])
@@ -1149,9 +1244,9 @@ def download_sales_report_pdf(request):
             order.order_id,
             order.created_at.strftime('%Y-%m-%d'),
             f"{order.user.first_name} {order.user.last_name}",
-            f"₹{order.subtotal:.2f}",
-            f"₹{order.coupon_discount:.2f}",
-            f"₹{order.net_amount:.2f}",
+            f"{order.subtotal:.2f} Rs.",
+            f"{order.coupon_discount:.2f} Rs.",
+            f"{order.net_amount:.2f} Rs.",
         ])
     
     orders_table = Table(orders_data, colWidths=[1.2*inch, 1*inch, 1.5*inch, 1*inch, 1*inch, 1*inch])
