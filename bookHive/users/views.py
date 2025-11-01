@@ -38,11 +38,9 @@ from django.http import HttpResponse
 import razorpay
 
 
-# Set up basic logging configuration to show debug messages with time, level, and message format
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 
-# Create a logger for the current module (helps track where logs come from)
 logger = logging.getLogger(__name__)
 
 
@@ -65,47 +63,38 @@ def signup(request):
         confirmPassword = request.POST.get('confirmPassword', '').strip()
         referral_code = request.POST.get('referral_code', '').strip().upper()
 
-        # Validation patterns
         name_pattern = r'^[A-Za-z]+(?: [A-Za-z]+)?$'
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        mobile_pattern = r'^[7-9]\d{9}$'  # Assuming 10-digit mobile number
+        mobile_pattern = r'^[7-9]\d{9}$'
 
-        # Validate first name
         if not re.match(name_pattern, firstName):
             errors['firstName'] = "First name should contain only letters and at most one space."
             has_error = True
 
-        # Validate last name
         if not re.match(name_pattern, lastName):
             errors['lastName'] = "Last name should contain only letters and at most one space."
             has_error = True
 
-        # Validate email
         if not re.match(email_pattern, email):
             errors['email'] = "Invalid email format."
             has_error = True
 
-        # Validate mobile number
         if not re.match(mobile_pattern, mobile):
             errors['mobile'] = "Mobile number must be 10 digits."
             has_error = True
 
-        # Check if passwords match
         if password != confirmPassword:
             errors['password'] = "Passwords do not match."
             has_error = True
 
-        # Check if email is already registered
         if CustomUser.objects.filter(email=email).exists():
             errors['email'] = "Email is already registered."
             has_error = True
 
-        # Check if Mobile number is already registered
         if CustomUser.objects.filter(phone_no=mobile).exists():
             errors['mobile'] = "Phone is already registered. Plaese enter another contact number."
             has_error = True
         
-        # Validate referral code if provided
         referrer = None
         if referral_code:
             try:
@@ -114,8 +103,6 @@ def signup(request):
                 errors['referral_code'] = "Invalid referral code."
                 has_error = True
         
-        # STOP EXECUTION IF ANY ERRORS
-
         if has_error:
             return render(request, 'signup.html', {'errors': errors})
 
@@ -145,24 +132,18 @@ def signup(request):
 def loading_page(request):
 
     request.session['address_update'] = False
-    # logger.debug(f"address flag : {address_update}")
 
-    # Start with all active books with min price in its variant
-    books = Product.objects.annotate(min_price=Min(
-        'variant__price')).filter(is_active=True, genre__is_active=True)
+    books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True, genre__is_active=True)
 
-    # Get filter parameters from request
     sort = request.GET.get('sort', 'featured')
     genres = request.GET.get('genres', 'allgenres')
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
 
-    # Apply genre filter if specified
     if genres and genres != 'allgenres':
         genre_list = genres.split(',')
         books = books.filter(genre__genre_name__in=genre_list)
 
-    # Apply price range filter
     if min_price:
         try:
             min_price = float(min_price)
@@ -177,7 +158,6 @@ def loading_page(request):
         except (ValueError, TypeError):
             pass
 
-    # Apply sorting
     if sort == 'lh':
         books = books.order_by('min_price')
     elif sort == 'hl':
@@ -186,25 +166,17 @@ def loading_page(request):
         books = books.order_by('book_title')
     elif sort == 'za':
         books = books.order_by('-book_title')
-    # else: featured, do nothing
 
-    # Pagination
     page = request.GET.get('page', 1)
     paginator = Paginator(books, 6)
     books = paginator.get_page(page)
 
-    # Get user's wishlist variants if authenticated
     user_wishlist_variants = []
     if request.user.is_authenticated:
-        user_wishlist_variants = Wishlist.objects.filter(
-            user=request.user
-        ).values_list('variant_id', flat=True)
+        user_wishlist_variants = Wishlist.objects.filter(user=request.user).values_list('variant_id', flat=True)
 
-    # Get all available genres
-    categories = Product.objects.filter(is_active=True, genre__is_active=True).values_list(
-        'genre__genre_name', flat=True).distinct()
+    categories = Product.objects.filter(is_active=True, genre__is_active=True).values_list('genre__genre_name', flat=True).distinct()
 
-    # Get price range
     price_range = {
         'min': Product.objects.filter(is_active=True, genre__is_active=True).aggregate(min_price=Min('variant__price'))['min_price'] or 0,
         'max': Product.objects.filter(is_active=True, genre__is_active=True).aggregate(max_price=Max('variant__price'))['max_price'] or 2000
@@ -222,6 +194,8 @@ def loading_page(request):
     }
 
     return render(request, 'index.html', context)
+
+
 
 
 @never_cache
@@ -291,19 +265,17 @@ def logout_user(request):
 
 
 def product_details(request, id):
-    # Fetch the product - must be active and genre must be active
     try:
         book = get_object_or_404(Product, id=id, is_active=True, genre__is_active=True)
     except:
         messages.error(request, "Book is no longer available.")
         return redirect('loading_page')
 
-    # Get related books in the same genre, exclude current one
     related_books = Product.objects.filter(
         genre=book.genre,
         is_active=True,
         genre__is_active=True
-    ).exclude(id=book.id)[:4]  # Only 4 suggestions
+    ).exclude(id=book.id)[:4]
 
     if request.method == "POST" and request.user.is_authenticated:
         # user_id = request.user.id
@@ -319,23 +291,16 @@ def product_details(request, id):
 
         messages.success(request, "Your Review is successfully submitted.")
 
-    # Get all variants for the given product
     variants = Variant.objects.filter(product=book, is_active=True).prefetch_related('productimage_set')
-
-    # Use the first variant as default
     default_variant = variants.first()
-
-    # Check if ALL variants have zero quantity
     is_sold_out = default_variant.available_quantity
     print("is variant sold out: ",is_sold_out)
 
-    # Use the best discount from product or genre
     if default_variant:
         discount_price = round(book.get_discounted_price(default_variant.price))
     else:
         discount_price = 0
 
-    # fetches the entire reviews related to the particular book and reviewed user.
     review_content = Review.objects.filter(product=book).select_related('user')
     # for i in review_content:
     #     print('review content ',i.rating)
@@ -345,10 +310,10 @@ def product_details(request, id):
     context = {
         'book': book,  # specific product details which variants included
         'discount_price': discount_price,
-        'variants': variants,  # all the variant for the specific product
-        'default_variant': default_variant,  # Use the first variant as default
-        'review_content': review_content,  # fetches the entire reviews
-        'review_count': review_content.count(),  # review count for a particular book
+        'variants': variants,
+        'default_variant': default_variant,
+        'review_content': review_content,
+        'review_count': review_content.count(),
         'average_rating': average_rating,
         'average_rating_int': int(round(average_rating)) if average_rating is not None else 0,
         'is_sold_out': is_sold_out,
@@ -406,7 +371,6 @@ def search_book(request):
     books = Product.objects.annotate(min_price=Min('variant__price')).filter(
         is_active=True, genre__is_active=True, book_title__istartswith=search_string)
 
-    # Get filter parameters from request
     sort = request.GET.get('sort', 'featured')
     genres = request.GET.get('genres', 'allgenres')
     min_price = request.GET.get('min_price')
@@ -441,18 +405,15 @@ def search_book(request):
         books = books.order_by('book_title')
     elif sort == 'za':
         books = books.order_by('-book_title')
-    # else: featured, do nothing
 
     # Pagination
     page = request.GET.get('page', 1)
     paginator = Paginator(books, 6)
     books = paginator.get_page(page)
 
-    # Get all available genres
     categories = Product.objects.filter(is_active=True, genre__is_active=True).values_list(
         'genre__genre_name', flat=True).distinct()
 
-    # Get price range
     price_range = {
         'min': Product.objects.filter(is_active=True, genre__is_active=True).aggregate(min_price=Min('variant__price'))['min_price'] or 0,
         'max': Product.objects.filter(is_active=True, genre__is_active=True).aggregate(max_price=Max('variant__price'))['max_price'] or 2000
@@ -535,6 +496,8 @@ def user_profile(request):
                 return redirect('user_profile')
 
     return render(request, 'user/user_profile.html', {'error': error})
+
+
 
 
 @login_required(login_url='login')
@@ -649,7 +612,6 @@ def profile_email_change(request):
                 request.session['otp_verified'] = True
                 messages.success(request, 'Email id changed Successfully.')
 
-                # Clear OTP from session
                 del request.session['otp']
 
                 # Redirect to next page (e.g., dashboard, profile, etc.)
@@ -760,36 +722,25 @@ def default_address(request, address_id):
 @login_required(login_url='login')
 def user_cart(request):
 
-    # Get or create the cart for the user
     cart, created = Cart.objects.get_or_create(user=request.user)
-    # logger.debug(f"this is the cart created- {cart}")
 
-    # Get all active cart items linked to this cart (variant, product, and genre must be active)
     cart_item = CartItem.objects.filter(
         cart=cart, product_variant__is_active=True, product_variant__product__is_active=True, product_variant__product__genre__is_active=True)
     subtotal = 0
     original_subtotal = 0
     for item in cart_item:
         product = item.product_variant.product
-        # Check if product and genre are active
         if not product.is_active or not product.genre.is_active:
-            # Remove cart item if product or genre is inactive
             item.delete()
             continue
         price = item.product_variant.price
         if product.is_offer:
-            # apply discount on this product
-            price = round(
-                price - (price * product.discount_percentage / 100)
-            )
+            price = round(price - (price * product.discount_percentage / 100))
 
-        # store discounted price in the item (optional, for template)
         item.discounted_price = price
 
-        # add to subtotal (quantity * discounted price)
         subtotal += price * item.quantity
         item.total_price = price * item.quantity
-        # Store original total for display
         item.original_total_price = item.product_variant.price * item.quantity
         original_subtotal += item.original_total_price
     count = cart_item.count()
@@ -817,7 +768,6 @@ def user_order(request):
     paginator = Paginator(order_details, 5)
     order_details = paginator.get_page(page)
 
-    # Calculate original subtotal for each order in current page
     for order in order_details:
         original_subtotal = 0
         for item in order.order_items.all():
@@ -832,7 +782,6 @@ def user_order(request):
 @login_required(login_url='login')
 def order_search(request):
 
-    # Get search parameters
     search_query = request.GET.get('search', '')
     period_filter = request.GET.get('period', 'all')
     status_filter = request.GET.get('status', '')
@@ -878,7 +827,6 @@ def order_search(request):
     paginator = Paginator(orders, 5)
     order_details = paginator.get_page(page)
 
-    # Calculate original subtotal for each order in current page
     for order in order_details:
         original_subtotal = 0
         for item in order.order_items.all():
@@ -983,11 +931,8 @@ def wallet_payment(request):
                 user_wallet.save()
                 
  
-                # Get cart and create order items - filter only active variants and products
                 cart = Cart.objects.filter(user=request.user).latest("created_at")
                 cart_items = cart.cart_items.filter(product_variant__is_active=True, product_variant__product__is_active=True, product_variant__product__genre__is_active=True)
-                
-                # Check if cart has inactive variants, products, or genres
                 inactive_variants = cart.cart_items.filter(product_variant__is_active=False)
                 inactive_products = cart.cart_items.filter(product_variant__product__is_active=False)
                 inactive_genres = cart.cart_items.filter(product_variant__product__genre__is_active=False)
@@ -1011,17 +956,12 @@ def wallet_payment(request):
                 except Exception as e:
                     return JsonResponse({"error": e}, status=500)
                 
-                # Calculate subtotal from cart
                 subtotal = sum(item.get_total_price() for item in cart_items)
                 
-                # Get coupon discount from session
                 coupon_code = request.session.get('applied_coupon_code', '')
                 coupon_discount = float(request.session.get('coupon_discount', 0))
-                
-                # Calculate final amount after discount
                 net_amount = subtotal - coupon_discount
                 
-                # Validate stock and active status BEFORE order creation
                 for item in cart_items:
                     variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                     if not variant.is_active:
@@ -1041,7 +981,6 @@ def wallet_payment(request):
                             "error": f"Only {variant.available_quantity} items available for {variant.product.book_title}"
                         }, status=400)
                 
-                # Create local order first
                 order = Order.objects.create(
                 user=request.user,
                 address=address,
@@ -1054,8 +993,6 @@ def wallet_payment(request):
                 payment_method='wallet',
                 is_paid=True)   
 
-                
-                # Create order items and update stock
                 for item in cart_items:
                     OrderItem.objects.create(
                         order=order,
@@ -1065,15 +1002,12 @@ def wallet_payment(request):
                         discount_price=item.get_discounted_price()
                     )
                     
-                    # Update stock (already validated above)
                     variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                     variant.available_quantity -= item.quantity
                     variant.save()
                 
-                # Clear cart
                 cart.delete()
                 
-                # Track coupon usage if a coupon was applied
                 if coupon_code:
                     try:
                         coupon = Coupon.objects.get(code=coupon_code)
@@ -1086,7 +1020,6 @@ def wallet_payment(request):
                     except Coupon.DoesNotExist:
                         logger.warning(f"Coupon {coupon_code} not found when tracking usage")
                 
-                # Clear coupon from session after successful order
                 if 'applied_coupon_code' in request.session:
                     del request.session['applied_coupon_code']
                 if 'applied_coupon_id' in request.session:
@@ -1133,7 +1066,6 @@ def checkoutpage(request):
         cart_items = []
         return redirect("user_cart")
     
-    # Remove inactive variants, products, and genres from cart
     inactive_variants = cart.cart_items.filter(product_variant__is_active=False)
     inactive_products = cart.cart_items.filter(product_variant__product__is_active=False)
     inactive_genres = cart.cart_items.filter(product_variant__product__genre__is_active=False)
@@ -1143,7 +1075,6 @@ def checkoutpage(request):
         inactive_genres.delete()
         messages.warning(request, "Some items in your cart are no longer available and have been removed.")
 
-    # Calculate totals with original prices for display
     subtotal = 0
     original_subtotal = 0
     for item in cart_items:
@@ -1153,7 +1084,6 @@ def checkoutpage(request):
         original_subtotal += item.original_total_price
     total_discount_from_offers = original_subtotal - subtotal
     
-    # Check for applied coupon
     applied_coupon = None
     coupon_discount = 0
     
@@ -1181,27 +1111,23 @@ def checkoutpage(request):
         payment_method = request.POST.get("payment_method")
         print("hi checkout post method.")
 
-        # Validate address
         try:
             address = Address.objects.get(id=address_id, user=request.user)
         except Address.DoesNotExist:
             messages.error(request, "Invalid address selected.")
             return redirect("checkoutpage")
 
-        # Validate cart
         try:
             cart = Cart.objects.filter(user=request.user).latest("created_at")
         except Cart.DoesNotExist:
             messages.error(request, "No cart found.")
             return redirect("cart")
 
-        # Validate cart - filter only active variants and products
         cart_items = cart.cart_items.filter(product_variant__is_active=True, product_variant__product__is_active=True, product_variant__product__genre__is_active=True)
         if not cart_items.exists():
             messages.error(request, "Your cart is empty.")
             return redirect("cart")
         
-        # Check if any inactive variants, products, or genres were in cart
         inactive_variants = cart.cart_items.filter(product_variant__is_active=False)
         inactive_products = cart.cart_items.filter(product_variant__product__is_active=False)
         inactive_genres = cart.cart_items.filter(product_variant__product__genre__is_active=False)
@@ -1212,17 +1138,11 @@ def checkoutpage(request):
             messages.warning(request, "Some items in your cart were no longer available and have been removed.")
             return redirect("checkoutpage")
 
-        # Calculate net amount
         net_amount = sum(item.get_total_price() for item in cart_items)
-        
 
-        # handling cash on delivery
         if payment_method == "cod":
-
-            # Wrap in transaction with stock validation
             try:
                 with transaction.atomic():
-                    # Validate stock and active status BEFORE order creation
                     for item in cart_items:
                         variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                         if not variant.is_active:
@@ -1238,7 +1158,6 @@ def checkoutpage(request):
                             messages.error(request, f"Only {variant.available_quantity} items available for {variant.product.book_title}")
                             return redirect("checkoutpage")
                     
-                    # Create order
                     order = Order.objects.create(
                         user=request.user,
                         address=address,
@@ -1247,7 +1166,6 @@ def checkoutpage(request):
                         order_date=timezone.now(),
                         payment_method='cod')
                     
-                    # Create order items and update stock
                     for item in cart_items:
                         OrderItem.objects.create(
                             order=order,
@@ -1256,12 +1174,10 @@ def checkoutpage(request):
                             unit_price=item.product_variant.price,
                             discount_price=item.get_discounted_price()
                         )
-                        # Update stock (already validated above)
                         variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                         variant.available_quantity -= item.quantity
                         variant.save()
                     
-                    # Delete cart only after successful order
                     cart.delete()
                     
             except Exception as e:
@@ -1271,15 +1187,11 @@ def checkoutpage(request):
 
             return redirect('order_confirm', id=order.id)
 
-        # If Razorpay selected
         if payment_method == "razorpay":
-            # Razorpay payment will be handled by JavaScript in the frontend
-            # The form will be submitted via AJAX to create_razorpay_order view
             print('hi now you are in razorpay payment method.')
             messages.info(request, "Please complete the payment process.")
             return redirect("checkoutpage")
 
-        # If COD / other methods
         return redirect("order_confirm", id=order.id)
 
     return render(request, "user/checkoutpage.html", {
@@ -1313,14 +1225,12 @@ def cod_payment(request):
         payment_method = data.get("payment_method")
         
 
-        # Validate address
         try:
             address = Address.objects.get(id=address_id, user=request.user)
         except Address.DoesNotExist:
             
             return JsonResponse({"error": "Invalid address selected."}, status=400)
 
-        # Validate cart
         try:
             cart = Cart.objects.filter(user=request.user).latest("created_at")
         except Cart.DoesNotExist:
@@ -1344,20 +1254,13 @@ def cod_payment(request):
                 "error": "Some items in your cart are no longer available. Please review your cart."
             }, status=400)
 
-        # Calculate net amount (subtotal before coupon)
         subtotal = sum(item.get_total_price() for item in cart_items)
-        
-        # Get coupon discount from session
         coupon_code = request.session.get('applied_coupon_code', '')
         coupon_discount = float(request.session.get('coupon_discount', 0))
-        
-        # Calculate final amount after discount
         net_amount = subtotal - coupon_discount
         
-        # Wrap entire order creation in transaction for atomicity
         try:
             with transaction.atomic():
-                # Validate stock and active status BEFORE order creation
                 for item in cart_items:
                     variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                     if not variant.is_active:
@@ -1377,7 +1280,6 @@ def cod_payment(request):
                             "error": f"Only {variant.available_quantity} items available for {variant.product.book_title}"
                         }, status=400)
                 
-                # Create order
                 order = Order.objects.create(
                     user=request.user,
                     address=address,
@@ -1390,7 +1292,6 @@ def cod_payment(request):
                     payment_method='cod'
                 )
                 
-                # Create order items and update stock
                 for item in cart_items:
                     OrderItem.objects.create(
                         order=order,
@@ -1399,15 +1300,12 @@ def cod_payment(request):
                         unit_price=item.product_variant.price,
                         discount_price=item.get_discounted_price()
                     )
-                    # Update stock (already validated above)
                     variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                     variant.available_quantity -= item.quantity
                     variant.save()
                 
-                # Delete cart only after successful order creation
                 cart.delete()
                 
-                # Track coupon usage if a coupon was applied
                 if coupon_code:
                     try:
                         coupon = Coupon.objects.get(code=coupon_code)
@@ -1420,7 +1318,6 @@ def cod_payment(request):
                     except Coupon.DoesNotExist:
                         logger.warning(f"Coupon {coupon_code} not found when tracking usage")
                 
-                # Clear coupon from session after successful order
                 if 'applied_coupon_code' in request.session:
                     del request.session['applied_coupon_code']
                 if 'applied_coupon_id' in request.session:
@@ -1498,19 +1395,14 @@ def add_to_cart(request, id):
         quantity = int(data.get('quantity', 0))  # ensure integer
         is_buy_now = data.get("buy_now", False)
 
-        # Remove wishlist entry
         Wishlist.objects.filter(user=request.user, variant=variant_id).delete()
 
         if quantity <= 0:
             return JsonResponse({'success': False, 'message': 'Invalid quantity'})
 
-        # Get or create user's cart
         cart, _ = Cart.objects.get_or_create(user=request.user)
 
-        # Get variant object - only active variants can be added to cart
         variant = get_object_or_404(Variant, id=variant_id, is_active=True)
-        
-        # Check if product and genre are active
         if not variant.product.is_active:
             return JsonResponse({
                 'success': False, 
@@ -1712,7 +1604,6 @@ def verification(request):
                 # You can mark user as verified here (maybe add `is_verified` field to model)
                 user_session_data = request.session.get('userdata')
                 try:
-                    # Get referrer if exists
                     referrer = None
                     referrer_id = user_session_data.get('referrer_id')
                     if referrer_id:
@@ -1784,7 +1675,6 @@ def verification(request):
                 messages.error(
                     request, "Something went wrong. Email not found in session.")
 
-    # Get email from session for display
     email = request.session.get('verification_email', '')
     
     context = {
@@ -1854,7 +1744,6 @@ def otp_page_fg(request):
             else:
                 messages.error(request, "Something went wrong. Email not found in session.")
 
-    # Get email from session for display
     email = request.session.get('verification_email', '')
     
     context = {
@@ -2008,7 +1897,6 @@ def change_variant(request, book_id):
                 'error': 'This book category is no longer available'
             }, status=404)
 
-        # Get images from related model
         images = []
         for img in variant.productimage_set.all():
             if img.image1:
@@ -2090,7 +1978,6 @@ def remove_from_wishlist(request):
     item_id = request.POST.get('item_id')
     print('item_id -', item_id)
 
-    # handling the wishlist item removal
     try:
         # wishlist item removal
         wish_item = Wishlist.objects.get(id=item_id, user=request.user)
@@ -2196,7 +2083,6 @@ def verify_razorpay_payment(request):
         if not all([razorpay_payment_id, razorpay_order_id, razorpay_signature, address_id, total_amount]):
             return JsonResponse({"error": "Missing payment details"}, status=400)
         
-        # Validate address
         try:
             address = Address.objects.get(id=address_id, user=request.user)
         except Address.DoesNotExist:
@@ -2223,11 +2109,9 @@ def verify_razorpay_payment(request):
         # Payment is verified, now process the order like COD flow
         try:
             with transaction.atomic():
-                # Get cart - filter only active variants and products
                 cart = Cart.objects.filter(user=request.user).latest("created_at")
                 cart_items = cart.cart_items.filter(product_variant__is_active=True, product_variant__product__is_active=True, product_variant__product__genre__is_active=True)
                 
-                # Check if cart has inactive variants, products, or genres
                 inactive_variants = cart.cart_items.filter(product_variant__is_active=False)
                 inactive_products = cart.cart_items.filter(product_variant__product__is_active=False)
                 inactive_genres = cart.cart_items.filter(product_variant__product__genre__is_active=False)
@@ -2244,17 +2128,12 @@ def verify_razorpay_payment(request):
                         "error": "Your cart is empty."
                     }, status=400)
 
-                # Recalculate subtotal from cart (don't trust client)
                 subtotal = sum(item.get_total_price() for item in cart_items)
                 
-                # Get coupon discount from session
                 coupon_code = request.session.get('applied_coupon_code', '')
                 coupon_discount = float(request.session.get('coupon_discount', 0))
-                
-                # Calculate final amount after discount
                 net_amount = subtotal - coupon_discount
-
-                # Validate stock and active status BEFORE order creation
+                
                 for item in cart_items:
                     variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                     if not variant.is_active:
@@ -2274,7 +2153,6 @@ def verify_razorpay_payment(request):
                             "error": f"Only {variant.available_quantity} items available for {variant.product.book_title}"
                         }, status=400)
 
-                # Create order
                 order = Order.objects.create(
                     user=request.user,
                     address=address,
@@ -2291,7 +2169,6 @@ def verify_razorpay_payment(request):
                     razorpay_signature=razorpay_signature,
                 )
 
-                # Create order items and update stock
                 for item in cart_items:
                     OrderItem.objects.create(
                         order=order,
@@ -2301,15 +2178,12 @@ def verify_razorpay_payment(request):
                         discount_price=item.get_discounted_price()
                     )
                     
-                    # Update stock (already validated above)
                     variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                     variant.available_quantity -= item.quantity
                     variant.save()
                 
-                # Clear cart
                 cart.delete()
                 
-                # Track coupon usage if a coupon was applied
                 if coupon_code:
                     try:
                         coupon = Coupon.objects.get(code=coupon_code)
@@ -2322,7 +2196,6 @@ def verify_razorpay_payment(request):
                     except Coupon.DoesNotExist:
                         logger.warning(f"Coupon {coupon_code} not found when tracking usage")
                 
-                # Clear coupon from session after successful order
                 if 'applied_coupon_code' in request.session:
                     del request.session['applied_coupon_code']
                 if 'applied_coupon_id' in request.session:

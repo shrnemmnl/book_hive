@@ -72,18 +72,15 @@ def admin_dashboard(request):
 
     
     """Generate sales report with filtering options"""
-    # Get filter parameters
     filter_type = request.GET.get('filter', 'all')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     
-    # Base query - only completed/delivered orders
     orders = Order.objects.filter(
         status__in=['pending', 'shipped', 'delivered'],
         is_active=True
     ).select_related('user', 'address').prefetch_related('order_items__product_variant__product')
     
-    # Apply filters
     now = timezone.now()
     filter_label = "All Time"
     
@@ -109,7 +106,6 @@ def admin_dashboard(request):
         except ValueError:
             messages.error(request, "Invalid date format")
     
-    # Calculate summary statistics
     summary = orders.aggregate(
         total_orders=Count('id'),
         total_amount=Sum('net_amount'),
@@ -123,10 +119,8 @@ def admin_dashboard(request):
     summary['total_discount'] = summary['total_discount'] or 0
     summary['total_subtotal'] = summary['total_subtotal'] or 0
     
-    # Get detailed order list
     orders_list = orders.order_by('-created_at')
     
-    # Pagination
     paginator = Paginator(orders_list, 10)
     page = request.GET.get('page', 1)
     
@@ -200,12 +194,9 @@ def genre(request):
 
     genre= Genre.objects.all().order_by('-is_active')
 
-    # Create Paginator object with 5 Genre per page
     paginator = Paginator(genre, 5)  
-    page_number = request.GET.get('page') # Get the current page number from request
-    print(page_number) 
-    page_obj = paginator.get_page(page_number) # Get Genre for the requested page
-    print(page_obj)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     if request.method == 'POST':
         genre_name = request.POST.get('genre', "").strip()
@@ -213,12 +204,10 @@ def genre(request):
         offer_title = request.POST.get('offer_title', "").strip()
         discount_percentage = request.POST.get('discount_percentage', 0)
         
-        # ✅ Add validation
         if not genre_name:
             messages.error(request, 'Genre name is required.')
             return redirect('genre')
         
-        # Validate genre name contains only alphabets (and spaces)
         if not re.match(r'^[A-Za-z\s]+$', genre_name):
             messages.error(request, 'Genre name must contain only alphabets and spaces.')
             return redirect('genre')
@@ -281,7 +270,6 @@ def genre_edit(request, genre_id):
         
         genre = Genre.objects.get(id=genre_id)
         
-        # ✅ Add validation
         if not name:
             messages.error(request, 'Genre name is required.')
             return redirect('genre_edit', genre_id=genre.id)
@@ -328,12 +316,9 @@ def genre_search(request):
     search_query=request.POST.get('genre_search', "").strip()
     genre = Genre.objects.filter(genre_name__istartswith=search_query)
 
-    # Create Paginator object with 5 Genre per page
     paginator = Paginator(genre, 5)  
-    page_number = request.GET.get('page') # Get the current page number from request
-    print(page_number) 
-    page_obj = paginator.get_page(page_number)  # Get Genre for the requested page
-    print(page_obj)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
         
     
     return render(request, 'admin/genre.html', {'page_obj':page_obj})
@@ -347,21 +332,18 @@ def add_new_book(request):
         author = request.POST.get('author', "").strip()
         genre_id = request.POST.get('genre_id', "").strip()
         description = request.POST.get('description', "").strip()
-        image = request.FILES.get('image')  # Changed from 'images' to 'image' to match form field name
+        image = request.FILES.get('image')
 
-        # Check if book already exists
         if Product.objects.filter(book_title=book_name).exists():
             messages.error(request, 'Book already exists.')
             return redirect('add_new_book')  
 
-        # Ensure genre exists
         try:
             genre = Genre.objects.get(id=int(genre_id))
         except (Genre.DoesNotExist, ValueError):
             messages.error(request, 'Invalid genre selected.')
             return redirect('add_new_book')
 
-        # Image validation - check both extension and MIME type
         if not image:
             messages.error(request, 'Book image is required.')
             return redirect('add_new_book')
@@ -369,32 +351,28 @@ def add_new_book(request):
         valid_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
         valid_mime_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
         
-        # Check file extension
         file_extension = image.name.split(".")[-1].lower() if "." in image.name else ""
         if not file_extension or file_extension not in valid_extensions:
             messages.error(request, 'Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only).')
             return redirect('add_new_book')
         
-        # Check MIME type
         file_mime_type = image.content_type.lower() if hasattr(image, 'content_type') and image.content_type else ""
         if not file_mime_type or file_mime_type not in valid_mime_types:
             messages.error(request, 'Invalid file type detected. Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only).')
             return redirect('add_new_book')
 
-        # Create new book
-        new_product = Product.objects.create(
+        Product.objects.create(
             book_title=book_name,
             author=author,
-            genre=genre,  # Assign Genre object instead of ID
+            genre=genre,
             is_active=True,
             description=description,
             image=image
         )
         
         messages.success(request, 'Book added successfully!')
-        return render(request, 'admin/add_new_book.html', {'redirect': True, 'redirect_url': 'books'})  # Redirect to book list page
+        return render(request, 'admin/add_new_book.html', {'redirect': True, 'redirect_url': 'books'})
 
-    # Fetch genres for dropdown
     all_genres = Genre.objects.all()   
     return render(request, 'admin/add_new_book.html', {'all_genres': all_genres})
 
@@ -433,19 +411,16 @@ def book_edit(request, book_id):
                 error['discount_percentage'] = "Discount percentage must be a valid number."
                 is_valid = False
         
-        # Image validation - check both extension and MIME type
         if image:
             valid_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
             valid_mime_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
             
-            # Check file extension
             file_extension = image.name.split(".")[-1].lower() if "." in image.name else ""
             if not file_extension or file_extension not in valid_extensions:
                 error['valid_image'] = "Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only)."
                 is_valid = False
             
-            # Check MIME type
-            if is_valid:  # Only check MIME type if extension is valid
+            if is_valid:
                 file_mime_type = image.content_type.lower() if hasattr(image, 'content_type') and image.content_type else ""
                 if not file_mime_type or file_mime_type not in valid_mime_types:
                     error['valid_image'] = "Invalid file type detected. Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only)."
@@ -535,7 +510,6 @@ def add_variant(request, book_id):
             messages.error(request,"Product not found")
             return redirect('books')
         
-        # ✅ Add validation
         if not publisher or not published_date or not language or not page:
             messages.error(request, 'All fields are required.')
             return redirect(reverse('view_variant', args=[book_id]))
@@ -1182,18 +1156,15 @@ def toggle_coupon_status(request, coupon_id):
 # Sales Report Views
 def sales_report(request):
     """Generate sales report with filtering options"""
-    # Get filter parameters
     filter_type = request.GET.get('filter', 'all')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     
-    # Base query - only completed/delivered orders
     orders = Order.objects.filter(
         status__in=['pending', 'shipped', 'delivered'],
         is_active=True
     ).select_related('user', 'address').prefetch_related('order_items__product_variant__product')
     
-    # Apply filters
     now = timezone.now()
     filter_label = "All Time"
     
@@ -1219,7 +1190,6 @@ def sales_report(request):
         except ValueError:
             messages.error(request, "Invalid date format")
     
-    # Calculate summary statistics
     summary = orders.aggregate(
         total_orders=Count('id'),
         total_amount=Sum('net_amount'),
