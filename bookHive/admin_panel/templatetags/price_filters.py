@@ -30,3 +30,25 @@ def discount_amount(price, book):
     except (ValueError, TypeError, AttributeError):
         return 0
 
+@register.filter
+def mul(value, arg):
+    """
+    Multiply the value by the arg.
+    Usage: {{ price|mul:quantity }}
+    """
+    try:
+        return float(value) * float(arg)
+    except (ValueError, TypeError):
+        return 0
+
+@register.filter
+def sub(value, arg):
+    """
+    Subtract the arg from the value.
+    Usage: {{ total|sub:discount }}
+    """
+    try:
+        return float(value) - float(arg)
+    except (ValueError, TypeError):
+        return 0
+

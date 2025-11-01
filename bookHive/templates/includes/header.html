@@ -46,47 +46,165 @@
 
     <!-- Custom CSS -->
     <style>
-      body {
-        background-color: #ffe5cfff;
-        font-family: "Roboto", sans-serif;
-        font-size: 1rem;
-        line-height: 1.6;
-        color: #333;
+      /* ===== BOOK HIVE COLOR PALETTE =====  */
+      :root {
+        --primary-orange: #e67e22;
+        --primary-orange-hover: #d35400;
+        --primary-navy: #2c3e50;
+        --primary-white: #fff;
+        --primary-dark: #212529;
+        --background-cream: #ffe5cfff;
+        --background-light-cream: #fff5e8;
+        --border-color: #f5d5b8;
+        --text-muted: #7f8c8d;
+        --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.08);
+        --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.1);
+        --shadow-hover: 0 6px 12px rgba(230, 126, 34, 0.2);
       }
 
       body {
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
-}
-body.fade-in {
-  opacity: 1;
-}
+        background-color: var(--background-cream);
+        font-family: "Roboto", sans-serif;
+        font-size: 1rem;
+        line-height: 1.6;
+        color: var(--primary-dark);
+      }
+
+      /* Book Watermark Background for User Pages */
+      body {
+        opacity: 1;
+        position: relative;
+        background-color: #ffe5cfff;
+        background-image: 
+          linear-gradient(135deg, #ffe5cfff 0%, #fff5e8 25%, #ffe5cfff 50%, #fff5e8 75%, #ffe5cfff 100%);
+        background-attachment: fixed;
+      }
+
+      /* Book Icons Pattern - Using Emojis */
+      body::before {
+        content: '📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒 📚 📖 📕 📗 📘 📙 📔 📓 📒';
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        font-size: 52px;
+        line-height: 2.5;
+        word-wrap: break-word;
+        opacity: 0.15;
+        z-index: -1;
+        pointer-events: none;
+        animation: floatBooks 100s linear infinite;
+        overflow: hidden;
+        filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.1));
+      }
+
+      /* Decorative book pattern overlay */
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        opacity: 0.08;
+        pointer-events: none;
+        background-image: 
+          repeating-linear-gradient(45deg, transparent 0px, transparent 100px, rgba(212, 165, 116, 0.15) 100px, rgba(212, 165, 116, 0.15) 101px),
+          repeating-linear-gradient(-45deg, transparent 0px, transparent 100px, rgba(196, 154, 108, 0.15) 100px, rgba(196, 154, 108, 0.15) 101px);
+      }
+
+      @keyframes floatBooks {
+        0% {
+          transform: translate(0, 0) rotate(0deg);
+        }
+        100% {
+          transform: translate(-100px, -100px) rotate(3deg);
+        }
+      }
+
+      /* Page transition overlay */
+      .page-transition-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #ffe5cfff 0%, #ffffff 100%);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease-in-out;
+      }
+
+      .page-transition-overlay.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .page-transition-spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(230, 126, 34, 0.2);
+        border-top-color: #e67e22;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      /* Page load animation */
+      .page-content-wrapper {
+        animation: fadeInUp 0.5s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Prevent flash on load */
+      body.loading {
+        overflow: hidden;
+      }
   
       .header-area {
-        background-color: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background-color: var(--primary-white);
+        box-shadow: var(--shadow-medium);
       }
       .top-header {
-        background-color: #2c3e50;
+        background-color: var(--primary-navy);
         font-size: 0.9rem;
       }
       .top-header a,
       .top-header span {
         color: #e2e8f0;
-        transition: color 0.2s;
+        transition: color 0.3s ease;
       }
       .top-header a:hover {
-        color: #f1c40f;
+        color: var(--primary-orange);
       }
       .logo h1 {
-        font-size: 2.5rem; /* Increased logo size for prominence */
+        font-size: 2.5rem;
         font-weight: 700;
-        color: #2c3e50;
+        color: var(--primary-navy);
         text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5),
           -3px -3px 6px rgba(255, 255, 255, 0.6);
       }
       .logo h1 span {
-        color: #e67e22;
+        color: var(--primary-orange);
         text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5),
           -3px -3px 6px rgba(255, 255, 255, 0.6);
       }
@@ -94,63 +212,91 @@ body.fade-in {
         border-radius: 20px 0 0 20px;
         font-size: 1rem;
         padding: 0.5rem 1rem;
-        border: 0.04rem solid #e67e22;
+        border: 0.04rem solid var(--primary-orange);
       }
       .search-bar .btn {
         border-radius: 10px 20px 20px 10px;
-        background-color: #e67e22;
-        border-color: #e67e22;
+        background-color: var(--primary-orange);
+        border-color: var(--primary-orange);
+        transition: all 0.3s ease;
       }
       .search-bar .btn:hover {
-        background-color: #d35400;
-        border-color: #d35400;
+        background-color: var(--primary-orange-hover);
+        border-color: var(--primary-orange-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
       }
       .header-action i {
         font-size: 1.5rem;
-        color: #2c3e50;
-        transition: color 0.2s;
+        color: var(--primary-navy);
+        transition: all 0.3s ease;
       }
       .header-action a:hover i {
-        color: #e67e22;
+        color: var(--primary-orange);
+        transform: scale(1.1);
       }
       .header-action .dropdown-toggle,
       .header-action a {
-        color: #2c3e50;
+        color: var(--primary-navy);
         text-decoration: none;
         font-size: 1rem;
         display: flex;
         align-items: center;
+        transition: all 0.3s ease;
       }
       .header-action .dropdown-toggle:hover,
       .header-action a:hover {
-        color: #e67e22;
+        color: var(--primary-orange);
       }
       .navbar {
-        background-color: #f8f9fa;
+        background-color: var(--primary-white);
+        box-shadow: var(--shadow-subtle);
       }
       .navbar-nav .nav-link {
         font-size: 1rem;
         font-weight: 500;
-        color: #2c3e50;
+        color: var(--primary-navy);
         padding: 0.5rem 1rem;
-        transition: color 0.2s;
+        transition: all 0.3s ease;
+        position: relative;
       }
       
       .navbar-nav .nav-link:hover {
-        color: #e67e22;
+        color: var(--primary-orange);
+      }
+
+      .navbar-nav .nav-link::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 0;
+        height: 2px;
+        background: var(--primary-orange);
+        transition: all 0.3s ease;
+        transform: translateX(-50%);
+      }
+
+      .navbar-nav .nav-link:hover::after {
+        width: 80%;
       }
       .dropdown-menu {
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        z-index: 9999 !important; /* go beyond normal stack */
+        border-radius: 12px;
+        box-shadow: var(--shadow-medium);
+        z-index: 9999 !important;
         position: absolute !important;
+        border: 1px solid var(--border-color);
       }
       .dropdown-item {
         font-size: 0.95rem;
+        color: var(--primary-navy);
+        transition: all 0.3s ease;
+        padding: 0.6rem 1rem;
       }
       .dropdown-item:hover {
-        background-color: #e67e22 !important;
-        color: #ffffffec !important;
+        background-color: var(--primary-orange) !important;
+        color: var(--primary-white) !important;
+        transform: translateX(5px);
       }
       .no-underline {
         text-decoration: none !important;
@@ -170,6 +316,195 @@ body.fade-in {
         .logo h1 {
           font-size: 2rem; /* Slightly smaller on mobile for balance */
         }
+      }
+      /* ===== GLOBAL BOOTSTRAP COLOR OVERRIDES ===== */
+      /* This ensures all Bootstrap primary colors use the Book Hive orange theme */
+      .btn-primary {
+        background-color: var(--primary-orange) !important;
+        border-color: var(--primary-orange) !important;
+        color: var(--primary-white) !important;
+      }
+
+      .btn-primary:hover,
+      .btn-primary:focus,
+      .btn-primary:active {
+        background-color: var(--primary-orange-hover) !important;
+        border-color: var(--primary-orange-hover) !important;
+        box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3) !important;
+      }
+
+      .btn-outline-primary {
+        color: var(--primary-orange) !important;
+        border-color: var(--primary-orange) !important;
+      }
+
+      .btn-outline-primary:hover,
+      .btn-outline-primary:focus,
+      .btn-outline-primary:active {
+        background-color: var(--primary-orange) !important;
+        border-color: var(--primary-orange) !important;
+        color: var(--primary-white) !important;
+      }
+
+      .text-primary {
+        color: var(--primary-orange) !important;
+      }
+
+      .bg-primary {
+        background-color: var(--primary-orange) !important;
+      }
+
+      .badge.bg-primary {
+        background-color: var(--primary-orange) !important;
+      }
+
+      .border-primary {
+        border-color: var(--primary-orange) !important;
+      }
+
+      .link-primary {
+        color: var(--primary-orange) !important;
+      }
+
+      .link-primary:hover,
+      .link-primary:focus {
+        color: var(--primary-orange-hover) !important;
+      }
+
+      /* Form Controls */
+      .form-control:focus,
+      .form-select:focus {
+        border-color: var(--primary-orange);
+        box-shadow: 0 0 0 0.2rem rgba(230, 126, 34, 0.15);
+      }
+
+      .form-check-input:checked {
+        background-color: var(--primary-orange);
+        border-color: var(--primary-orange);
+      }
+
+      .form-check-input:focus {
+        border-color: var(--primary-orange);
+        box-shadow: 0 0 0 0.2rem rgba(230, 126, 34, 0.15);
+      }
+
+      /* Alerts */
+      .alert-primary {
+        background-color: rgba(230, 126, 34, 0.1);
+        border-color: var(--primary-orange);
+        color: var(--primary-navy);
+      }
+
+      /* Cards */
+      .card {
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Tables */
+      .table-primary {
+        background-color: rgba(230, 126, 34, 0.1);
+      }
+
+      /* Progress Bars */
+      .progress-bar {
+        background-color: var(--primary-orange);
+      }
+
+      /* Navs and Tabs */
+      .nav-pills .nav-link.active {
+        background-color: var(--primary-orange);
+      }
+
+      .nav-tabs .nav-link:hover {
+        border-color: var(--primary-orange);
+        color: var(--primary-orange);
+      }
+
+      .nav-tabs .nav-link.active {
+        color: var(--primary-orange);
+        border-color: var(--border-color) var(--border-color) #fff;
+      }
+
+      /* Links */
+      a {
+        color: var(--primary-navy);
+        transition: color 0.3s ease;
+      }
+
+      a:hover {
+        color: var(--primary-orange);
+      }
+
+      /* Headings */
+      h1, h2, h3, h4, h5, h6 {
+        color: var(--primary-navy);
+      }
+
+      /* Badges */
+      .badge {
+        font-weight: 500;
+      }
+
+      /* List Group */
+      .list-group-item.active {
+        background-color: var(--primary-orange);
+        border-color: var(--primary-orange);
+      }
+
+      /* Spinners */
+      .spinner-border {
+        color: var(--primary-orange);
+      }
+
+      /* Modals */
+      .modal-header {
+        background-color: var(--primary-white);
+        border-bottom: 2px solid var(--border-color);
+      }
+
+      .modal-title {
+        color: var(--primary-navy);
+        font-weight: 600;
+      }
+
+      /* Text Colors */
+      .text-dark {
+        color: var(--primary-dark) !important;
+      }
+
+      .text-muted {
+        color: var(--text-muted) !important;
+      }
+
+      /* Shadows */
+      .shadow-sm {
+        box-shadow: var(--shadow-subtle) !important;
+      }
+
+      .shadow {
+        box-shadow: var(--shadow-medium) !important;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--primary-orange);
+        border-radius: 5px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--primary-orange-hover);
       }
     </style>
 
@@ -436,31 +771,138 @@ body.fade-in {
       {% endif %}
     </script>
  <script>   
-document.addEventListener("DOMContentLoaded", () => {
-  document.body.classList.add('fade-in');
+// Smooth Page Transition
+(function() {
+  'use strict';
 
-  document.querySelectorAll("a[href]").forEach(link => {
-    const href = link.getAttribute("href");
-    if (
-      link.target === "_blank" || 
-      href.startsWith("#") || 
-      href === "" || 
-      href === "javascript:void(0)"
-    ) return;
+  // Create transition overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'page-transition-overlay';
+  overlay.innerHTML = '<div class="page-transition-spinner"></div>';
+  
+  // Add to body when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      document.body.appendChild(overlay);
+      initTransitions();
+    });
+  } else {
+    document.body.appendChild(overlay);
+    initTransitions();
+  }
 
-    link.addEventListener("click", e => {
-      // only fade if link goes to another page
-      if (link.hostname === window.location.hostname && link.pathname !== window.location.pathname) {
-        e.preventDefault();
-        document.body.classList.remove('fade-in');
-        document.body.style.opacity = 0;
-        setTimeout(() => {
-          window.location.href = href;
-        }, 200); // slightly longer for smoother fade
+  function initTransitions() {
+    let isTransitioning = false;
+
+    // Smooth page entrance
+    setTimeout(() => {
+      document.body.classList.remove('loading');
+    }, 100);
+
+    // Function to trigger transition
+    function triggerTransition(url) {
+      if (isTransitioning) return;
+      isTransitioning = true;
+
+      // Add loading state
+      document.body.classList.add('loading');
+      
+      // Show overlay
+      overlay.classList.add('active');
+
+      // Navigate after transition
+      setTimeout(() => {
+        window.location.href = url;
+      }, 400);
+    }
+
+    // Handle all link clicks
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a[href]');
+      if (!link) return;
+
+      const href = link.getAttribute('href');
+      
+      // Skip if no href or special cases
+      if (!href || 
+          href === '#' || 
+          href === '' ||
+          href === 'javascript:void(0)' ||
+          href.startsWith('javascript:') ||
+          href.startsWith('mailto:') ||
+          href.startsWith('tel:') ||
+          link.target === '_blank' ||
+          link.hasAttribute('download')) {
+        return;
+      }
+
+      // Check if it's an anchor link
+      if (href.startsWith('#')) {
+        return; // Let it scroll normally
+      }
+
+      // Check if it's same domain
+      try {
+        const linkUrl = new URL(href, window.location.origin);
+        const currentUrl = new URL(window.location.href);
+
+        // Only transition if navigating to different page on same domain
+        if (linkUrl.origin === currentUrl.origin) {
+          // Check if it's actually a different page
+          if (linkUrl.pathname !== currentUrl.pathname || 
+              linkUrl.search !== currentUrl.search) {
+            e.preventDefault();
+            triggerTransition(href);
+          }
+        }
+      } catch (err) {
+        // If URL parsing fails, it's likely a relative URL
+        if (href !== window.location.pathname) {
+          e.preventDefault();
+          triggerTransition(href);
+        }
       }
     });
-  });
-});
+
+    // Handle form submissions (for search, etc.)
+    document.addEventListener('submit', (e) => {
+      const form = e.target;
+      
+      // Skip if form has special attributes
+      if (form.hasAttribute('data-no-transition') || 
+          form.target === '_blank' ||
+          form.method.toLowerCase() === 'post') {
+        return;
+      }
+
+      // For GET forms (like search), show transition
+      if (form.method.toLowerCase() === 'get' || !form.method) {
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+        const action = form.action || window.location.href;
+        const url = `${action}?${params.toString()}`;
+        
+        e.preventDefault();
+        triggerTransition(url);
+      }
+    });
+
+    // Handle browser back/forward
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        // Page loaded from cache
+        isTransitioning = false;
+        overlay.classList.remove('active');
+        document.body.classList.remove('loading');
+      }
+    });
+
+    // Reset on page hide
+    window.addEventListener('pagehide', () => {
+      isTransitioning = false;
+    });
+  }
+})();
 </script>
 
     {% block extra_js %}{% endblock %}

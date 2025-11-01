@@ -50,10 +50,10 @@
                   <div class="col-md-2 col-2 text-center">
                     {% if item.product_variant.product.has_active_offer %}
                       <p class="fw-bold mb-0 text-success cart-item-price" id="item-total-{{ item.id }}">
-                        ₹{{ item.product_variant.price|calculate_discount:item.product_variant.product|floatformat:0 }}
+                        ₹{{ item.total_price|floatformat:0 }}
                       </p>
                       <p class="text-muted text-decoration-line-through mb-0" style="font-size: 0.75rem;">
-                        ₹{{ item.product_variant.price }}
+                        ₹{{ item.original_total_price|floatformat:0 }}
                       </p>
                     {% else %}
                       <p class="fw-bold mb-0 cart-item-price" id="item-total-{{ item.id }}">₹{{ item.get_total_price }}
@@ -79,9 +79,19 @@
             <div class="card cart-summary-card">
               <div class="card-body p-3 shadow-lg">
                 <div class="cart-summary">
+                  {% if original_subtotal > subtotal %}
+                  <div class="d-flex justify-content-between mb-2">
+                    <span>Total MRP:</span>
+                    <span class="text-muted text-decoration-line-through">₹{{ original_subtotal|floatformat:0 }}</span>
+                  </div>
+                  <div class="d-flex justify-content-between mb-2 text-success">
+                    <span>Discount:</span>
+                    <span>-₹{{ total_discount|floatformat:0 }}</span>
+                  </div>
+                  {% endif %}
                   <div class="d-flex justify-content-between mb-2">
                     <span>Subtotal:</span>
-                    <span id="cart-subtotal">₹{{ subtotal }}</span>
+                    <span id="cart-subtotal">₹{{ subtotal|floatformat:0 }}</span>
                   </div>
                   <div class="d-flex justify-content-between mb-2">
                     <span>Shipping:</span>
@@ -89,8 +99,13 @@
                   </div>
                   <div class="d-flex justify-content-between fw-bold">
                     <span>Total:</span>
-                    <span id="cart-nettotal">₹{{ subtotal }}</span>
+                    <span id="cart-nettotal">₹{{ subtotal|floatformat:0 }}</span>
                   </div>
+                  {% if original_subtotal > subtotal %}
+                  <div class="text-center text-success mb-2">
+                    <small><i class="bi bi-tag-fill"></i> You saved ₹{{ total_discount|floatformat:0 }}!</small>
+                  </div>
+                  {% endif %}
                   <a href="{% url 'checkoutpage' %}" class="btn btn-primary w-100 mt-3 text-decoration-none"
                     id="checkout-button">
                     Proceed to Checkout
@@ -156,11 +171,13 @@
         success: function (response) {
           if (response.success) {
             input.val(response.new_quantity);
-            $('#cart-subtotal').text('₹' + response.cart_total);
-            $('#cart-nettotal').text('₹' + response.cart_total);
-            $('#item-total-' + itemId).text('₹' + response.item_total_price);
-
-
+            $('#item-total-' + itemId).html('₹' + response.item_total_price);
+            // Update original price if exists
+            if (response.item_original_total && response.item_original_total != response.item_total_price) {
+              $('#item-total-' + itemId).next('p').html('<span class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">₹' + response.item_original_total + '</span>');
+            }
+            $('#cart-subtotal').text('₹' + Math.round(response.cart_total));
+            $('#cart-nettotal').text('₹' + Math.round(response.cart_total));
           } else {
             alert("Error: " + response.error);
           }

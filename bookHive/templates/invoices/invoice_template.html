@@ -1,3 +1,4 @@
+{% load price_filters %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -108,8 +109,20 @@ th, td {
     </tbody>
 </table>
 
+<div style="margin-bottom: 15px; font-size: 10pt; line-height: 1.8;">
+    {% if original_subtotal > order.subtotal %}
+    <div style="text-align: right;"><strong>Total MRP:</strong> <span style="text-decoration: line-through;">Rs. {{ original_subtotal|floatformat:2 }}</span></div>
+    <div style="text-align: right; color: #059669;"><strong>Discount:</strong> -Rs. {{ total_discount_from_offers|floatformat:2 }}</div>
+    {% endif %}
+    <div style="text-align: right;"><strong>Subtotal:</strong> Rs. {{ order.subtotal|floatformat:2 }}</div>
+    {% if order.coupon_discount and order.coupon_discount > 0 %}
+    <div style="text-align: right; color: #059669;"><strong>Coupon Discount ({{ order.coupon_code }}):</strong> -Rs. {{ order.coupon_discount|floatformat:2 }}</div>
+    {% endif %}
+    <div style="text-align: right;"><strong>Shipping:</strong> Free</div>
+</div>
+
 <div class="total">
-    Total Amount: Rs. {{ order.calculate_total|floatformat:2 }}
+    Total Amount: Rs. {{ order.net_amount|floatformat:2 }}
 </div>
 
 <div class="footer">

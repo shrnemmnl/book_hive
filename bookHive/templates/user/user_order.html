@@ -1,4 +1,5 @@
 {% load static %}
+{% load price_filters %}
 {% include 'includes/header.html' %}
 
 <div class="container-fluid">
@@ -107,7 +108,12 @@
                   <p class="small mb-0">Quantity: {{ item.quantity }}</p>
                 </div>
                 <div class="col-md-4 text-md-end">
-                  <p class="mb-0">₹{{ item.total_amount }}</p>
+                  {% if item.discount_price < item.unit_price %}
+                    <div class="fw-bold text-success mb-0">₹{{ item.total_amount|floatformat:0 }}</div>
+                    <div class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">₹{{ item.original_total_price|floatformat:0 }}</div>
+                  {% else %}
+                    <p class="mb-0">₹{{ item.total_amount }}</p>
+                  {% endif %}
                 </div>
               </div>
               {% endfor %}
@@ -165,7 +171,12 @@
                       <p class="small mb-0">Quantity: {{ item.quantity }}</p>
                     </div>
                     <div class="col-md-4 text-md-end">
-                      <p class="mb-0">₹{{ item.discount_price }} x {{ item.quantity }} = ₹{{ item.total_amount|floatformat:2 }}</p>
+                      {% if item.discount_price < item.unit_price %}
+                        <div class="fw-bold text-success mb-0">₹{{ item.total_amount|floatformat:0 }}</div>
+                        <div class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">₹{{ item.original_total_price|floatformat:0 }}</div>
+                      {% else %}
+                        <p class="mb-0">₹{{ item.total_amount|floatformat:2 }}</p>
+                      {% endif %}
                     </div>
                   </div>
                   {% endfor %}
@@ -175,12 +186,23 @@
                       <p><strong>Shipping Address:</strong><br>{{ order.address }}</p>
                     </div>
                     <div class="col-md-6 text-md-end">
+                      {% if order.original_subtotal > order.subtotal %}
+                      <p><strong>Total MRP:</strong> <span class="text-muted text-decoration-line-through">₹{{ order.original_subtotal|floatformat:0 }}</span></p>
+                      <p class="text-success"><strong>Discount:</strong> -₹{{ order.total_discount_from_offers|floatformat:0 }}</p>
+                      {% endif %}
                       <p><strong>Subtotal:</strong> ₹{{ order.subtotal|floatformat:2 }}</p>
                       {% if order.coupon_discount and order.coupon_discount > 0 %}
                       <p class="text-success"><strong>Coupon Discount ({{ order.coupon_code }}):</strong> -₹{{ order.coupon_discount|floatformat:2 }}</p>
                       {% endif %}
                       <p><strong>Shipping:</strong> Free</p>
                       <p class="fw-bold text-primary"><strong>Total:</strong> ₹{{ order.net_amount|floatformat:2 }}</p>
+                      {% if order.original_subtotal > order.subtotal or order.coupon_discount %}
+                      <div class="text-center mt-2">
+                        <small class="text-success">
+                          <i class="bi bi-tag-fill"></i> You saved ₹{{ order.total_discount_from_offers|add:order.coupon_discount|default:0|floatformat:2 }} in total!
+                        </small>
+                      </div>
+                      {% endif %}
                     </div>
                   </div>
                 </div>

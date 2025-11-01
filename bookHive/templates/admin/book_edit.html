@@ -31,10 +31,11 @@
                 <!-- Book Image -->
                 <div class="mb-3">
                     <label for="bookImage" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Image</label>
-                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="bookImage" name="image" multiple style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="bookImage" name="image" multiple accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div id="image-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
                     {% if error.valid_image %}
-            <div class="text-danger mt-1">{{ error.valid_image }}</div>
-            {% endif %}
+                    <div class="text-danger mt-1">{{ error.valid_image }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Genre -->
@@ -63,10 +64,11 @@
 
                 <div class="mb-3">
                     <label for="discount" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Discount (%)</label>
-                    <input type="number" class="form-control{% if error.discount_percentage %}is-invalid{% endif %}" id="discount" name="discount_percentage" value="{{ book.discount_percentage }}" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <input type="number" class="form-control {% if error.discount_percentage %}is-invalid{% endif %}" id="discount" name="discount_percentage" value="{{ book.discount_percentage }}" min="0" max="99" placeholder="Enter discount from 0 to 99 (must be less than 100%)" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <div id="discount-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
                     {% if error.discount_percentage %}
-            <div class="text-danger mt-1">{{ error.discount_percentage }}</div>
-            {% endif %}
+                    <div class="text-danger mt-1">{{ error.discount_percentage }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Book Description -->
@@ -101,6 +103,172 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.getElementById('bookImage');
+    const discountInput = document.getElementById('discount');
+    const isOfferCheckbox = document.getElementById('isOffer');
+    const imageError = document.getElementById('image-error');
+    const discountError = document.getElementById('discount-error');
+    const form = document.querySelector('form');
+
+    // Valid image extensions
+    const validImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const validImageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+    // Function to validate image file
+    function validateImage() {
+        const files = imageInput.files;
+        
+        if (files.length === 0) {
+            // No files selected - this is okay for edit (optional field)
+            imageInput.classList.remove('is-invalid');
+            imageError.style.display = 'none';
+            imageError.textContent = '';
+            return true;
+        }
+
+        // Check each file
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileName = file.name.toLowerCase();
+            const fileExtension = fileName.split('.').pop();
+            const fileType = file.type;
+
+            // Check file extension
+            if (!validImageExtensions.includes(fileExtension)) {
+                imageInput.classList.add('is-invalid');
+                imageError.style.display = 'block';
+                imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+                return false;
+            }
+
+            // Check MIME type (if available)
+            if (fileType && !validImageMimeTypes.includes(fileType)) {
+                imageInput.classList.add('is-invalid');
+                imageError.style.display = 'block';
+                imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+                return false;
+            }
+        }
+
+        // All files are valid
+        imageInput.classList.remove('is-invalid');
+        imageError.style.display = 'none';
+        imageError.textContent = '';
+        return true;
+    }
+
+    // Function to validate discount percentage
+    function validateDiscount() {
+        const discountValue = discountInput.value.trim();
+
+        // Only validate if offer is checked and discount is provided
+        if (!isOfferCheckbox.checked || discountValue === '') {
+            discountInput.classList.remove('is-invalid');
+            discountError.style.display = 'none';
+            discountError.textContent = '';
+            return true;
+        }
+
+        const discount = parseFloat(discountValue);
+
+        if (isNaN(discount)) {
+            discountInput.classList.add('is-invalid');
+            discountError.style.display = 'block';
+            discountError.textContent = 'Discount percentage must be a valid number.';
+            return false;
+        }
+
+        if (discount < 0) {
+            discountInput.classList.add('is-invalid');
+            discountError.style.display = 'block';
+            discountError.textContent = 'Discount percentage cannot be negative.';
+            return false;
+        }
+
+        if (discount >= 100) {
+            discountInput.classList.add('is-invalid');
+            discountError.style.display = 'block';
+            discountError.textContent = 'Discount percentage must be less than 100%.';
+            // Auto-correct if value is >= 100
+            discountInput.value = 99;
+            return false;
+        }
+
+        // Valid discount
+        discountInput.classList.remove('is-invalid');
+        discountError.style.display = 'none';
+        discountError.textContent = '';
+        return true;
+    }
+
+    // Event listeners for image validation
+    imageInput.addEventListener('change', function() {
+        validateImage();
+    });
+
+    // Event listeners for discount validation
+    discountInput.addEventListener('input', function() {
+        if (isOfferCheckbox.checked) {
+            validateDiscount();
+        }
+    });
+
+    discountInput.addEventListener('change', function() {
+        if (isOfferCheckbox.checked) {
+            validateDiscount();
+        }
+    });
+
+    discountInput.addEventListener('blur', function() {
+        if (isOfferCheckbox.checked) {
+            validateDiscount();
+        }
+    });
+
+    // Event listener for offer checkbox
+    isOfferCheckbox.addEventListener('change', function() {
+        if (isOfferCheckbox.checked) {
+            validateDiscount();
+        } else {
+            discountInput.classList.remove('is-invalid');
+            discountError.style.display = 'none';
+            discountError.textContent = '';
+        }
+    });
+
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+
+        // Validate image if files are selected
+        if (imageInput.files.length > 0) {
+            if (!validateImage()) {
+                isValid = false;
+            }
+        }
+
+        // Validate discount if offer is checked
+        if (isOfferCheckbox.checked && discountInput.value.trim() !== '') {
+            if (!validateDiscount()) {
+                isValid = false;
+            }
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Initial validation on page load (in case there are existing invalid values)
+    if (isOfferCheckbox.checked && discountInput.value !== '') {
+        validateDiscount();
+    }
+});
+</script>
 
 <style>
     .card {

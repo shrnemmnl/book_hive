@@ -29,7 +29,7 @@
           </div>
           <div class="col-md-4">
             <label class="form-label">Discount Value</label>
-            <input type="number" step="0.01" class="form-control" name="discount_value" value="{{ coupon.discount_value }}">
+            <input type="number" step="0.01" class="form-control" name="discount_value" id="discount_value" value="{{ coupon.discount_value }}">
           </div>
           <div class="col-md-4">
             <label class="form-label">Minimum Order Amount</label>
@@ -57,11 +57,112 @@
 
         <div class="d-flex justify-content-end mt-4 gap-2">
           <a href="{% url 'coupon_list' %}" class="btn btn-outline-secondary">Cancel</a>
-          <button class="btn btn-primary" style="background-color:#2563eb;">Update Coupon</button>
+          <button type="submit" class="btn btn-primary" style="background-color:#2563eb;">Update Coupon</button>
         </div>
+        
+        <!-- Error message container -->
+        <div id="discount-error" class="text-danger mt-2" style="display: none;"></div>
       </form>
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const discountTypeSelect = document.querySelector('select[name="discount_type"]');
+    const discountValueInput = document.querySelector('input[name="discount_value"]');
+    const form = document.querySelector('form');
+    const errorDiv = document.getElementById('discount-error');
+    
+    function updateDiscountInputAttributes() {
+      const discountType = discountTypeSelect.value;
+      
+      if (discountType === 'percentage') {
+        discountValueInput.setAttribute('max', '100');
+        discountValueInput.setAttribute('min', '0.01');
+        discountValueInput.setAttribute('placeholder', 'Enter percentage (max 100)');
+      } else {
+        discountValueInput.removeAttribute('max');
+        discountValueInput.setAttribute('min', '0.01');
+        discountValueInput.setAttribute('placeholder', 'Enter amount (e.g. 200)');
+      }
+      
+      // Validate after updating attributes
+      validateDiscountValue();
+    }
+    
+    function validateDiscountValue() {
+      const discountType = discountTypeSelect.value;
+      const discountValue = parseFloat(discountValueInput.value);
+      
+      // Clear previous error
+      errorDiv.style.display = 'none';
+      errorDiv.textContent = '';
+      discountValueInput.classList.remove('is-invalid');
+      
+      // Only validate if both fields have values
+      if (discountType && discountValueInput.value !== '') {
+        if (discountType === 'percentage') {
+          if (isNaN(discountValue)) {
+            return false;
+          }
+          if (discountValue > 100) {
+            errorDiv.textContent = 'Percentage discount cannot exceed 100%';
+            errorDiv.style.display = 'block';
+            discountValueInput.classList.add('is-invalid');
+            return false;
+          }
+          if (discountValue <= 0) {
+            errorDiv.textContent = 'Discount value must be greater than 0';
+            errorDiv.style.display = 'block';
+            discountValueInput.classList.add('is-invalid');
+            return false;
+          }
+        } else if (discountType === 'fixed') {
+          if (isNaN(discountValue) || discountValue <= 0) {
+            errorDiv.textContent = 'Discount value must be greater than 0';
+            errorDiv.style.display = 'block';
+            discountValueInput.classList.add('is-invalid');
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    }
+    
+    // Update input attributes when discount type changes
+    discountTypeSelect.addEventListener('change', function() {
+      updateDiscountInputAttributes();
+    });
+    
+    // Initialize attributes on page load
+    updateDiscountInputAttributes();
+    
+    // Validate when discount value changes
+    discountValueInput.addEventListener('input', function() {
+      validateDiscountValue();
+    });
+    
+    // Validate on form submission
+    form.addEventListener('submit', function(e) {
+      if (!validateDiscountValue()) {
+        e.preventDefault();
+        return false;
+      }
+    });
+  });
+</script>
+
+<style>
+  .is-invalid {
+    border-color: #dc3545 !important;
+  }
+  .is-invalid:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+  }
+</style>
+
 {% endblock %}
 

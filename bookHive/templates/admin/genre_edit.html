@@ -20,7 +20,8 @@
                 <!-- Genre Name -->
                 <div class="mb-3">
                     <label for="genreName" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Genre Name</label>
-                    <input type="text" name="genre" value="{{ genres.genre_name }}" id="genreName" class="form-control" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <input type="text" name="genre" value="{{ genres.genre_name }}" id="genreName" class="form-control" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;" placeholder="Enter genre name (alphabets only)">
+                    <div id="genre-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
                 </div>
 
                 <!-- Offer Section -->
@@ -52,10 +53,11 @@
                                     Discount Percentage (%)
                                 </label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="discountPercentage" name="discount_percentage" min="0" max="100" value="{{ genres.discount_percentage }}" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px 0 0 6px;">
+                                    <input type="number" class="form-control" id="discountPercentage" name="discount_percentage" min="0" max="99" value="{{ genres.discount_percentage }}" step="0.01" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px 0 0 6px;">
                                     <span class="input-group-text" style="background-color: #f8fafc; border-radius: 0 6px 6px 0;">%</span>
                                 </div>
-                                <small class="text-muted">Enter discount from 0 to 100</small>
+                                <small class="text-muted">Enter discount from 0 to 99 (must be less than 100%)</small>
+                                <div id="discount-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
                             </div>
                         </div>
                     </div>
@@ -113,18 +115,155 @@
 </style>
 
 <script>
-// Toggle offer fields based on checkbox
-document.getElementById('isOffer').addEventListener('change', function() {
+document.addEventListener('DOMContentLoaded', function() {
+    const genreNameInput = document.getElementById('genreName');
+    const discountPercentageInput = document.getElementById('discountPercentage');
+    const isOfferCheckbox = document.getElementById('isOffer');
     const offerFields = document.getElementById('offerFields');
-    if (this.checked) {
-        offerFields.style.display = 'block';
-        document.getElementById('discountPercentage').required = true;
-    } else {
-        offerFields.style.display = 'none';
-        document.getElementById('discountPercentage').required = false;
-        document.getElementById('discountPercentage').value = '0';
-        document.getElementById('offerTitle').value = '';
+    const form = document.querySelector('form');
+    const genreErrorDiv = document.getElementById('genre-error');
+    const discountErrorDiv = document.getElementById('discount-error');
+    
+    // Validate genre name - only alphabets and spaces
+    function validateGenreName() {
+        const genreName = genreNameInput.value.trim();
+        
+        // Clear previous error
+        genreErrorDiv.style.display = 'none';
+        genreErrorDiv.textContent = '';
+        genreNameInput.classList.remove('is-invalid');
+        
+        if (genreName === '') {
+            return true; // Let HTML5 required handle empty
+        }
+        
+        // Check if only alphabets and spaces
+        const alphabetOnlyPattern = /^[A-Za-z\s]+$/;
+        if (!alphabetOnlyPattern.test(genreName)) {
+            genreErrorDiv.textContent = 'Genre name must contain only alphabets and spaces.';
+            genreErrorDiv.style.display = 'block';
+            genreNameInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Validate discount percentage - must be less than 100
+    function validateDiscountPercentage() {
+        const discountValue = parseFloat(discountPercentageInput.value);
+        
+        // Clear previous error
+        discountErrorDiv.style.display = 'none';
+        discountErrorDiv.textContent = '';
+        discountPercentageInput.classList.remove('is-invalid');
+        
+        // Only validate if offer is enabled and value is entered
+        if (isOfferCheckbox.checked && discountPercentageInput.value !== '') {
+            if (isNaN(discountValue)) {
+                discountErrorDiv.textContent = 'Please enter a valid number.';
+                discountErrorDiv.style.display = 'block';
+                discountPercentageInput.classList.add('is-invalid');
+                return false;
+            }
+            
+            if (discountValue < 0) {
+                discountErrorDiv.textContent = 'Discount percentage cannot be negative.';
+                discountErrorDiv.style.display = 'block';
+                discountPercentageInput.classList.add('is-invalid');
+                return false;
+            }
+            
+            if (discountValue >= 100) {
+                discountErrorDiv.textContent = 'Discount percentage must be less than 100%.';
+                discountErrorDiv.style.display = 'block';
+                discountPercentageInput.classList.add('is-invalid');
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    // Genre name validation - on input (prevent invalid characters)
+    genreNameInput.addEventListener('input', function(e) {
+        // Prevent non-alphabetic characters and spaces
+        const value = e.target.value;
+        const cleaned = value.replace(/[^A-Za-z\s]/g, '');
+        if (value !== cleaned) {
+            e.target.value = cleaned;
+        }
+        validateGenreName();
+    });
+    
+    // Genre name validation - on blur
+    genreNameInput.addEventListener('blur', validateGenreName);
+    
+    // Discount percentage validation - on input
+    discountPercentageInput.addEventListener('input', validateDiscountPercentage);
+    
+    // Discount percentage validation - on change (auto-correct if >= 100)
+    discountPercentageInput.addEventListener('change', function() {
+        const value = parseFloat(this.value);
+        if (!isNaN(value) && value >= 100) {
+            this.value = 99;
+        }
+        validateDiscountPercentage();
+    });
+    
+    // Toggle offer fields based on checkbox
+    isOfferCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            offerFields.style.display = 'block';
+            discountPercentageInput.required = true;
+        } else {
+            offerFields.style.display = 'none';
+            discountPercentageInput.required = false;
+            discountPercentageInput.value = '0';
+            document.getElementById('offerTitle').value = '';
+            // Clear discount error when offer is disabled
+            discountErrorDiv.style.display = 'none';
+            discountPercentageInput.classList.remove('is-invalid');
+        }
+        // Validate discount when toggling (might need to check existing value)
+        validateDiscountPercentage();
+    });
+    
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Validate genre name
+        if (!validateGenreName()) {
+            isValid = false;
+        }
+        
+        // Validate discount percentage if offer is enabled
+        if (isOfferCheckbox.checked && !validateDiscountPercentage()) {
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Initial validation on page load (in case there are existing invalid values)
+    validateGenreName();
+    if (isOfferCheckbox.checked && discountPercentageInput.value !== '') {
+        validateDiscountPercentage();
     }
 });
 </script>
+
+<style>
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+    .is-invalid:focus {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+</style>
 {% endblock %}

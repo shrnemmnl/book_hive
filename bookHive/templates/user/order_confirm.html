@@ -8,7 +8,7 @@
 {% endblock confirmation_css %}
 
 <!-- Confirmation Section -->
-<section class="confirmation-section py-5 bg-light">
+<section class="confirmation-section py-5" style="background-color: transparent;">
   <div class="container">
     <!-- Confirmation Header -->
     <div class="confirmation-header text-center mb-5">
@@ -21,7 +21,7 @@
     <div class="row justify-content-center">
       <div class="col-lg-8">
         <!-- Order Details -->
-        <div class="order-details bg-white p-4 shadow-lg rounded mb-4">
+        <div class="order-details p-4 shadow-lg rounded mb-4" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5);">
           <h4 class="section-title mb-4"><span class="section-number">1</span> Order Details</h4>
           <div class="row">
             <!-- Shipping Information -->
@@ -52,11 +52,11 @@
         </div>
 
         <!-- Order Items -->
-        <div class="order-items bg-white p-4 shadow-lg rounded mb-4">
+        <div class="order-items p-4 shadow-lg rounded mb-4" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5);">
           <h4 class="section-title mb-4"><span class="section-number">2</span> Order Items</h4>
           <div class="items-list">
             {% for item in order_items %}
-              <div class="card mb-3 border-0 shadow-sm">
+              <div class="card mb-3 border-0 shadow-sm" style="background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(5px);">
                 <div class="card-body p-3">
                   <div class="row align-items-center">
                     <div class="col-3">
@@ -70,7 +70,14 @@
                           <span class="badge bg-light text-dark">Qty: {{ item.quantity }}</span>
                           {% if item.product_variant.format %}<small class="text-muted ms-1">({{ item.product_variant.format }})</small>{% endif %}
                         </div>
-                        <div class="price-info text-end fw-bold">₹{{ item.total_amount |floatformat:2 }}</div>
+                        <div class="price-info text-end">
+                          {% if item.original_total_price and item.original_total_price != item.total_amount %}
+                            <div class="fw-bold text-success">₹{{ item.total_amount|floatformat:0 }}</div>
+                            <div class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">₹{{ item.original_total_price|floatformat:0 }}</div>
+                          {% else %}
+                            <div class="fw-bold">₹{{ item.total_amount|floatformat:2 }}</div>
+                          {% endif %}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -86,9 +93,19 @@
         </div>
 
         <!-- Order Summary -->
-        <div class="order-summary bg-white p-4  shadow-lg rounded">
+        <div class="order-summary p-4 shadow-lg rounded" style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5);">
           <h4 class="section-title mb-4"><span class="section-number">3</span> Order Summary</h4>
           <div class="order-totals">
+            {% if original_subtotal > order.subtotal %}
+            <div class="d-flex justify-content-between mb-2">
+              <span>Total MRP</span>
+              <span class="text-muted text-decoration-line-through">₹{{ original_subtotal|floatformat:0 }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 text-success">
+              <span>Discount</span>
+              <span>-₹{{ total_discount_from_offers|floatformat:0 }}</span>
+            </div>
+            {% endif %}
             <div class="d-flex justify-content-between mb-2">
               <span>Subtotal ({{ order_items.count }} item{{ order_items.count|pluralize }})</span>
               <span class="fw-medium">₹{{ order.subtotal|floatformat:2 }}</span>
@@ -108,9 +125,9 @@
               <span class="fw-bold fs-5">Total</span>
               <span class="total-price fs-4 mb-0 text-primary fw-bold">₹{{ order.net_amount|floatformat:2 }}</span>
             </div>
-            {% if order.coupon_discount and order.coupon_discount > 0 %}
+            {% if order.coupon_discount or total_discount_from_offers %}
               <div class="text-center mb-3">
-                <small class="text-success"><i class="bi bi-tag-fill me-1"></i> You saved ₹{{ order.coupon_discount|floatformat:2 }} with your coupon!</small>
+                <small class="text-success"><i class="bi bi-tag-fill me-1"></i> You saved ₹{{ order.coupon_discount|add:total_discount_from_offers|floatformat:2 }} in total!</small>
               </div>
             {% endif %}
           </div>
@@ -136,7 +153,7 @@
 /* Global Styles */
 .confirmation-section {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #f5f6f5;
+  background-color: transparent;
 }
 
 .container {

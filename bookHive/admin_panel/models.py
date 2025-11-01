@@ -100,7 +100,9 @@ class ProductImage(models.Model):
    
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
-    
+
+
+
 class Coupon(models.Model):
     DISCOUNT_TYPES = [
         ('percentage', 'Percentage'),
@@ -151,6 +153,12 @@ class Coupon(models.Model):
         if cart_total < self.minimum_amount:
             return False, f"Minimum order amount of ₹{self.minimum_amount} required."
         
+        # Check if coupon has already been used by this user
+        if user:
+            # Check if user has already used this specific coupon
+            has_used = CouponUsage.objects.filter(user=user, coupon=self).exists()
+            if has_used:
+                return False, "This coupon can only be used once."
         
         return True, "Coupon is valid."
 
@@ -166,6 +174,9 @@ class Coupon(models.Model):
         # Ensure discount doesn't exceed cart total
         return min(discount, cart_total)
     
+
+
+
 class CouponUsage(models.Model):
     user = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
     coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)

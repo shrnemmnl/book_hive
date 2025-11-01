@@ -22,7 +22,8 @@
         </div>
         <div class="mb-3">
             <label for="image" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Image</label>
-            <input type="file" class="form-control" id="image" name="image" multiple required style="font-size: 0.9rem; padding: 0.65rem;">
+            <input type="file" class="form-control" id="image" name="image" multiple accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="image-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
         </div>
         <div class="mb-3">
             <label for="genre_id" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Genre</label>
@@ -62,6 +63,74 @@
     </form>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.getElementById('image');
+    const imageError = document.getElementById('image-error');
+    const form = document.getElementById('addBookForm');
+
+    // Valid image extensions
+    const validImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const validImageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+    // Function to validate image file
+    function validateImage() {
+        const files = imageInput.files;
+        
+        if (files.length === 0) {
+            // No files selected - required field
+            imageInput.classList.add('is-invalid');
+            imageError.style.display = 'block';
+            imageError.textContent = 'Book image is required.';
+            return false;
+        }
+
+        // Check each file
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileName = file.name.toLowerCase();
+            const fileExtension = fileName.split('.').pop();
+            const fileType = file.type;
+
+            // Check file extension
+            if (!validImageExtensions.includes(fileExtension)) {
+                imageInput.classList.add('is-invalid');
+                imageError.style.display = 'block';
+                imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+                return false;
+            }
+
+            // Check MIME type (if available)
+            if (fileType && !validImageMimeTypes.includes(fileType)) {
+                imageInput.classList.add('is-invalid');
+                imageError.style.display = 'block';
+                imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+                return false;
+            }
+        }
+
+        // All files are valid
+        imageInput.classList.remove('is-invalid');
+        imageError.style.display = 'none';
+        imageError.textContent = '';
+        return true;
+    }
+
+    // Event listener for image validation
+    imageInput.addEventListener('change', function() {
+        validateImage();
+    });
+
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        if (!validateImage()) {
+            e.preventDefault();
+            return false;
+        }
+    });
+});
+</script>
+
 <style>
     .card {
         background-color: #ffffff;
@@ -92,6 +161,13 @@
     .alert {
         background-color: #f1f5f9;
         color: #1e293b;
+    }
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+    .is-invalid:focus {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
     }
 </style>
 {% endblock %}

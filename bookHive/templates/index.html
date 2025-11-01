@@ -7,7 +7,7 @@
 {% endblock slider %}
 
 <!-- PRODUCT LISTING COMPONENT WITH SIDEBAR -->
-<section id="library" class="product-listing py-4" style="background-color: rgb(255, 235, 208);">
+<section id="library" class="product-listing py-4" style="background-color: transparent;">
   <div class="container-fluid px-3">
     <div class="section-header text-center mb-4">
       <h6 class="text-primary text-uppercase fw-bold mb-2" style="font-size: 0.9rem;">Our Collection</h6>
@@ -18,98 +18,120 @@
 
     <div class="row g-3">
       <!-- Side Panel for Filters and Sorting -->
-      <div class="col-lg-2 col-md-4 mb-3">
-        <div class="filter-sidebar bg-white p-3 rounded shadow-lg">
+      <div class="col-lg-3 col-md-4 mb-3">
+        <div class="filter-sidebar bg-white p-4 rounded-3 shadow-lg border">
           <!-- Sorting Options -->
-          <div class="filter-section mb-3">
-            <h5 class="fw-bold mb-2" style="font-size: 1rem;">Sort By</h5>
+          <div class="filter-section mb-4">
+            <h5 class="fw-bold mb-3 text-primary" style="font-size: 1.1rem;">
+              <i class="bi bi-sort-down me-2"></i>Sort By
+            </h5>
             <form id="sortForm" method="get">
               {% csrf_token %}
-              <div class="form-check mb-2">
+              <div class="form-check mb-2 p-2 rounded hover-bg">
                 <input class="form-check-input" type="radio" name="sort" id="sortFeatured" value="featured" {% if selected_sort == 'featured' %}checked{% endif %}>
-                <label class="form-check-label" for="sortFeatured" style="font-size: 0.85rem;">Featured</label>
+                <label class="form-check-label" for="sortFeatured" style="font-size: 0.9rem; cursor: pointer;">
+                  <i class="bi bi-star text-warning me-1"></i> Featured
+                </label>
               </div>
-              <div class="form-check mb-2">
+              <div class="form-check mb-2 p-2 rounded hover-bg">
                 <input class="form-check-input" type="radio" name="sort" id="sortLowHigh" value="lh" {% if selected_sort == 'lh' %}checked{% endif %}>
-                <label class="form-check-label" for="sortLowHigh" style="font-size: 0.85rem;">Price: Low to High</label>
+                <label class="form-check-label" for="sortLowHigh" style="font-size: 0.9rem; cursor: pointer;">
+                  <i class="bi bi-arrow-up text-success me-1"></i> Price: Low to High
+                </label>
               </div>
-              <div class="form-check mb-2">
+              <div class="form-check mb-2 p-2 rounded hover-bg">
                 <input class="form-check-input" type="radio" name="sort" id="sortHighLow" value="hl" {% if selected_sort == 'hl' %}checked{% endif %}>
-                <label class="form-check-label" for="sortHighLow" style="font-size: 0.85rem;">Price: High to Low</label>
+                <label class="form-check-label" for="sortHighLow" style="font-size: 0.9rem; cursor: pointer;">
+                  <i class="bi bi-arrow-down text-danger me-1"></i> Price: High to Low
+                </label>
               </div>
-              <div class="form-check mb-2">
+              <div class="form-check mb-2 p-2 rounded hover-bg">
                 <input class="form-check-input" type="radio" name="sort" id="sortAZ" value="az" {% if selected_sort == 'az' %}checked{% endif %}>
-                <label class="form-check-label" for="sortAZ" style="font-size: 0.85rem;">A-Z</label>
+                <label class="form-check-label" for="sortAZ" style="font-size: 0.9rem; cursor: pointer;">
+                  <i class="bi bi-sort-alpha-down me-1"></i> A-Z
+                </label>
               </div>
-              <div class="form-check">
+              <div class="form-check p-2 rounded hover-bg">
                 <input class="form-check-input" type="radio" name="sort" id="sortZA" value="za" {% if selected_sort == 'za' %}checked{% endif %}>
-                <label class="form-check-label" for="sortZA" style="font-size: 0.85rem;">Z-A</label>
+                <label class="form-check-label" for="sortZA" style="font-size: 0.9rem; cursor: pointer;">
+                  <i class="bi bi-sort-alpha-up me-1"></i> Z-A
+                </label>
               </div>
             </form>
           </div>
 
           <!-- Genre Filter -->
-          <div class="filter-section mb-3">
-            <h5 class="fw-bold mb-2" style="font-size: 1rem;">Filter by Genre</h5>
+          <div class="filter-section mb-4">
+            <h5 class="fw-bold mb-3 text-primary" style="font-size: 1.1rem;">
+              <i class="bi bi-bookmark-fill me-2"></i>Filter by Genre
+            </h5>
             <div class="genre-options">
-              <div class="form-check mb-2">
+              <div class="form-check mb-2 p-2 rounded hover-bg">
                 <input class="form-check-input" type="checkbox" id="genreAll" name="genres" value="allgenres" {% if 'allgenres' in selected_genres or selected_genres|length == 0 %}checked{% endif %}>
-                <label class="form-check-label" for="genreAll" style="font-size: 0.85rem;">All GENERS</label>
+                <label class="form-check-label fw-semibold" for="genreAll" style="font-size: 0.9rem; cursor: pointer;">
+                  <i class="bi bi-collection me-1"></i> All Genres
+                </label>
               </div>
               {% for category in categories %}
-              <div class="form-check mb-2">
+              <div class="form-check mb-2 p-2 rounded hover-bg">
                 <input class="form-check-input genre-checkbox" type="checkbox" id="genre{{ category|slugify }}" name="genres" value="{{ category }}" {% if category in selected_genres %}checked{% endif %} {% if 'allgenres' in selected_genres %}disabled{% endif %}>
-                <label class="form-check-label" for="genre{{ category|slugify }}" style="font-size: 0.85rem;">{{ category|upper }}</label>
+                <label class="form-check-label" for="genre{{ category|slugify }}" style="font-size: 0.9rem; cursor: pointer;">{{ category|title }}</label>
               </div>
               {% endfor %}
             </div>
           </div>
 
           <!-- Price Range Filter -->
-          <div class="filter-section mb-3">
-            <h5 class="fw-bold mb-2" style="font-size: 1rem;">Price Range</h5>
+          <div class="filter-section mb-4">
+            <h5 class="fw-bold mb-3 text-primary" style="font-size: 1.1rem;">
+              <i class="bi bi-currency-rupee me-2"></i>Price Range
+            </h5>
             <div class="price-slider">
-              <div class="range-slider">
+              <div class="range-slider mb-3">
                 <input type="range" class="form-range" id="priceMin" min="{{ price_range.min }}" max="{{ price_range.max }}" step="100" name="min_price" value="{{ selected_min_price|default:price_range.min }}">
                 <input type="range" class="form-range" id="priceMax" min="{{ price_range.min }}" max="{{ price_range.max }}" step="100" name="max_price" value="{{ selected_max_price|default:price_range.max }}">
               </div>
-              <div class="range-input d-flex align-items-center mt-2">
+              <div class="range-input d-flex align-items-center gap-2 mt-3">
                 <div class="input-group">
-                  <span class="input-group-text" style="font-size: 0.85rem;">₹</span>
-                  <input type="number" class="form-control" id="minPriceInput" value="{{ selected_min_price|default:price_range.min }}" min="{{ price_range.min }}" style="font-size: 0.85rem;">
+                  <span class="input-group-text bg-primary text-white" style="font-size: 0.9rem;">₹</span>
+                  <input type="number" class="form-control" id="minPriceInput" value="{{ selected_min_price|default:price_range.min }}" min="{{ price_range.min }}" style="font-size: 0.9rem;">
                 </div>
-                <div class="mx-2" style="font-size: 0.85rem;">-</div>
+                <div class="fw-bold" style="font-size: 0.9rem;">to</div>
                 <div class="input-group">
-                  <span class="input-group-text" style="font-size: 0.85rem;">₹</span>
-                  <input type="number" class="form-control" id="maxPriceInput" value="{{ selected_max_price|default:price_range.max }}" min="{{ price_range.min }}" style="font-size: 0.85rem;">
+                  <span class="input-group-text bg-primary text-white" style="font-size: 0.9rem;">₹</span>
+                  <input type="number" class="form-control" id="maxPriceInput" value="{{ selected_max_price|default:price_range.max }}" min="{{ price_range.min }}" style="font-size: 0.9rem;">
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Apply Filters and Clear Buttons -->
-          <div class="d-flex gap-2">
-            <button id="applyFilters" type="submit" form="sortForm" class="btn btn-primary w-100" style="font-size: 0.9rem;">Apply Filters</button>
-            <button id="clearFilters" type="button" class="btn btn-outline-secondary w-100" style="font-size: 0.9rem; display: none;">Clear</button>
+          <div class="d-flex flex-column gap-2">
+            <button id="applyFilters" type="submit" form="sortForm" class="btn btn-primary w-100 py-2 fw-semibold shadow" style="font-size: 0.95rem;">
+              <i class="bi bi-funnel-fill me-2"></i>Apply Filters
+            </button>
+            <button id="clearFilters" type="button" class="btn btn-outline-danger w-100 py-2 shadow-sm" style="font-size: 0.95rem; display: none;">
+              <i class="bi bi-x-circle me-2"></i>Clear All
+            </button>
           </div>
         </div>
       </div>
 
       <!-- Product Grid -->
-      <div class="col-lg-10 col-md-8">
+      <div class="col-lg-9 col-md-8">
         <div class="product-grid">
           <div class="row g-3">
             {% for book in books %}
             <div class="col-6 col-md-6 col-lg-4">
-              <div class="product-card h-100 bg-white rounded overflow-hidden shadow-lg position-relative">
+              <div class="product-card h-100 bg-white rounded-3 overflow-hidden shadow-lg position-relative border">
                 {% if book.is_featured %}
-                <div class="product-badge bg-primary text-white position-absolute py-1 px-2" style="top: 8px; left: 8px; font-size: 0.75rem;">
-                  Featured
+                <div class="product-badge bg-gradient bg-primary text-white position-absolute py-2 px-3 rounded-end shadow-sm" style="top: 12px; left: 0; font-size: 0.8rem; font-weight: 600;">
+                  <i class="bi bi-star-fill me-1"></i>Featured
                 </div>
                 {% endif %}
                 {% if book.has_active_offer %}
-                <div class="product-badge bg-warning text-dark position-absolute py-1 px-2" style="top: {% if book.is_featured %}38px{% else %}8px{% endif %}; left: 8px; font-size: 0.75rem;">
-                  {{ book.get_best_discount_percentage }}% OFF
+                <div class="product-badge bg-gradient bg-warning text-dark position-absolute py-2 px-3 rounded-end shadow-sm fw-bold" style="top: {% if book.is_featured %}48px{% else %}12px{% endif %}; left: 0; font-size: 0.85rem;">
+                  <i class="bi bi-tag-fill me-1"></i>{{ book.get_best_discount_percentage }}% OFF
                 </div>
                 {% endif %}
 
@@ -118,42 +140,77 @@
                   <a href="{% url 'product_details' book.id %}">
                     <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid w-100" style="height: 200px; object-fit: cover;">
                   </a>
-                  <div class="product-actions position-absolute start-0 bottom-0 end-0 bg-white bg-opacity-75 d-flex justify-content-around py-2 translate-middle-y opacity-0">
-                    <a href="#" class="text-dark" title="Add to wishlist"><i class="bi bi-heart"></i></a>
-                    <a href="#" class="text-dark" title="Quick view"><i class="bi bi-eye"></i></a>
-                    <a href="#" class="text-dark" title="Add to cart"><i class="bi bi-cart-plus"></i></a>
-                  </div>
+                  
+                  <!-- Wishlist Heart Button (Top Right) -->
+                  {% with default_variant=book.variant_set.first %}
+                  {% if user.is_authenticated %}
+                  <button class="wishlist-toggle-btn position-absolute btn btn-light rounded-circle p-2 border-0 shadow-sm" 
+                          data-variant-id="{{ default_variant.id }}" 
+                          style="top: 8px; right: 8px; width: 35px; height: 35px; z-index: 10;">
+                    {% if default_variant.id in user_wishlist_variants %}
+                    <i class="bi bi-heart-fill text-danger"></i>
+                    {% else %}
+                    <i class="bi bi-heart text-danger"></i>
+                    {% endif %}
+                  </button>
+                  {% else %}
+                  <a href="{% url 'login' %}?next={{ request.path }}" 
+                     class="position-absolute btn btn-light rounded-circle p-2 border-0 shadow-sm" 
+                     style="top: 8px; right: 8px; width: 35px; height: 35px; z-index: 10;"
+                     title="Login to add to wishlist">
+                    <i class="bi bi-heart text-danger"></i>
+                  </a>
+                  {% endif %}
+                  {% endwith %}
                 </div>
 
                 <!-- Book Info -->
-                <div class="product-info p-2">
-                  <div class="product-category mb-1">
-                    <small class="text-muted" style="font-size: 0.75rem;">{{ book.category|default:"Fiction" }}</small>
+                <div class="product-info p-3">
+                  <div class="product-category mb-2">
+                    <span class="badge bg-light text-primary border" style="font-size: 0.75rem;">
+                      <i class="bi bi-bookmark me-1"></i>{{ book.genre.genre_name|default:"Fiction" }}
+                    </span>
                   </div>
-                  <h3 class="product-title fw-bold mb-1" style="font-size: 0.9rem;">
-                    <a href="{% url 'product_details' book.id %}" class="text-dark text-decoration-none">{{ book.book_title }}</a>
+                  <h3 class="product-title fw-bold mb-2" style="font-size: 1rem; line-height: 1.3;">
+                    <a href="{% url 'product_details' book.id %}" class="text-dark text-decoration-none hover-primary">{{ book.book_title }}</a>
                   </h3>
-                  <div class="product-author mb-1">
-                    <small style="font-size: 0.75rem;">by <span class="text-muted">{{ book.author }}</span></small>
+                  <div class="product-author mb-3">
+                    <small style="font-size: 0.8rem;" class="text-muted">
+                      <i class="bi bi-pen me-1"></i>by <span class="fw-semibold">{{ book.author }}</span>
+                    </small>
                   </div>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <div>
+                  
+                  <!-- Price and Rating Section -->
+                  <div class="d-flex justify-content-between align-items-end border-top pt-2">
+                    <div class="price-section">
                       {% if book.has_active_offer %}
-                        <div class="product-price fw-bold text-success" style="font-size: 0.9rem;">
-                          ₹{{ book.min_price|calculate_discount:book }}
+                        <div class="d-flex align-items-baseline gap-2 mb-1">
+                          <div class="product-price fw-bold text-success" style="font-size: 1.35rem;">
+                            ₹{{ book.min_price|calculate_discount:book }}
+                          </div>
+                          <div class="text-muted text-decoration-line-through" style="font-size: 0.9rem;">
+                            ₹{{ book.min_price|floatformat:0 }}
+                          </div>
                         </div>
-                        <div class="text-dark text-decoration-line-through" style="font-size: 0.75rem;">
-                          ₹{{ book.min_price|floatformat:0 }}
+                        <div class="savings text-success fw-semibold" style="font-size: 0.75rem;">
+                          <i class="bi bi-piggy-bank me-1"></i>Save ₹{{ book.min_price|discount_amount:book }}
                         </div>
                       {% else %}
-                        <div class="product-price text-dark" style="font-size: 0.9rem;">₹{{ book.min_price|floatformat:0 }}</div>
+                        <div class="product-price fw-bold text-dark" style="font-size: 1.35rem;">
+                          ₹{{ book.min_price|floatformat:0 }}
+                        </div>
                       {% endif %}
                     </div>
-                    <div class="product-rating" style="font-size: 0.75rem;">
-                      <i class="bi bi-star-fill text-warning"></i>
-                      <span class="ms-1">{{ book.rating|default:"4.5" }}</span>
+                    <div class="product-rating bg-warning bg-opacity-10 px-2 py-1 rounded" style="font-size: 0.8rem;">
+                      <i class="bi bi-star-fill text-warning me-1"></i>
+                      <span class="fw-semibold">{{ book.rating|default:"4.5" }}</span>
                     </div>
                   </div>
+                  
+                  <!-- View Details Button -->
+                  <a href="{% url 'product_details' book.id %}" class="btn btn-outline-primary btn-sm w-100 mt-3 fw-semibold">
+                    <i class="bi bi-eye me-1"></i>View Details
+                  </a>
                 </div>
               </div>
             </div>
@@ -194,29 +251,38 @@
 
 <style>
   .product-listing .divider {
-    width: 40px;
-    height: 2px;
-    background-color: #0d6efd;
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-orange), var(--primary-orange-hover));
+    border-radius: 2px;
   }
 
+  /* Product Card Styles */
   .product-card {
-    transition: all 0.3s ease;
-    border: none;
-    border-radius: 8px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid #e8e8e8 !important;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(5px);
   }
 
   .product-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(230, 126, 34, 0.2) !important;
+    border-color: var(--primary-orange) !important;
   }
 
-  .product-card:hover .product-actions {
-    opacity: 1;
-    transform: translateY(0);
+  .product-card .product-img {
+    overflow: hidden;
+    position: relative;
   }
 
-  .product-actions {
-    transition: all 0.3s ease;
+  .product-card:hover .product-img img {
+    transform: scale(1.08);
+  }
+
+  .product-card .product-img img {
+    transition: transform 0.4s ease;
   }
 
   .product-title {
@@ -225,16 +291,45 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-height: 2.6rem;
   }
 
+  .product-title a:hover {
+    color: var(--primary-orange) !important;
+  }
+
+  .product-badge {
+    backdrop-filter: blur(10px);
+    animation: slideInLeft 0.5s ease;
+  }
+
+  @keyframes slideInLeft {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Filter Sidebar Styles */
   .filter-sidebar {
     position: sticky;
     top: 15px;
-    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .filter-sidebar:hover {
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
   }
 
   .filter-section {
-    border-bottom: 1px solid #f1f1f1;
+    border-bottom: 2px solid #e9ecef;
     padding-bottom: 1rem;
   }
 
@@ -242,20 +337,113 @@
     border-bottom: none;
   }
 
+  .hover-bg:hover {
+    background-color: rgba(230, 126, 34, 0.08);
+    transition: background-color 0.3s ease;
+  }
+
+  .form-check-input:checked {
+    background-color: var(--primary-orange);
+    border-color: var(--primary-orange);
+  }
+
+  .form-range::-webkit-slider-thumb {
+    background: var(--primary-orange);
+    width: 18px;
+    height: 18px;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  .form-range::-webkit-slider-thumb:hover {
+    background: var(--primary-orange-hover);
+    transform: scale(1.2);
+  }
+
+  /* Pagination Styles */
   .pagination .page-link {
-    border-radius: 4px;
-    margin: 0 2px;
+    border-radius: 8px;
+    margin: 0 4px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .pagination .page-link:hover {
+    background-color: var(--primary-orange);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(230, 126, 34, 0.3);
   }
 
   .pagination .page-item.active .page-link {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
+    background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-hover) 100%);
+    border-color: var(--primary-orange);
+    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.4);
   }
 
+  /* Wishlist Button Styles */
+  .wishlist-toggle-btn {
+    transition: all 0.3s ease;
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .wishlist-toggle-btn:hover {
+    transform: scale(1.2);
+    box-shadow: 0 6px 12px rgba(220, 53, 69, 0.3) !important;
+    background-color: white !important;
+  }
+
+  .wishlist-toggle-btn:active {
+    transform: scale(0.9);
+  }
+
+  .wishlist-toggle-btn i {
+    font-size: 1.15rem;
+    transition: all 0.2s ease;
+  }
+
+  .wishlist-toggle-btn:hover i {
+    transform: scale(1.1);
+  }
+
+  /* Button Hover Effects */
+  .btn-outline-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+  }
+
+  /* Price Section Animation */
+  .price-section {
+    animation: fadeInUp 0.6s ease;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Mobile Responsiveness */
   @media (max-width: 991px) {
     .filter-sidebar {
       position: relative;
       top: 0;
+    }
+    
+    .product-card:hover {
+      transform: translateY(-4px);
+    }
+  }
+
+  @media (max-width: 576px) {
+    .product-price {
+      font-size: 1.1rem !important;
     }
   }
 </style>
@@ -412,6 +600,78 @@ window.addEventListener('DOMContentLoaded', function() {
     }
   }
 });
+
+// Wishlist Toggle Functionality
+$(document).ready(function() {
+  $('.wishlist-toggle-btn').on('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const button = $(this);
+    const variantId = button.data('variant-id');
+    const icon = button.find('i');
+    
+    // Disable button during request
+    button.prop('disabled', true);
+    
+    $.ajax({
+      url: '/wishlist/toggle/',
+      type: 'POST',
+      data: {
+        product_id: variantId,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+      },
+      success: function(response) {
+        if (response.added) {
+          // Change to filled heart
+          icon.removeClass('bi-heart').addClass('bi-heart-fill');
+          showToast('Added to wishlist!', 'success');
+        } else if (response.removed) {
+          // Change to empty heart
+          icon.removeClass('bi-heart-fill').addClass('bi-heart');
+          showToast('Removed from wishlist!', 'info');
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error('Wishlist toggle error:', error);
+        showToast('Something went wrong. Please try again.', 'error');
+      },
+      complete: function() {
+        // Re-enable button
+        button.prop('disabled', false);
+      }
+    });
+  });
+});
+
+// Toast notification function
+function showToast(message, type = 'info') {
+  // Remove existing toasts
+  $('.wishlist-toast').remove();
+  
+  const bgColor = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
+  
+  const toast = $(`
+    <div class="wishlist-toast position-fixed top-0 end-0 m-3 p-3 ${bgColor} text-white rounded shadow-lg" style="z-index: 9999; min-width: 250px;">
+      <div class="d-flex align-items-center">
+        <i class="bi ${type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-x-circle' : 'bi-info-circle'} me-2"></i>
+        <span>${message}</span>
+      </div>
+    </div>
+  `);
+  
+  $('body').append(toast);
+  
+  // Fade out and remove after 3 seconds
+  setTimeout(function() {
+    toast.fadeOut(300, function() {
+      $(this).remove();
+    });
+  }, 3000);
+}
 </script>
+
+<!-- Include jQuery if not already included -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 {% include 'includes/footer.html' %}

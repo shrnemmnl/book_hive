@@ -208,29 +208,49 @@ def genre(request):
     print(page_obj)
 
     if request.method == 'POST':
-        genre_name = request.POST.get('genre', "").strip().lower()
+        genre_name = request.POST.get('genre', "").strip()
         is_offer = request.POST.get('is_offer') == 'on'
         offer_title = request.POST.get('offer_title', "").strip()
         discount_percentage = request.POST.get('discount_percentage', 0)
         
-        if Genre.objects.filter(genre_name=genre_name).exists():
+        # ✅ Add validation
+        if not genre_name:
+            messages.error(request, 'Genre name is required.')
+            return redirect('genre')
+        
+        # Validate genre name contains only alphabets (and spaces)
+        if not re.match(r'^[A-Za-z\s]+$', genre_name):
+            messages.error(request, 'Genre name must contain only alphabets and spaces.')
+            return redirect('genre')
+        
+        if len(genre_name) > 255:
+            messages.error(request, 'Genre name is too long (max 255 characters).')
+            return redirect('genre')
+        
+        if Genre.objects.filter(genre_name=genre_name.lower()).exists():
             messages.error(request, 'Genre already exists.')
-            return redirect('genre')  # Redirect to avoid form resubmission
+            return redirect('genre')
         
         try:
             discount_percentage = int(discount_percentage) if discount_percentage else 0
+            if discount_percentage < 0:
+                messages.error(request, 'Discount percentage cannot be negative.')
+                return redirect('genre')
+            if discount_percentage >= 100:
+                messages.error(request, 'Discount percentage must be less than 100%.')
+                return redirect('genre')
         except ValueError:
             discount_percentage = 0
         
         Genre.objects.create(
-            genre_name=genre_name,
+            genre_name=genre_name.lower(),
             is_active=True,
             is_offer=is_offer,
             offer_title=offer_title if is_offer else '',
             discount_percentage=discount_percentage if is_offer else 0
         )
         messages.success(request, 'Genre added successfully.')
-        return redirect('genre')  # Redirect after successful creation
+        return redirect('genre')
     
     return render(request, 'admin/genre.html', {'page_obj':page_obj})
 
@@ -254,29 +274,49 @@ def genre_edit(request, genre_id):
     genre = Genre.objects.get(id=genre_id)
 
     if request.method == 'POST':
-        name = request.POST.get('genre', "").strip().lower()
+        name = request.POST.get('genre', "").strip()
         is_offer = request.POST.get('is_offer') == 'on'
         offer_title = request.POST.get('offer_title', "").strip()
         discount_percentage = request.POST.get('discount_percentage', 0)
         
         genre = Genre.objects.get(id=genre_id)
+        
+        # ✅ Add validation
+        if not name:
+            messages.error(request, 'Genre name is required.')
+            return redirect('genre_edit', genre_id=genre.id)
+        
+        # Validate genre name contains only alphabets (and spaces)
+        if not re.match(r'^[A-Za-z\s]+$', name):
+            messages.error(request, 'Genre name must contain only alphabets and spaces.')
+            return redirect('genre_edit', genre_id=genre.id)
+        
+        if len(name) > 255:
+            messages.error(request, 'Genre name is too long (max 255 characters).')
+            return redirect('genre_edit', genre_id=genre.id)
 
-        if Genre.objects.filter(genre_name=name).exclude(id=genre_id).exists():
+        if Genre.objects.filter(genre_name=name.lower()).exclude(id=genre_id).exists():
             messages.error(request, 'Genre already exists.')
             return redirect('genre_edit', genre_id=genre.id)
-        else:
-            try:
-                discount_percentage = int(discount_percentage) if discount_percentage else 0
-            except ValueError:
-                discount_percentage = 0
+        
+        try:
+            discount_percentage = int(discount_percentage) if discount_percentage else 0
+            if discount_percentage < 0:
+                messages.error(request, 'Discount percentage cannot be negative.')
+                return redirect('genre_edit', genre_id=genre.id)
+            if discount_percentage >= 100:
+                messages.error(request, 'Discount percentage must be less than 100%.')
+                return redirect('genre_edit', genre_id=genre.id)
+        except ValueError:
+            discount_percentage = 0
                 
-            genre.genre_name = name
-            genre.is_offer = is_offer
-            genre.offer_title = offer_title if is_offer else ''
-            genre.discount_percentage = discount_percentage if is_offer else 0
-            genre.save()
-            messages.success(request, 'Genre Edited Successfully.')
-            return redirect('genre')
+        genre.genre_name = name.lower()
+        genre.is_offer = is_offer
+        genre.offer_title = offer_title if is_offer else ''
+        genre.discount_percentage = discount_percentage if is_offer else 0
+        genre.save()
+        messages.success(request, 'Genre Edited Successfully.')
+        return redirect('genre')
  
     return render(request, 'admin/genre_edit.html', {'genres':genre})
 
@@ -307,7 +347,7 @@ def add_new_book(request):
         author = request.POST.get('author', "").strip()
         genre_id = request.POST.get('genre_id', "").strip()
         description = request.POST.get('description', "").strip()
-        image = request.FILES.get('images')
+        image = request.FILES.get('image')  # Changed from 'images' to 'image' to match form field name
 
         # Check if book already exists
         if Product.objects.filter(book_title=book_name).exists():
@@ -319,6 +359,26 @@ def add_new_book(request):
             genre = Genre.objects.get(id=int(genre_id))
         except (Genre.DoesNotExist, ValueError):
             messages.error(request, 'Invalid genre selected.')
+            return redirect('add_new_book')
+
+        # Image validation - check both extension and MIME type
+        if not image:
+            messages.error(request, 'Book image is required.')
+            return redirect('add_new_book')
+        
+        valid_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
+        valid_mime_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+        
+        # Check file extension
+        file_extension = image.name.split(".")[-1].lower() if "." in image.name else ""
+        if not file_extension or file_extension not in valid_extensions:
+            messages.error(request, 'Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only).')
+            return redirect('add_new_book')
+        
+        # Check MIME type
+        file_mime_type = image.content_type.lower() if hasattr(image, 'content_type') and image.content_type else ""
+        if not file_mime_type or file_mime_type not in valid_mime_types:
+            messages.error(request, 'Invalid file type detected. Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only).')
             return redirect('add_new_book')
 
         # Create new book
@@ -359,15 +419,36 @@ def book_edit(request, book_id):
 
         is_valid = True
 
-        # discount percentage validation
-        if not discount_percentage.isdigit() and int(discount_percentage) <= 0:
-            error['discount_percentage']="Discount percentage must be a positive integer."
-            is_valid = False
+        # Discount percentage validation
+        if is_offer and discount_percentage:
+            try:
+                discount_percentage = int(discount_percentage)
+                if discount_percentage < 0:
+                    error['discount_percentage'] = "Discount percentage cannot be negative."
+                    is_valid = False
+                elif discount_percentage >= 100:
+                    error['discount_percentage'] = "Discount percentage must be less than 100%."
+                    is_valid = False
+            except (ValueError, AttributeError):
+                error['discount_percentage'] = "Discount percentage must be a valid number."
+                is_valid = False
         
+        # Image validation - check both extension and MIME type
         if image:
-                valid_extensions = ["jpg", "jpeg", "png"]
-                if not image.name.split(".")[-1].lower() in valid_extensions:
-                    error['valid_image']="Please enter a valid image extension in jpg, jpeg and png formats."
+            valid_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
+            valid_mime_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+            
+            # Check file extension
+            file_extension = image.name.split(".")[-1].lower() if "." in image.name else ""
+            if not file_extension or file_extension not in valid_extensions:
+                error['valid_image'] = "Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only)."
+                is_valid = False
+            
+            # Check MIME type
+            if is_valid:  # Only check MIME type if extension is valid
+                file_mime_type = image.content_type.lower() if hasattr(image, 'content_type') and image.content_type else ""
+                if not file_mime_type or file_mime_type not in valid_mime_types:
+                    error['valid_image'] = "Invalid file type detected. Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only)."
                     is_valid = False
 
         if is_valid:
@@ -451,8 +532,40 @@ def add_variant(request, book_id):
         try:
             product = Product.objects.get(id=book_id)  # Fetch Product instance
         except Product.DoesNotExist:
-            return messages.error(request,"Product not found")
+            messages.error(request,"Product not found")
+            return redirect('books')
         
+        # ✅ Add validation
+        if not publisher or not published_date or not language or not page:
+            messages.error(request, 'All fields are required.')
+            return redirect(reverse('view_variant', args=[book_id]))
+        
+        try:
+            stock = int(stock) if stock else 0
+            if stock < 0:
+                messages.error(request, 'Stock cannot be negative.')
+                return redirect(reverse('view_variant', args=[book_id]))
+        except ValueError:
+            messages.error(request, 'Invalid stock value.')
+            return redirect(reverse('view_variant', args=[book_id]))
+        
+        try:
+            price = int(price) if price else 0
+            if price <= 0:
+                messages.error(request, 'Price must be positive.')
+                return redirect(reverse('view_variant', args=[book_id]))
+        except ValueError:
+            messages.error(request, 'Invalid price value.')
+            return redirect(reverse('view_variant', args=[book_id]))
+        
+        try:
+            page = int(page) if page else 0
+            if page <= 0:
+                messages.error(request, 'Page count must be positive.')
+                return redirect(reverse('view_variant', args=[book_id]))
+        except ValueError:
+            messages.error(request, 'Invalid page count.')
+            return redirect(reverse('view_variant', args=[book_id]))
         
         new_variant = Variant.objects.create(
             product=product,
@@ -923,6 +1036,9 @@ def add_coupon(request):
             })
     
     return render(request, 'coupons/add_coupon.html')
+
+
+
 
 @login_required
 def edit_coupon(request, coupon_id):
