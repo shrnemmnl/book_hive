@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from users.models import CustomUser,Order,OrderItem,Review, Wallet # Import your user model
+from users.models import CustomUser,Order,OrderItem,Review, Wallet, Transaction # Import your user model
 from .models import Genre, Product, Variant, ProductImage,Coupon,CouponUsage
 from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.cache import never_cache, cache_control
@@ -756,6 +756,18 @@ def admin_order_details(request, order_id):
         # for cod
         if new_status == 'delivered':
             order.is_paid = True
+            
+            # Create Transaction record for COD order when delivered
+            if order.payment_method == 'cod':
+                Transaction.objects.create(
+                    user=order.user,
+                    order=order,
+                    transaction_type='cod',
+                    amount=order.net_amount,
+                    description=f"COD payment completed for {order.order_id}",
+                    payment_method='cod',
+                    status='completed'
+                )
 
 
         elif new_status not in valid_statuses:
@@ -791,10 +803,21 @@ def admin_order_details(request, order_id):
             user_wallet.wallet_amount += refund_amount
             user_wallet.save()
 
+            # Create Transaction record for refund
+            transaction_type = 'refund'
             if new_status == 'cancelled':
                 order.status = 'cancelled'
             else:
                 order.status = 'return approved'
+            
+            Transaction.objects.create(
+                user=user,
+                order=order,
+                transaction_type=transaction_type,
+                amount=refund_amount,
+                description=f"Refund for {order.order_id}",
+                payment_method=order.payment_method
+            )
     
             order.save()
         
@@ -1507,3 +1530,83 @@ def download_sales_report_excel(request):
     
     wb.save(response)
     return response
+
+
+@never_cache
+@cache_control(no_store=True, no_cache=True, must_revalidate=True)
+def admin_transactions(request):
+    """Display list of all transactions"""
+    # Get all transactions only (not orders)
+    transactions = Transaction.objects.select_related('user', 'order').all().order_by('-transaction_date')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        transactions = transactions.filter(
+            Q(transaction_id__icontains=search_query) |
+            Q(user__email__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(order__order_id__icontains=search_query)
+        )
+    
+    # Filter by transaction type
+    filter_method = request.GET.get('filter_method', '')
+    if filter_method:
+        # Map display name to transaction type value
+        type_mapping = {
+            'razorpay': 'razorpay',
+            'cod': 'cod',
+            'refund': 'refund',
+            'wallet addition': 'wallet_addition',
+        }
+        trans_type = type_mapping.get(filter_method.lower(), '')
+        if trans_type:
+            transactions = transactions.filter(transaction_type=trans_type)
+        else:
+            # Also check payment method for backward compatibility
+            transactions = transactions.filter(payment_method__icontains=filter_method)
+    
+    # Get unique transaction types for filter dropdown
+    payment_methods = []
+    for choice_value, choice_display in Transaction.TRANSACTION_TYPE_CHOICES:
+        payment_methods.append(choice_display)
+    
+    # Pagination
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    paginator = Paginator(transactions, 20)
+    page = request.GET.get('page', 1)
+    try:
+        transactions_page = paginator.page(page)
+    except PageNotAnInteger:
+        transactions_page = paginator.page(1)
+    except EmptyPage:
+        transactions_page = paginator.page(paginator.num_pages)
+    
+    context = {
+        'transactions': transactions_page,
+        'payment_methods': sorted(set(payment_methods)),
+        'search_query': search_query,
+        'filter_method': filter_method,
+    }
+    
+    return render(request, 'admin/admin_transactions.html', context)
+
+
+@never_cache
+@cache_control(no_store=True, no_cache=True, must_revalidate=True)
+def transaction_detail(request, order_id):
+    """Display detailed view of a specific transaction"""
+    # Find transaction by transaction_id
+    transaction = get_object_or_404(Transaction.objects.select_related('user', 'order', 'order__address'), transaction_id=order_id)
+    
+    context = {
+        'transaction': transaction,
+    }
+    
+    # If transaction has an associated order, fetch order items
+    if transaction.order:
+        order_items = OrderItem.objects.filter(order=transaction.order).select_related('product_variant__product')
+        context['order_items'] = order_items
+    
+    return render(request, 'admin/admin_transaction_detail.html', context)

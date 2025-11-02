@@ -126,7 +126,7 @@
               </div>
               <div>
                 <button class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#viewDetailsModal{{ order.id }}">View Details</button>
-                <a href="{% url 'download_invoice' order.id %}" class="btn btn-sm btn-outline-success me-2">Invoice</a>
+                <a href="{% url 'download_invoice' order.id %}" class="btn btn-sm btn-outline-success me-2" download>Invoice</a>
                 {% if order.status not in 'request to cancel,cancelled,return approved, request to return' %}
                 <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ order.id }}"> {% if order.status == 'delivered' %}Return Request{% else %}Cancel Order{% endif %} </button>
                 {% endif %}
@@ -183,7 +183,29 @@
                   <hr>
                   <div class="row">
                     <div class="col-md-6">
-                      <p><strong>Shipping Address:</strong><br>{{ order.address }}</p>
+                      <h6 class="fw-bold mb-2">Shipping Address</h6>
+                      {% if order.address %}
+                        <p class="mb-1"><strong>{{ order.address.address_type|title }}</strong></p>
+                        <p class="mb-1">{{ order.address.street }}</p>
+                        {% if order.address.landmark %}
+                        <p class="mb-1">{{ order.address.landmark }}</p>
+                        {% endif %}
+                        <p class="mb-1">{{ order.address.city }}, {{ order.address.state }} {{ order.address.postal_code }}</p>
+                        <p class="mb-0"><i class="bi bi-telephone"></i> {{ order.address.phone }}</p>
+                      {% else %}
+                        <p class="text-muted">No address available</p>
+                      {% endif %}
+                      
+                      <h6 class="fw-bold mb-2 mt-3">Payment Method</h6>
+                      {% if order.payment_method == 'razorpay' %}
+                        <span class="badge bg-primary"><i class="bi bi-credit-card"></i> Razorpay</span>
+                      {% elif order.payment_method == 'wallet' %}
+                        <span class="badge bg-info"><i class="bi bi-wallet2"></i> Wallet</span>
+                      {% elif order.payment_method == 'cod' %}
+                        <span class="badge bg-warning text-dark"><i class="bi bi-cash-coin"></i> Cash on Delivery</span>
+                      {% else %}
+                        <span class="badge bg-secondary">Not specified</span>
+                      {% endif %}
                     </div>
                     <div class="col-md-6 text-md-end">
                       {% if order.original_subtotal > order.subtotal %}

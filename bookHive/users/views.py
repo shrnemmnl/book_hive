@@ -8,7 +8,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.conf import settings
 from django.urls import reverse
 # Import your user model
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache, cache_control
 from django.db.models import Min
@@ -44,7 +44,6 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
-print("hiiiiiii")
 
 
 def signup(request):
@@ -734,15 +733,13 @@ def user_cart(request):
         if not product.is_active or not product.genre.is_active:
             item.delete()
             continue
-        price = item.product_variant.price
-        if product.is_offer:
-            price = round(price - (price * product.discount_percentage / 100))
-
-        item.discounted_price = price
-
-        subtotal += price * item.quantity
-        item.total_price = price * item.quantity
+        
+        # Use CartItem's built-in methods for correct discount calculation
+        item.discounted_price = item.get_discounted_price()
+        item.total_price = item.get_total_price()
         item.original_total_price = item.product_variant.price * item.quantity
+
+        subtotal += item.total_price
         original_subtotal += item.original_total_price
     count = cart_item.count()
     total_discount = original_subtotal - subtotal
@@ -1027,6 +1024,17 @@ def wallet_payment(request):
                     del request.session['applied_coupon_id']
                 if 'coupon_discount' in request.session:
                     del request.session['coupon_discount']
+                
+                # Create Transaction record for wallet payment
+                Transaction.objects.create(
+                    user=request.user,
+                    order=order,
+                    transaction_type='wallet_addition',
+                    amount=net_amount,
+                    description=f"Wallet payment for {order.order_id}",
+                    payment_method='wallet',
+                    status='completed'
+                )
                 
                 logger.debug(f"The order amount: {total_amount} is deducted from the wallet {prev_amount}rs. Balance wallet amount {user_wallet.wallet_amount}.")
                 return JsonResponse({
@@ -1568,11 +1576,15 @@ def delete_cart_item(request):
         count = cart_items.count()
         print("count -", count)
         cart_total = sum(item.get_total_price() for item in cart_items)
+        original_total = sum(item.product_variant.price * item.quantity for item in cart_items)
+        total_discount = original_total - cart_total
 
         return JsonResponse({
             'success': True,
             'cart_total': cart_total,
             'count': count,
+            'original_subtotal': original_total,
+            'total_discount': total_discount,
         })
 
     except CartItem.DoesNotExist:
@@ -1941,36 +1953,41 @@ def change_variant(request, book_id):
 
 @login_required(login_url='login')
 def download_invoice(request, id):
+    try:
+        # Get order and validate ownership
+        order = get_object_or_404(Order, id=id, user=request.user)
+        order_items = order.order_items.all()
+        
+        # Calculate original subtotal for invoice display
+        original_subtotal = 0
+        for item in order_items:
+            item.original_total_price = item.unit_price * item.quantity
+            original_subtotal += item.original_total_price
+        total_discount_from_offers = max(0, original_subtotal - order.subtotal)
+        
+        template_path = 'invoices/invoice_template.html'
+        context = {
+            'order': order,
+            'order_items': order_items,
+            'original_subtotal': original_subtotal,
+            'total_discount_from_offers': total_discount_from_offers,
+        }
 
-    order = Order.objects.get(id=id)
-    order_items = order.order_items.all()
-    
-    # Calculate original subtotal for invoice display
-    original_subtotal = 0
-    for item in order_items:
-        item.original_total_price = item.unit_price * item.quantity
-        original_subtotal += item.original_total_price
-    total_discount_from_offers = max(0, original_subtotal - order.subtotal)
-    
-    template_path = 'invoices/invoice_template.html'
-    context = {
-        'order': order,
-        'order_items': order_items,
-        'original_subtotal': original_subtotal,
-        'total_discount_from_offers': total_discount_from_offers,
-    }
+        template = get_template(template_path)
+        html = template.render(context)
 
-    template = get_template(template_path)
-    html = template.render(context)
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="invoice_{order.order_id}.pdf"'
 
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="invoice_{order.order_id}.pdf"'
+        pisa_status = pisa.CreatePDF(html, dest=response)
 
-    pisa_status = pisa.CreatePDF(html, dest=response)
-
-    if pisa_status.err:
-        return HttpResponse('We had some errors with PDF generation <pre>' + html + '</pre>')
-    return response
+        if pisa_status.err:
+            return HttpResponse('We had some errors with PDF generation <pre>' + html + '</pre>')
+        return response
+    except Exception as e:
+        logger.error(f"Error generating invoice: {str(e)}")
+        messages.error(request, "Error generating invoice. Please try again.")
+        return redirect('user_order')
 
 
 @login_required(login_url='login')
@@ -2203,6 +2220,18 @@ def verify_razorpay_payment(request):
                     del request.session['applied_coupon_id']
                 if 'coupon_discount' in request.session:
                     del request.session['coupon_discount']
+
+                # Create Transaction record for Razorpay order
+                Transaction.objects.create(
+                    user=request.user,
+                    order=order,
+                    transaction_type='razorpay',
+                    amount=net_amount,
+                    description=f"Order payment via Razorpay for {order.order_id}",
+                    payment_method='razorpay',
+                    razorpay_payment_id=razorpay_payment_id,
+                    status='completed'
+                )
 
                 return JsonResponse({
                     "status": "success",

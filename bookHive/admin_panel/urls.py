@@ -39,4 +39,8 @@ urlpatterns = [
     
     path('sales-report/download-pdf', views.download_sales_report_pdf, name='download_sales_report_pdf'),
     path('sales-report/download-excel', views.download_sales_report_excel, name='download_sales_report_excel'),
+    
+    # Transactions
+    path('transactions', views.admin_transactions, name='admin_transactions'),
+    path('transactions/<str:order_id>/', views.transaction_detail, name='admin_transaction_detail'),
 ]

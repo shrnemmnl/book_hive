@@ -149,6 +149,9 @@ body {
                 <a class="nav-link" href="{% url 'admin_order' %}" id="orders-tab">
                     <i class="bi bi-cart"></i> Orders
                 </a>
+                <a class="nav-link" href="{% url 'admin_transactions' %}" id="transactions-tab">
+                    <i class="bi bi-cash-coin"></i> Transactions
+                </a>
                 <a class="nav-link" href="{% url 'customer_details' %}" id="customers-tab">
                     <i class="bi bi-people"></i> Customers
                 </a>
@@ -205,6 +208,8 @@ body {
                 document.getElementById("books-tab").classList.add("active");
             } else if (currentPage.includes("/orders")) {
                 document.getElementById("orders-tab").classList.add("active");
+            } else if (currentPage.includes("/transactions")) {
+                document.getElementById("transactions-tab").classList.add("active");
             } else if (currentPage.includes("/customers")) {
                 document.getElementById("customers-tab").classList.add("active");
             } else if (currentPage.includes("/reviews")) {

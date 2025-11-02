@@ -220,4 +220,58 @@ class Wallet(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Transaction(models.Model):
+    TRANSACTION_TYPE_CHOICES = [
+        ('razorpay', 'Razorpay'),
+        ('cod', 'COD'),
+        ('refund', 'Refund'),
+        ('wallet_addition', 'Wallet Addition'),
+    ]
     
+    transaction_id = models.CharField(max_length=50, unique=True, blank=False, editable=False)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='transactions')
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    transaction_type = models.CharField(max_length=50, choices=TRANSACTION_TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    transaction_date = models.DateTimeField(auto_now_add=True)
+    description = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=50, default='completed')
+    payment_method = models.CharField(max_length=50, blank=True, null=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-transaction_date']
+        indexes = [
+            models.Index(fields=['-transaction_date']),
+            models.Index(fields=['transaction_type']),
+            models.Index(fields=['user', '-transaction_date']),
+        ]
+    
+    def __str__(self):
+        return f"Transaction #{self.transaction_id} - {self.get_transaction_type_display()}"
+    
+    def generate_transaction_id(self):
+        """Generate a unique transaction_id in the format TXN+timestamp."""
+        prefix = "TXN"
+        timestamp = timezone.now()
+        transaction_id = f"{prefix}{timestamp.strftime('%Y%m%d%H%M%S')}{str(timestamp.microsecond)[:3]}"
+        
+        counter = 0
+        while Transaction.objects.filter(transaction_id=transaction_id).exists():
+            counter += 1
+            suffix = str(random.randint(0, 9))
+            transaction_id = f"{prefix}{timestamp.strftime('%Y%m%d%H%M%S')}{str(timestamp.microsecond)[:3]}{suffix}"
+            if counter > 10:
+                raise ValueError("Unable to generate a unique transaction_id after multiple attempts.")
+        return transaction_id
+    
+    def save(self, *args, **kwargs):
+        """Override save to set transaction_id on creation."""
+        if not self.transaction_id:
+            self.transaction_id = self.generate_transaction_id()
+        super().save(*args, **kwargs)
+
