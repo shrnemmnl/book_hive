@@ -3,208 +3,275 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="row">
+  <!-- Period Filter -->
+  <div class="row mb-4">
     <div class="col-12">
       <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-          <h4 class="mb-0"><i class="bi bi-graph-up me-2"></i>Sales Report</h4>
-          <span class="badge bg-light text-primary">{{ filter_label }}</span>
-        </div>
         <div class="card-body">
-          <!-- Filter Section -->
-          <form method="GET" action="{% url 'admin_dashboard' %}" class="mb-4">
-            <div class="row g-3">
+          <form method="GET" action="{% url 'admin_dashboard' %}" class="mb-0">
+            <div class="row align-items-end">
               <div class="col-md-3">
-                <label class="form-label fw-semibold">Filter By</label>
+                <label class="form-label fw-semibold">View Period</label>
                 <select name="filter" class="form-select" id="filterType">
-                  <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All Time</option>
                   <option value="today" {% if filter_type == 'today' %}selected{% endif %}>Today</option>
                   <option value="week" {% if filter_type == 'week' %}selected{% endif %}>Past 7 Days</option>
                   <option value="month" {% if filter_type == 'month' %}selected{% endif %}>Past 30 Days</option>
-                  <option value="custom" {% if filter_type == 'custom' %}selected{% endif %}>Custom Range</option>
+                  <option value="year" {% if filter_type == 'year' %}selected{% endif %}>Past Year</option>
+                  <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All Time</option>
                 </select>
               </div>
-              
-              <div class="col-md-3" id="startDateDiv" style="display: {% if filter_type == 'custom' %}block{% else %}none{% endif %};">
-                <label class="form-label fw-semibold">Start Date</label>
-                <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
-              </div>
-              
-              <div class="col-md-3" id="endDateDiv" style="display: {% if filter_type == 'custom' %}block{% else %}none{% endif %};">
-                <label class="form-label fw-semibold">End Date</label>
-                <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
-              </div>
-              
-              <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary me-2">
-                  <i class="bi bi-funnel me-1"></i> Apply Filter
+              <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="bi bi-funnel me-1"></i> Apply
                 </button>
-                <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
-                  <i class="bi bi-x-circle me-1"></i> Clear
-                </a>
+              </div>
+              <div class="col-md-7 text-md-end">
+                <span class="badge bg-secondary">Showing: <strong>{{ filter_label }}</strong></span>
               </div>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          <!-- Summary Cards -->
-          <div class="row mb-4">
-            <div class="col-md-3">
-              <div class="card border-primary">
-                <div class="card-body text-center">
-                  <i class="bi bi-cart-check fs-1 text-primary mb-2"></i>
-                  <h6 class="text-muted mb-1">Total Orders</h6>
-                  <h3 class="mb-0 text-primary fw-bold">{{ summary.total_orders }}</h3>
-                </div>
-              </div>
-            </div>
-            
-            <div class="col-md-3">
-              <div class="card border-info">
-                <div class="card-body text-center">
-                  <i class="bi bi-currency-rupee fs-1 text-info mb-2"></i>
-                  <h6 class="text-muted mb-1">Subtotal</h6>
-                  <h3 class="mb-0 text-info fw-bold">₹{{ summary.total_subtotal|floatformat:2 }}</h3>
-                </div>
-              </div>
-            </div>
-            
-            <div class="col-md-3">
-              <div class="card border-warning">
-                <div class="card-body text-center">
-                  <i class="bi bi-tag fs-1 text-warning mb-2"></i>
-                  <h6 class="text-muted mb-1">Total Discount</h6>
-                  <h3 class="mb-0 text-warning fw-bold">₹{{ summary.total_discount|floatformat:2 }}</h3>
-                </div>
-              </div>
-            </div>
-            
-            <div class="col-md-3">
-              <div class="card border-success">
-                <div class="card-body text-center">
-                  <i class="bi bi-cash-stack fs-1 text-success mb-2"></i>
-                  <h6 class="text-muted mb-1">Net Amount</h6>
-                  <h3 class="mb-0 text-success fw-bold">₹{{ summary.total_amount|floatformat:2 }}</h3>
-                </div>
-              </div>
-            </div>
-          </div>
+  <!-- Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-primary shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-cart-check fs-1 text-primary mb-2"></i>
+          <h6 class="text-muted mb-1">Total Orders</h6>
+          <h3 class="mb-0 text-primary fw-bold">{{ total_orders }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card border-success shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-cash-stack fs-1 text-success mb-2"></i>
+          <h6 class="text-muted mb-1">Total Revenue</h6>
+          <h3 class="mb-0 text-success fw-bold">₹{{ total_revenue|floatformat:2 }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card border-info shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-graph-up-arrow fs-1 text-info mb-2"></i>
+          <h6 class="text-muted mb-1">Avg Order Value</h6>
+          <h3 class="mb-0 text-info fw-bold">₹{{ avg_order_value|floatformat:2 }}</h3>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3">
+      <div class="card border-warning shadow-sm">
+        <div class="card-body text-center">
+          <i class="bi bi-box-seam fs-1 text-warning mb-2"></i>
+          <h6 class="text-muted mb-1">Total Categories</h6>
+          <h3 class="mb-0 text-warning fw-bold">{{ best_selling_categories|length }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          <!-- Download Buttons -->
-          <div class="mb-3 d-flex justify-content-end gap-2">
-            <a href="{% url 'download_sales_report_pdf' %}?filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
-               class="btn btn-danger">
-              <i class="bi bi-file-pdf me-1"></i> Download PDF
-            </a>
-            <a href="{% url 'download_sales_report_excel' %}?filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
-               class="btn btn-success">
-              <i class="bi bi-file-earmark-excel me-1"></i> Download Excel
-            </a>
-          </div>
+  <!-- Charts Section -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Sales Performance</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="salesChart" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
 
-          <!-- Orders Table -->
+  <!-- Best Selling Products & Categories -->
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Top 10 Best Selling Products</h5>
+        </div>
+        <div class="card-body">
           <div class="table-responsive">
-            <table class="table table-hover table-striped align-middle">
-              <thead class="table-dark">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
                 <tr>
-                  <th>Order ID</th>
-                  <th>Date</th>
-                  <th>Customer</th>
-                  <th>Subtotal</th>
-                  <th>Discount</th>
-                  <th>Coupon</th>
-                  <th>Net Amount</th>
-                  <th>Status</th>
+                  <th width="40">#</th>
+                  <th>Product</th>
+                  <th class="text-end">Sold</th>
+                  <th class="text-end">Revenue</th>
                 </tr>
               </thead>
               <tbody>
-                {% for order in orders %}
+                {% for product in best_selling_products %}
                 <tr>
-                  <td class="fw-semibold">{{ order.order_id }}</td>
-                  <td>{{ order.created_at|date:"d M Y, H:i" }}</td>
-                  <td>{{ order.user.first_name }} {{ order.user.last_name }}</td>
-                  <td>₹{{ order.subtotal|floatformat:2 }}</td>
-                  <td class="text-success">
-                    {% if order.coupon_discount > 0 %}
-                      -₹{{ order.coupon_discount|floatformat:2 }}
-                    {% else %}
-                      ₹0.00
-                    {% endif %}
-                  </td>
+                  <td class="fw-bold text-muted">{{ forloop.counter }}</td>
                   <td>
-                    {% if order.coupon_code %}
-                      <span class="badge bg-success">{{ order.coupon_code }}</span>
-                    {% else %}
-                      <span class="text-muted">N/A</span>
-                    {% endif %}
+                    <div>
+                      <strong class="d-block">{{ product.product_variant__product__book_title }}</strong>
+                      <small class="text-muted">{{ product.product_variant__product__author }}</small>
+                    </div>
                   </td>
-                  <td class="fw-bold text-primary">₹{{ order.net_amount|floatformat:2 }}</td>
-                  <td>
-                    <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'shipped' %}info{% elif order.status == 'cancelled' %}danger{% else %}warning{% endif %}">
-                      {{ order.status|title }}
-                    </span>
-                  </td>
+                  <td class="text-end fw-semibold">{{ product.total_sold }}</td>
+                  <td class="text-end text-success fw-bold">₹{{ product.total_revenue|floatformat:2 }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                  <td colspan="8" class="text-center text-muted py-4">
+                  <td colspan="4" class="text-center text-muted py-4">
                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                    No orders found for the selected period
+                    No sales data available
                   </td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
-
-          <!-- Pagination -->
-          {% if orders.has_other_pages %}
-          <nav>
-            <ul class="pagination justify-content-center">
-              {% if orders.has_previous %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ orders.previous_page_number }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">
-                  Previous
-                </a>
-              </li>
-              {% endif %}
-              
-              {% for num in orders.paginator.page_range %}
-                {% if orders.number == num %}
-                  <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                {% elif num > orders.number|add:'-3' and num < orders.number|add:'3' %}
-                  <li class="page-item">
-                    <a class="page-link" href="?page={{ num }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">
-                      {{ num }}
-                    </a>
-                  </li>
-                {% endif %}
-              {% endfor %}
-              
-              {% if orders.has_next %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ orders.next_page_number }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">
-                  Next
-                </a>
-              </li>
-              {% endif %}
-            </ul>
-          </nav>
-          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0"><i class="bi bi-bookmark-fill me-2"></i>Top 10 Best Selling Categories</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th width="40">#</th>
+                  <th>Category</th>
+                  <th class="text-end">Sold</th>
+                  <th class="text-end">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for category in best_selling_categories %}
+                <tr>
+                  <td class="fw-bold text-muted">{{ forloop.counter }}</td>
+                  <td>
+                    <strong>{{ category.product_variant__product__genre__genre_name|title }}</strong>
+                  </td>
+                  <td class="text-end fw-semibold">{{ category.total_sold }}</td>
+                  <td class="text-end text-success fw-bold">₹{{ category.total_revenue|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    No category data available
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <script>
-document.getElementById('filterType').addEventListener('change', function() {
-  const customDivs = ['startDateDiv', 'endDateDiv'];
-  if (this.value === 'custom') {
-    customDivs.forEach(id => document.getElementById(id).style.display = 'block');
-  } else {
-    customDivs.forEach(id => document.getElementById(id).style.display = 'none');
-  }
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('salesChart');
+    
+    if (ctx) {
+        const chartData = {
+            labels: {{ chart_labels|safe }},
+            datasets: [
+                {
+                    label: 'Revenue (₹)',
+                    data: {{ chart_revenue|safe }},
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Orders',
+                    data: {{ chart_orders|safe }},
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
+        };
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                if (context.datasetIndex === 0) {
+                                    return 'Revenue: ₹' + context.parsed.y.toFixed(2);
+                                } else {
+                                    return 'Orders: ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Revenue (₹)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value.toFixed(0);
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Orders'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+    }
 });
 </script>
-{% endblock %}
 
+{% endblock %}

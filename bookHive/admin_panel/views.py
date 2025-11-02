@@ -68,76 +68,114 @@ def admin_signin(request):
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @login_required(login_url='admin_signin')  # Redirect to login page if not authenticated
 def admin_dashboard(request):
-
-
+    """Admin Dashboard with charts, best selling products and categories"""
     
-    """Generate sales report with filtering options"""
-    filter_type = request.GET.get('filter', 'all')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
+    # Get filter from request
+    filter_type = request.GET.get('filter', 'month')  # Default to monthly view
     
+    now = timezone.now()
+    
+    # Filter orders based on selected period
     orders = Order.objects.filter(
         status__in=['pending', 'shipped', 'delivered'],
         is_active=True
-    ).select_related('user', 'address').prefetch_related('order_items__product_variant__product')
-    
-    now = timezone.now()
-    filter_label = "All Time"
-    
-    if filter_type == 'today':
-        start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        orders = orders.filter(created_at__gte=start_of_day)
-        filter_label = "Today"
-    elif filter_type == 'week':
-        start_of_week = now - timedelta(days=7)
-        orders = orders.filter(created_at__gte=start_of_week)
-        filter_label = "Past 7 Days"
-    elif filter_type == 'month':
-        start_of_month = now - timedelta(days=30)
-        orders = orders.filter(created_at__gte=start_of_month)
-        filter_label = "Past 30 Days"
-    elif filter_type == 'custom' and start_date and end_date:
-        try:
-            start = datetime.strptime(start_date, '%Y-%m-%d')
-            end = datetime.strptime(end_date, '%Y-%m-%d')
-            end = end.replace(hour=23, minute=59, second=59)
-            orders = orders.filter(created_at__range=[start, end])
-            filter_label = f"{start_date} to {end_date}"
-        except ValueError:
-            messages.error(request, "Invalid date format")
-    
-    summary = orders.aggregate(
-        total_orders=Count('id'),
-        total_amount=Sum('net_amount'),
-        total_discount=Sum('coupon_discount'),
-        total_subtotal=Sum('subtotal')
     )
     
-    # Handle None values
-    summary['total_orders'] = summary['total_orders'] or 0
-    summary['total_amount'] = summary['total_amount'] or 0
-    summary['total_discount'] = summary['total_discount'] or 0
-    summary['total_subtotal'] = summary['total_subtotal'] or 0
+    if filter_type == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        filter_label = "Today"
+    elif filter_type == 'week':
+        start_date = now - timedelta(days=7)
+        filter_label = "Past 7 Days"
+    elif filter_type == 'month':
+        start_date = now - timedelta(days=30)
+        filter_label = "Past 30 Days"
+    elif filter_type == 'year':
+        start_date = now - timedelta(days=365)
+        filter_label = "Past Year"
+    else:  # all
+        start_date = None
+        filter_label = "All Time"
     
-    orders_list = orders.order_by('-created_at')
+    if start_date:
+        orders = orders.filter(created_at__gte=start_date)
     
-    paginator = Paginator(orders_list, 10)
-    page = request.GET.get('page', 1)
+    # Calculate sales data for chart (daily data for the period)
+    if filter_type in ['today', 'week', 'month', 'year']:
+        # Get daily sales data
+        daily_sales = orders.annotate(
+            day=TruncDate('created_at')
+        ).values('day').annotate(
+            total=Sum('net_amount'),
+            count=Count('id')
+        ).order_by('day')
+        
+        chart_labels = [item['day'].strftime('%d %b') if item['day'] else '' for item in daily_sales]
+        chart_revenue = [float(item['total']) for item in daily_sales]
+        chart_orders = [item['count'] for item in daily_sales]
+    else:
+        # For "all time", show monthly data - grouping by year-month
+        # Using TruncDate might not work perfectly for monthly, so we'll iterate through orders
+        from collections import OrderedDict
+        monthly_data = OrderedDict()
+        for order in orders:
+            month_key = order.created_at.strftime('%Y-%m')
+            if month_key not in monthly_data:
+                monthly_data[month_key] = {'total': 0, 'count': 0}
+            monthly_data[month_key]['total'] += float(order.net_amount)
+            monthly_data[month_key]['count'] += 1
+        
+        chart_labels = list(monthly_data.keys())
+        chart_revenue = [monthly_data[k]['total'] for k in chart_labels]
+        chart_orders = [monthly_data[k]['count'] for k in chart_labels]
     
-    try:
-        orders_page = paginator.page(page)
-    except PageNotAnInteger:
-        orders_page = paginator.page(1)
-    except EmptyPage:
-        orders_page = paginator.page(paginator.num_pages)
+    # Overall statistics
+    total_stats = orders.aggregate(
+        total_orders=Count('id'),
+        total_revenue=Sum('net_amount')
+    )
+    
+    # Calculate average order value
+    total_orders_count = total_stats['total_orders'] or 0
+    total_revenue_amount = total_stats['total_revenue'] or 0
+    avg_order_value = (total_revenue_amount / total_orders_count) if total_orders_count > 0 else 0
+    
+    # Best selling products (top 10)
+    best_selling_products = OrderItem.objects.filter(
+        order__in=orders
+    ).values(
+        'product_variant__product__book_title',
+        'product_variant__product__author'
+    ).annotate(
+        total_sold=Sum('quantity'),
+        total_revenue=Sum(F('quantity') * F('discount_price'))
+    ).order_by('-total_sold')[:10]
+    
+    # Best selling categories (genres) (top 10)
+    best_selling_categories = OrderItem.objects.filter(
+        order__in=orders
+    ).values(
+        'product_variant__product__genre__genre_name'
+    ).annotate(
+        total_sold=Sum('quantity'),
+        total_revenue=Sum(F('quantity') * F('discount_price')),
+        order_count=Count('order', distinct=True)
+    ).order_by('-total_sold')[:10]
+    
+    # Convert to JSON-safe format for Chart.js
+    import json
     
     context = {
-        'orders': orders_page,
-        'summary': summary,
         'filter_type': filter_type,
         'filter_label': filter_label,
-        'start_date': start_date,
-        'end_date': end_date,
+        'total_orders': total_orders_count,
+        'total_revenue': total_revenue_amount,
+        'avg_order_value': avg_order_value,
+        'chart_labels': json.dumps(chart_labels),
+        'chart_revenue': json.dumps(chart_revenue),
+        'chart_orders': json.dumps(chart_orders),
+        'best_selling_products': best_selling_products,
+        'best_selling_categories': best_selling_categories,
     }
     
     return render(request, 'admin/admin_dashboard.html', context)

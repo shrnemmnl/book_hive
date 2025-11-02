@@ -140,8 +140,11 @@ body {
             <a href="{% url 'admin_dashboard' %}" class="logo text-decoration-none">Book Hive</a>
             <div class="admin-label">Admin</div>
             <nav class="nav flex-column flex-grow-1">
-                <a class="nav-link" href="{% url 'admin_dashboard' %}" id="sales-report-tab">
-                    <i class="bi bi-graph-up"></i> Dashboard
+                <a class="nav-link" href="{% url 'admin_dashboard' %}" id="dashboard-tab">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a class="nav-link" href="{% url 'sales_report' %}" id="sales-report-tab">
+                    <i class="bi bi-graph-up"></i> Sales Report
                 </a>
                 <a class="nav-link" href="{% url 'books' %}" id="books-tab">
                     <i class="bi bi-book"></i> Books
@@ -204,6 +207,8 @@ body {
             // Apply active class based on current URL
             if (currentPage.includes("/admin_dashboard")) {
                 document.getElementById("dashboard-tab").classList.add("active");
+            } else if (currentPage.includes("/sales-report")) {
+                document.getElementById("sales-report-tab").classList.add("active");
             } else if (currentPage.includes("/books")) {
                 document.getElementById("books-tab").classList.add("active");
             } else if (currentPage.includes("/orders")) {
