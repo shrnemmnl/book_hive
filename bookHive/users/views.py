@@ -44,6 +44,7 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
+print("hiiiiiii")
 
 
 def signup(request):
