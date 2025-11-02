@@ -137,10 +137,15 @@
                   </label>
                 </div>
 
-                <div class="form-check mb-3 d-flex align-items-center">
-                  <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentCOD" value="cod">
-                  <label class="form-check-label fs-5" for="paymentCOD">
+                <div class="form-check mb-3 d-flex align-items-start">
+                  <div class="flex-shrink-0">
+                    <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentCOD" value="cod">
+                  </div>
+                  <label class="form-check-label fs-5" for="paymentCOD" style="flex: 1;">
                     <i class="bi bi-cash-coin me-2"></i> Cash on Delivery
+                    <br><small class="text-muted mt-1 d-block" id="codHelperText">
+                      Available for orders under ₹1000
+                    </small>
                   </label>
                 </div>
               </div>
@@ -302,6 +307,13 @@
                 </small>
               </div>
             {% endif %}
+          </div>
+
+          <div class="alert alert-warning mt-2 mb-0 d-none" id="codLimitWarning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <small class="mb-0">
+              <strong>Note:</strong> COD is only available for orders under ₹1000. Please use Razorpay or Wallet for orders above ₹1000.
+            </small>
           </div>
 
           <button type="submit" class="btn btn-primary w-100 mt-3 text-decoration-none shadow-lg" id="checkout-button">
@@ -536,6 +548,17 @@
   .form-check-input:checked {
     background-color: #2563eb;
     border-color: #2563eb;
+  }
+
+  .form-check-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .form-check-input:disabled + label,
+  .form-check-label.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   /* Responsive Adjustments */
@@ -943,6 +966,43 @@
         e.stopPropagation();
       });
     });
+    
+    // Payment method change listeners - Show COD limit warning only when COD is selected
+    const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
+    const codLimitWarning = document.getElementById('codLimitWarning');
+    const codHelperText = document.getElementById('codHelperText');
+    const totalAmount = parseFloat(document.querySelector('input[name="total_amount"]').value);
+    const paymentCOD = document.getElementById('paymentCOD');
+    
+    paymentMethods.forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.value === 'cod' && totalAmount >= 1000) {
+          // Show warning when COD is selected for orders above ₹1000
+          codLimitWarning.classList.remove('d-none');
+          codHelperText.innerHTML = `<i class="bi bi-info-circle me-1"></i>COD only available for orders under ₹1000. Current total: ₹${totalAmount.toFixed(2)}`;
+          codHelperText.className = 'text-danger mt-1 d-block';
+          
+          // Uncheck COD and disable it
+          this.checked = false;
+          this.disabled = true;
+          
+          // Show toast message
+          showToast('Cash on Delivery is only available for orders under ₹1000. Please choose Razorpay or Wallet.', 'error');
+        } else if (this.value !== 'cod') {
+          // Hide warning when other payment methods are selected
+          codLimitWarning.classList.add('d-none');
+          codHelperText.innerHTML = 'Available for orders under ₹1000';
+          codHelperText.className = 'text-muted mt-1 d-block';
+          
+          // Re-enable COD if it was disabled
+          if (paymentCOD) {
+            paymentCOD.disabled = false;
+          }
+        }
+      });
+    });
+    
+    
     // Handle form submission
     checkoutForm.addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -961,6 +1021,13 @@
         
         return;
       }
+      
+      // Check COD limit validation
+      if (paymentMethod === 'cod' && parseFloat(totalAmount) >= 1000) {
+        showToast('Cash on Delivery is only available for orders under ₹1000. Please choose another payment method.', 'error');
+        return;
+      }
+      
       if (paymentMethod === 'razorpay') {
         try {
           // Create Razorpay order

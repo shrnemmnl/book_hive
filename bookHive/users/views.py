@@ -1259,6 +1259,13 @@ def cod_payment(request):
         coupon_discount = float(request.session.get('coupon_discount', 0))
         net_amount = subtotal - coupon_discount
         
+        # COD limit validation - orders above ₹1000 should not be allowed for COD
+        COD_LIMIT = 1000
+        if net_amount >= COD_LIMIT:
+            return JsonResponse({
+                "error": f"Cash on Delivery is only available for orders under ₹{COD_LIMIT}. Your order total is ₹{net_amount:.2f}. Please use Razorpay or Wallet for orders above ₹{COD_LIMIT}."
+            }, status=400)
+        
         try:
             with transaction.atomic():
                 for item in cart_items:
