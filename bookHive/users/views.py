@@ -905,7 +905,42 @@ def user_wallet(request):
     user_wallet, created = Wallet.objects.get_or_create(user=request.user)
     wallet_amount = user_wallet.wallet_amount
 
-    return render(request, 'user/user_wallet.html', {'wallet_amount': wallet_amount, 'user_wallet': user_wallet})
+    # Get all wallet transactions for this user
+    wallet_transactions = Transaction.objects.filter(
+        user=request.user,
+        payment_method='wallet'
+    ).select_related('order').order_by('-transaction_date')
+    
+    # Calculate statistics
+    total_transactions = wallet_transactions.count()
+    total_credits = wallet_transactions.filter(transaction_type='refund').aggregate(
+        total=Sum('amount'))['total'] or 0
+    total_debits = wallet_transactions.exclude(transaction_type='refund').aggregate(
+        total=Sum('amount'))['total'] or 0
+    
+    # Pagination - only if more than 5 entries
+    transactions_page = None
+    if total_transactions > 5:
+        paginator = Paginator(wallet_transactions, 10)
+        page = request.GET.get('page', 1)
+        try:
+            transactions_page = paginator.page(page)
+        except:
+            transactions_page = paginator.page(1)
+    else:
+        transactions_page = wallet_transactions[:5] if total_transactions > 0 else []
+
+    context = {
+        'wallet_amount': wallet_amount,
+        'user_wallet': user_wallet,
+        'total_transactions': total_transactions,
+        'total_credits': total_credits,
+        'total_debits': total_debits,
+        'wallet_transactions': transactions_page,
+        'has_pagination': total_transactions > 5,
+    }
+
+    return render(request, 'user/user_wallet.html', context)
 
 
 @login_required(login_url='login')

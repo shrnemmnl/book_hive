@@ -1648,3 +1648,82 @@ def transaction_detail(request, order_id):
         context['order_items'] = order_items
     
     return render(request, 'admin/admin_transaction_detail.html', context)
+
+
+@never_cache
+@cache_control(no_store=True, no_cache=True, must_revalidate=True)
+@login_required(login_url='admin_signin')
+def wallet_management(request):
+    """Display all wallet transactions with user filtering"""
+    
+    # Get all wallet transactions (transactions with wallet payment method)
+    wallet_transactions = Transaction.objects.filter(
+        payment_method='wallet'
+    ).select_related('user', 'order').order_by('-transaction_date')
+    
+    # Search functionality
+    search_query = request.GET.get('search', '')
+    if search_query:
+        wallet_transactions = wallet_transactions.filter(
+            Q(transaction_id__icontains=search_query) |
+            Q(user__email__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(user__phone_no__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(wallet_transactions, 20)
+    page = request.GET.get('page', 1)
+    try:
+        transactions_page = paginator.page(page)
+    except PageNotAnInteger:
+        transactions_page = paginator.page(1)
+    except EmptyPage:
+        transactions_page = paginator.page(paginator.num_pages)
+    
+    context = {
+        'transactions': transactions_page,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'admin/wallet_management.html', context)
+
+
+@never_cache
+@cache_control(no_store=True, no_cache=True, must_revalidate=True)
+@login_required(login_url='admin_signin')
+def wallet_user_details(request, user_id):
+    """Display detailed wallet information for a specific user"""
+    
+    user = get_object_or_404(CustomUser, id=user_id)
+    
+    # Get user wallet
+    try:
+        wallet = Wallet.objects.get(user=user)
+    except Wallet.DoesNotExist:
+        wallet = Wallet.objects.create(user=user, wallet_amount=0)
+    
+    # Get all wallet transactions for this user
+    wallet_transactions = Transaction.objects.filter(
+        user=user,
+        payment_method='wallet'
+    ).select_related('order').order_by('-transaction_date')
+    
+    # Calculate statistics
+    total_transactions = wallet_transactions.count()
+    total_credits = wallet_transactions.filter(transaction_type='refund').aggregate(
+        total=Sum('amount'))['total'] or 0
+    total_debits = wallet_transactions.exclude(transaction_type='refund').aggregate(
+        total=Sum('amount'))['total'] or 0
+    
+    context = {
+        'user': user,
+        'wallet': wallet,
+        'wallet_transactions': wallet_transactions,
+        'total_transactions': total_transactions,
+        'total_credits': total_credits,
+        'total_debits': total_debits,
+    }
+    
+    return render(request, 'admin/wallet_user_details.html', context)
