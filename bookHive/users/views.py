@@ -277,19 +277,34 @@ def product_details(request, id):
         genre__is_active=True
     ).exclude(id=book.id)[:4]
 
+    # Check if user has purchased any variant of this product
+    can_review = False
+    if request.user.is_authenticated:
+        # Check if user has purchased and received any variant of this product
+        purchased_orders = OrderItem.objects.filter(
+            order__user=request.user,
+            order__status='delivered',
+            order__is_paid=True,
+            product_variant__product=book
+        ).exists()
+        can_review = purchased_orders
+
     if request.method == "POST" and request.user.is_authenticated:
-        # user_id = request.user.id
-        rating = request.POST.get('overallRating', '').strip()
-        comments = request.POST.get('comment', '').strip()
+        # Verify user has purchased before allowing review
+        if not can_review:
+            messages.error(request, "You haven't purchased this product yet. Only customers who have purchased can write reviews.")
+        else:
+            rating = request.POST.get('overallRating', '').strip()
+            comments = request.POST.get('comment', '').strip()
 
-        review = Review.objects.create(
-            user=request.user,
-            product=book,
-            rating=int(rating),
-            comments=comments,
-        )
+            review = Review.objects.create(
+                user=request.user,
+                product=book,
+                rating=int(rating),
+                comments=comments,
+            )
 
-        messages.success(request, "Your Review is successfully submitted.")
+            messages.success(request, "Your Review is successfully submitted.")
 
     variants = Variant.objects.filter(product=book, is_active=True).prefetch_related('productimage_set')
     default_variant = variants.first()
@@ -318,6 +333,7 @@ def product_details(request, id):
         'average_rating_int': int(round(average_rating)) if average_rating is not None else 0,
         'is_sold_out': is_sold_out,
         'related_books': related_books,
+        'can_review': can_review,
 
     }
 

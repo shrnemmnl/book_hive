@@ -228,9 +228,18 @@
 
           <!-- Write Review Button -->
           {% if user.is_authenticated %}
-          <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#writeReviewModal" style="font-size: 0.9rem;">
-            Write a Review
-          </button>
+            {% if can_review %}
+            <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#writeReviewModal" style="font-size: 0.9rem;">
+              Write a Review
+            </button>
+            {% else %}
+            <button class="btn btn-secondary w-100" data-bs-toggle="modal" data-bs-target="#writeReviewModal" style="font-size: 0.9rem;" disabled>
+              Write a Review
+            </button>
+            <p class="text-muted text-center mt-2" style="font-size: 0.75rem;">
+              ⚠️ You need to purchase this product to write a review
+            </p>
+            {% endif %}
           {% else %}
           <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary w-100" style="font-size: 0.9rem;">
             Write a Review
@@ -342,7 +351,21 @@ document.addEventListener('DOMContentLoaded', function () {
   setupAddToCartAjax();
   setupBuyNowAjax();
   highlightDefaultThumbnail();
+  setupReviewModalCheck();
 });
+
+function setupReviewModalCheck() {
+  {% if user.is_authenticated and not can_review %}
+  const writeReviewBtn = document.querySelector('[data-bs-target="#writeReviewModal"]');
+  if (writeReviewBtn && writeReviewBtn.disabled) {
+    writeReviewBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      showErrorMessage('⚠️ You need to purchase this product to write a review.');
+      return false;
+    });
+  }
+  {% endif %}
+}
 
 function setupQtyButtons() {
     const qtyInput = document.getElementById('quantity');
