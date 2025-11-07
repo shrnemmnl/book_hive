@@ -4,14 +4,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 {% endblock head %}
 
-{% block heading %}
-<div class="d-flex justify-content-between align-items-center">
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="fw-semibold mb-0" style="font-size: 1.5rem; color: #1e293b;">Order Details #{{ order.order_id }}</h2>
     <a href="{% url 'admin_order' %}" class="btn btn-outline-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;"><i class="bi bi-arrow-left me-2"></i>Back to Orders</a>
 </div>
-{% endblock heading %}
-
-{% block content %}
 <div class="container-fluid mt-4">
     <!-- Messages -->
     {% if messages %}

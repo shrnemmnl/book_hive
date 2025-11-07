@@ -106,6 +106,7 @@
                   <h6 class="mb-1 fw-bold">{{ item.product_variant.product.book_title }}</h6>
                   <p class="text-muted mb-1">{{ item.product_variant.product.author }}</p>
                   <p class="small mb-0">Quantity: {{ item.quantity }}</p>
+                  
                 </div>
                 <div class="col-md-4 text-md-end">
                   {% if item.discount_price < item.unit_price %}
@@ -114,6 +115,7 @@
                   {% else %}
                     <p class="mb-0">₹{{ item.total_amount }}</p>
                   {% endif %}
+                  
                 </div>
               </div>
               {% endfor %}
@@ -134,6 +136,7 @@
             </div>
           </div>
 
+      
           <!-- View Details Modal -->
           <div class="modal fade" id="viewDetailsModal{{ order.id }}" tabindex="-1" aria-labelledby="viewDetailsModalLabel{{ order.id }}" aria-hidden="true">
             <div class="modal-dialog modal-lg">
@@ -169,6 +172,7 @@
                       <p class="mb-1 fw-bold">{{ item.product_variant.product.book_title }}</p>
                       <p class="text-muted mb-1">{{ item.product_variant.product.author }}</p>
                       <p class="small mb-0">Quantity: {{ item.quantity }}</p>
+                      
                     </div>
                     <div class="col-md-4 text-md-end">
                       {% if item.discount_price < item.unit_price %}
@@ -177,6 +181,7 @@
                       {% else %}
                         <p class="mb-0">₹{{ item.total_amount|floatformat:2 }}</p>
                       {% endif %}
+                      
                     </div>
                   </div>
                   {% endfor %}

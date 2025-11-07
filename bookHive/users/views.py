@@ -1,4 +1,3 @@
-
 from datetime import timedelta
 import datetime as dt
 import random
@@ -8,7 +7,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.conf import settings
 from django.urls import reverse
 # Import your user model
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, WalletTransaction
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache, cache_control
 from django.db.models import Min
@@ -82,6 +81,16 @@ def signup(request):
         if not re.match(mobile_pattern, mobile):
             errors['mobile'] = "Mobile number must be 10 digits."
             has_error = True
+
+        # At least one uppercase, one lowercase, one digit, one special char, and 8+ length
+        strong_password_regex = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,}$'
+
+        if not re.match(strong_password_regex, password):
+                errors['new_password'] = (
+                    "Password must be at least 8 characters long, contain an uppercase letter, "
+                    "a lowercase letter, a number, and a special character."
+                )
+                has_error=True
 
         if password != confirmPassword:
             errors['password'] = "Passwords do not match."
@@ -892,6 +901,8 @@ def cancel_order(request, order_id):
     return render(request, 'user/user_order.html',)
 
 
+ 
+
 @login_required(login_url='login')
 def user_wishlist(request):
     wishlist_items = Wishlist.objects.filter(user=request.user)
@@ -922,8 +933,13 @@ def user_wallet(request):
 
     user_wallet, created = Wallet.objects.get_or_create(user=request.user)
     wallet_amount = user_wallet.wallet_amount
+    transactions = WalletTransaction.objects.filter(user=request.user)
 
-    return render(request, 'user/user_wallet.html', {'wallet_amount': wallet_amount, 'user_wallet': user_wallet})
+    return render(request, 'user/user_wallet.html', {
+        'wallet_amount': wallet_amount,
+        'user_wallet': user_wallet,
+        'transactions': transactions,
+    })
 
 
 @login_required(login_url='login')
@@ -945,6 +961,17 @@ def wallet_payment(request):
             with transaction.atomic():
                 user_wallet.wallet_amount-=int(total_amount)
                 user_wallet.save()
+
+                # Record wallet debit transaction
+                try:
+                    WalletTransaction.objects.create(
+                        user=request.user,
+                        amount=total_amount,
+                        transaction_type='debit',
+                        description='Order payment via wallet'
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to log wallet debit: {e}")
                 
  
                 cart = Cart.objects.filter(user=request.user).latest("created_at")
@@ -1462,6 +1489,15 @@ def add_to_cart(request, id):
             cart_item.quantity += quantity
             cart_item.save()
 
+            # Return response immediately after successful update
+            if is_buy_now:
+                return JsonResponse({
+                    'success': True,
+                    'redirect_url': reverse('checkoutpage')
+                })
+            else:
+                return JsonResponse({'success': True})
+
         except CartItem.DoesNotExist:
             if quantity > 5:
                 return JsonResponse({
@@ -1485,11 +1521,11 @@ def add_to_cart(request, id):
             response = {"success": True}
 
             if is_buy_now:
-            # Redirect user to the cart or checkout page
-                response["redirect_url"] = reverse('user_cart')
+                # Redirect user to checkout for Buy Now
+                response["redirect_url"] = reverse('checkoutpage')
             return JsonResponse(response)
 
-        return JsonResponse({'success': True, 'redirect_url': '/user/cart/'})
+        return JsonResponse({'success': True, 'redirect_url': reverse('user_cart')})
 
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'message': 'Invalid JSON'})
@@ -1726,7 +1762,7 @@ def fg_verification(request):
             return redirect('otp_page_fg')
         else:
             messages.error(
-                request, "Email not found or an error occurred. Please check the email you entered. If you haven’t signed up yet, please register first.")
+                request, "Email not found or an error occurred. Please check the email you entered. If you haven't signed up yet, please register first.")
             redirect('fg_verification')
 
     return render(request, 'login/fg_verification.html')
@@ -1780,7 +1816,7 @@ def otp_page_fg(request):
 def password_change(request):
     errors = {}
 
-    # 🚫 If password was changed, don't show this page again
+    # If password was changed, don't show this page again
     if request.session.get('password_changed'):
 
         del request.session['password_changed']

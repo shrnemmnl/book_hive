@@ -24,45 +24,43 @@
           </div>
         </div>
 
-        {% comment %} <h5 class="mb-3">Transaction History</h5> {% endcomment %}
-        {% comment %} <div class="table-responsive">
-          <table class="table">
+        <h5 class="mb-3">Transactions</h5>
+        <div class="table-responsive">
+          <table class="table align-middle">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Status</th>
+                <th scope="col">Date</th>
+                <th scope="col">Description</th>
+                <th scope="col">Type</th>
+                <th scope="col" class="text-end">Amount</th>
               </tr>
             </thead>
             <tbody>
-              {% if user_wallet %}
+              {% for tx in transactions %}
               <tr>
-                <td>{{ wallet.created_at|date:"M d, Y" }}</td>
-                <td>Added to Wallet</td>
+                <td>{{ tx.created_at|date:"d M Y, h:i A" }}</td>
+                <td class="text-muted">{{ tx.description|default:"—" }}</td>
                 <td>
-                  <span class="badge bg-success">Credit</span>
-                  {% comment %} {% if tx.is_credit %}
-                  <span class="badge bg-success">Credit</span>
+                  <span class="badge {% if tx.transaction_type == 'credit' %}bg-success{% elif tx.transaction_type == 'refund' %}bg-primary{% else %}bg-danger{% endif %}">
+                    {{ tx.transaction_type|capfirst }}
+                  </span>
+                </td>
+                <td class="text-end">
+                  {% if tx.transaction_type in 'credit,refund' %}
+                    <span class="text-success">+ ₹{{ tx.amount|floatformat:2 }}</span>
                   {% else %}
-                  <span class="badge bg-danger">Debit</span>
-                  {% endif %} {% endcomment %}
-                {% comment %} </td>
-                <td>₹{{ wallet.amount }}</td>
-                <td>
-                  <span class="text-success">Completed</span>
+                    <span class="text-danger">- ₹{{ tx.amount|floatformat:2 }}</span>
+                  {% endif %}
                 </td>
               </tr>
-              {% endif %} {% empty %}
+              {% empty %}
               <tr>
-                <td colspan="5" class="text-center text-muted">
-                  No transactions yet.
-                </td>
+                <td colspan="4" class="text-center text-muted">No transactions yet.</td>
               </tr>
+              {% endfor %}
             </tbody>
           </table>
-        </div> {% endcomment %}
+        </div>
       </div> 
     </div>
   </div>

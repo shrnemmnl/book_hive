@@ -51,6 +51,7 @@ def admin_signin(request):
         password=request.POST.get('password', "").strip()
 
         isuser=authenticate(request, email=email, password=password)
+        
 
         if isuser is not None and isuser.is_superuser:
             login(request, isuser)
@@ -79,7 +80,7 @@ def admin_dashboard(request):
     orders = Order.objects.filter(
         status__in=['pending', 'shipped', 'delivered'],
         is_active=True
-    ).select_related('user', 'address').prefetch_related('order_items__product_variant__product')
+    ).select_related('user')
     
     now = timezone.now()
     filter_label = "All Time"
@@ -141,6 +142,9 @@ def admin_dashboard(request):
     }
     
     return render(request, 'admin/admin_dashboard.html', context)
+
+
+
     
 
 
@@ -790,6 +794,16 @@ def admin_order_details(request, order_id):
             user_wallet, created = Wallet.objects.get_or_create(user=user)
             user_wallet.wallet_amount += refund_amount
             user_wallet.save()
+            try:
+                from users.models import WalletTransaction
+                WalletTransaction.objects.create(
+                    user=user,
+                    amount=refund_amount,
+                    transaction_type='refund',
+                    description=f'Refund for order {order.order_id}'
+                )
+            except Exception as e:
+                logger.error(f"Failed to log wallet refund: {e}")
 
             if new_status == 'cancelled':
                 order.status = 'cancelled'

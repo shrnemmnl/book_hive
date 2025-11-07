@@ -627,6 +627,7 @@ function setupAddToCartAjax() {
 function addToCartAjax(bookId, variantId, quantity, isBuyNow = false) {
   const buttons = document.querySelectorAll('.add-to-cart-btn');
   const originalTexts = [];
+  const checkoutUrl = "{% url 'checkoutpage' %}";
   
   buttons.forEach((btn, index) => {
     originalTexts[index] = btn.innerText;
@@ -657,12 +658,11 @@ function addToCartAjax(bookId, variantId, quantity, isBuyNow = false) {
   .then(data => {
     if (data.success) {
       if (isBuyNow) {
-        showSuccessMessage('Added to cart! Redirecting...');
-        if (data.redirect_url) {
-          setTimeout(() => {
-            window.location.href = data.redirect_url;
-          }, 1000);
-        }
+        showSuccessMessage('Redirecting to checkout...');
+        const target = data.redirect_url || checkoutUrl;
+        setTimeout(() => {
+          window.location.href = target;
+        }, 600);
       } else {
         showSuccessMessage('Added to cart successfully!');
       }

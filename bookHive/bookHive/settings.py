@@ -30,7 +30,9 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1",
+    "localhost",
+    "nonresponsively-mustachioed-yoshie.ngrok-free.dev",]
 
 
 # Application definition
@@ -233,3 +235,8 @@ MESSAGE_TAGS = {
 RAZORPAY_KEY_ID = config("RAZORPAY_KEY_ID")
 RAZORPAY_KEY_SECRET = config("RAZORPAY_KEY_SECRET")
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://nonresponsively-mustachioed-yoshie.ngrok-free.dev",
+]
+
