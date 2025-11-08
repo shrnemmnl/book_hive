@@ -187,6 +187,7 @@ class OrderItem(models.Model):
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     status = models.CharField(max_length=50, default='pending')
+    cancel_reason = models.CharField(max_length=500, blank=True, null=True)
     image_url = models.URLField(max_length=500, null=True, blank=True)
     shipping_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
@@ -196,7 +197,20 @@ class OrderItem(models.Model):
     def total_amount(self):
         # discount price is neither unit price or after discounted price
         return self.discount_price*self.quantity
-        
+    
+    def is_refunded(self):
+        """Check if this order item has been refunded by checking wallet transactions"""
+        try:
+            # Use apps.get_model to avoid forward reference issues
+            from django.apps import apps
+            WalletTransaction = apps.get_model('users', 'WalletTransaction')
+            return WalletTransaction.objects.filter(
+                user=self.order.user,
+                transaction_type='refund',
+                description__icontains=f'item {self.id}'
+            ).exists()
+        except:
+            return False
         
     
 

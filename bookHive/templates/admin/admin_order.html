@@ -17,7 +17,9 @@
                     <option value="shipped">Shipped</option>
                     <option value="delivered">Delivered</option>
                     <option value="request to cancel">Request to Cancel</option>
+                    <option value="request to return">Request to Return</option>
                     <option value="cancelled">Cancelled</option>
+                    <option value="return approved">Return Approved</option>
                 </select>
                 <button class="btn btn-outline-secondary" id="sortStatusBtn" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Sort Status (Asc)</button>
                 <button class="btn btn-outline-secondary" id="clearSearch" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Clear</button>
@@ -35,50 +37,53 @@
                         <tr>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Sl No.</th>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Order ID</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Coustomer Name</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Purchased Items</th>
+                            <th scope="col" style="color: #1e293b; font-weight: 500;">Customer Name</th>
+                            <th scope="col" style="color: #1e293b; font-weight: 500;">Purchased Items & Status</th>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Purchase Date</th>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Grand Total</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Status</th>
                             <th scope="col" style="color: #1e293b; font-weight: 500;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for order in order_details %}
-                        <tr class="order-row" data-order-id="{{ order.order_id }}" data-status="{{ order.status }}">
+                        <tr class="order-row" data-order-id="{{ order.order_id }}" data-item-statuses="{% for item in order.order_items.all %}{{ item.status }}{% if not forloop.last %},{% endif %}{% endfor %}">
                             <td>{{ forloop.counter }}</td>
                             <td>{{ order.order_id }}</td>
                             <td>{{ order.user.first_name }} {{ order.user.last_name }}</td>
                             <td>
                                 <ul class="list-unstyled mb-0">
                                     {% for item in order.order_items.all %}
-                                    <li class="mb-1 text-muted" style="font-size: 0.85rem;">
-                                        {{ forloop.counter }}. {{ item.product_variant.product.book_title }} (Qty: {{ item.quantity }})
+                                    <li class="mb-2" style="font-size: 0.85rem;">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span class="text-muted">
+                                                {{ forloop.counter }}. {{ item.product_variant.product.book_title }} (Qty: {{ item.quantity }})
+                                            </span>
+                                            <span class="item-status-badge ms-2" data-item-status="{{ item.status }}">
+                                                {% if item.status == "pending" %}
+                                                    <span class="badge bg-warning text-dark" style="font-size: 0.7rem; padding: 0.3em 0.5em;">Pending</span>
+                                                {% elif item.status == "shipped" %}
+                                                    <span class="badge bg-info text-dark" style="font-size: 0.7rem; padding: 0.3em 0.5em;">Shipped</span>
+                                                {% elif item.status == "delivered" %}
+                                                    <span class="badge bg-success text-dark" style="font-size: 0.7rem; padding: 0.3em 0.5em;">Delivered</span>
+                                                {% elif item.status == "request to cancel" %}
+                                                    <span class="badge bg-dark text-white" style="font-size: 0.7rem; padding: 0.3em 0.5em;">Request to Cancel</span>
+                                                {% elif item.status == "request to return" %}
+                                                    <span class="badge bg-dark text-white" style="font-size: 0.7rem; padding: 0.3em 0.5em;">Request to Return</span>
+                                                {% elif item.status == "cancelled" %}
+                                                    <span class="badge bg-danger text-white" style="font-size: 0.7rem; padding: 0.3em 0.5em;">Cancelled</span>
+                                                {% elif item.status == "return approved" %}
+                                                    <span class="badge bg-primary text-white" style="font-size: 0.7rem; padding: 0.3em 0.5em;">Return Approved</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary text-white" style="font-size: 0.7rem; padding: 0.3em 0.5em;">{{ item.status|capfirst }}</span>
+                                                {% endif %}
+                                            </span>
+                                        </div>
                                     </li>
                                     {% endfor %}
                                 </ul>
                             </td>
                             <td style="font-size: 0.85rem;">{{ order.created_at|date:"d M Y, h:i A" }}</td>
                             <td style="font-size: 0.85rem;">₹{{ order.net_amount|floatformat:2 }}</td>
-                            <td>
-                                {% if order.status == "pending" %}
-                                    <span class="badge bg-warning text-dark" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Pending</span>
-                                {% elif order.status == "shipped" %}
-                                    <span class="badge bg-info text-dark" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Shipped</span>
-                                {% elif order.status == "delivered" %}
-                                    <span class="badge bg-success text-dark" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Delivered</span>
-                                {% elif order.status == "request to cancel" %}
-                                    <span class="badge bg-dark text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Request to Cancel</span>
-                                {% elif order.status == "request to return" %}
-                                    <span class="badge bg-dark text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Request to Return</span>
-                                {% elif order.status == "cancelled" %}
-                                    <span class="badge bg-danger text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Cancelled</span>
-                                {% elif order.status == "return approved" %}
-                                    <span class="badge bg-primary text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Return Approved</span>
-                                {% else %}
-                                    <span class="badge bg-secondary text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">{{ order.status|capfirst }}</span>
-                                {% endif %}
-                            </td>
                             <td>
                                 <a href="{% url 'admin_order_details' order.id %}" class="btn btn-sm btn-primary view-details" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 6px; background-color: #2563eb;">View Details</a>
                             </td>
@@ -180,19 +185,21 @@
             const statusTerm = statusFilter.value.toLowerCase();
             const rows = Array.from(document.querySelectorAll('.order-row'));
 
-            // Filter rows
+            // Filter rows based on item statuses
             let filteredRows = rows.filter(row => {
                 const text = row.textContent.toLowerCase();
-                const status = row.getAttribute('data-status').toLowerCase();
+                const itemStatuses = row.getAttribute('data-item-statuses').toLowerCase().split(',');
                 const matchesSearch = searchTerm ? text.includes(searchTerm) : true;
-                const matchesStatus = statusTerm ? status === statusTerm : true;
+                const matchesStatus = statusTerm ? itemStatuses.includes(statusTerm) : true;
                 return matchesSearch && matchesStatus;
             });
 
-            // Sort rows by status
+            // Sort rows by first item status (or primary status)
             filteredRows.sort((a, b) => {
-                const statusA = a.getAttribute('data-status').toLowerCase();
-                const statusB = b.getAttribute('data-status').toLowerCase();
+                const statusesA = a.getAttribute('data-item-statuses').toLowerCase().split(',');
+                const statusesB = b.getAttribute('data-item-statuses').toLowerCase().split(',');
+                const statusA = statusesA[0] || '';
+                const statusB = statusesB[0] || '';
                 return isSortAscending ? statusA.localeCompare(statusB) : statusB.localeCompare(statusA);
             });
 

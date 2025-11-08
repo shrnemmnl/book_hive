@@ -121,13 +121,13 @@
         headers: { "X-CSRFToken": "{{ csrf_token }}" },
         success: function (response) {
           if (response.success) {
-            // Remove card from DOM (add_to_cart also deletes wishlist entry server-side)
-            $btn.closest(".card").remove();
-
-            // If list becomes empty, show empty message
-            refreshEmptyState();
-
+            // Show success message
             toastr.success("Added to cart");
+            
+            // Redirect to cart page after a short delay
+            setTimeout(function() {
+              window.location.href = "{% url 'user_cart' %}";
+            }, 500);
           } else {
             toastr.error(response.message || "Could not add to cart");
           }

@@ -748,77 +748,139 @@ def admin_order_details(request, order_id):
 
     order = get_object_or_404(Order, id=order_id)
     
-    logger.info(f"admin side status: {order.status} and order status : {"Paid" if order.is_paid else "Not Paid."}")
+    logger.info(f"admin side status: {order_id}")
 
     if request.method == 'POST':
         
+        item_id = request.POST.get('item_id')
         new_status = request.POST.get('status')
-        logger.info(f"admin side status: {new_status} and order status : {"Paid" if order.is_paid else "Not Paid."}")
+        
+        if not item_id:
+            messages.error(request, "Item ID is required.")
+            return redirect('admin_order_details', order_id=order.id)
+        
+        try:
+            order_item = OrderItem.objects.get(id=item_id, order=order)
+        except OrderItem.DoesNotExist:
+            messages.error(request, "Order item not found.")
+            return redirect('admin_order_details', order_id=order.id)
+        
+        logger.info(f"admin side updating item {item_id} status to: {new_status}")
         
         valid_statuses = ['pending', 'shipped', 'delivered', 'cancelled', 'request to cancel','return approved','request to return']
         
-        # for cod
-        if new_status == 'delivered':
-            order.is_paid = True
-
-
-        elif new_status not in valid_statuses:
+        if new_status not in valid_statuses:
             messages.error(request, "Invalid status selected.")
             return redirect('admin_order_details', order_id=order.id)
         
-        #If item cancelled stock needs to update. mainly in cash on delivery.    
-        elif new_status == 'cancelled' and not order.is_paid:
-
-            #Stock need to update
-            for item in order.order_items.all():
-                variant = item.product_variant  
-                variant.available_quantity = F('available_quantity') + item.quantity  # db math - more safe and concorency proof
-                variant.save(update_fields=['available_quantity'])  #save only field available_quantity
+        # Handle status updates per item
+        old_status = order_item.status
+        refund_message_shown = False
+        
+        # If item is being delivered, mark order as paid (for COD)
+        if new_status == 'delivered' and not order.is_paid:
+            order.is_paid = True
+            order.save()
+        
+        # Handle cancel/return request approvals with refunds
+        if old_status == 'request to return' and new_status == 'return approved':
+            # If returning, update stock and refund if paid
+            variant = order_item.product_variant
+            variant.available_quantity = F('available_quantity') + order_item.quantity
+            variant.save(update_fields=['available_quantity'])
             
-        # Check if the item is being cancelled and the order is paid
-        elif new_status in ['return approved','cancelled'] and order.is_paid:
-
+            if order.is_paid:
+                user = order.user
+                item_refund_amount = order_item.total_amount()
+                user_wallet, created = Wallet.objects.get_or_create(user=user)
+                user_wallet.wallet_amount += item_refund_amount
+                user_wallet.save()
+                try:
+                    from users.models import WalletTransaction
+                    WalletTransaction.objects.create(
+                        user=user,
+                        amount=item_refund_amount,
+                        transaction_type='refund',
+                        description=f'Refund for returned item {order_item.id} from order {order.order_id}'
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to log wallet refund: {e}")
+                messages.success(request, f"Refunded ₹{item_refund_amount:.2f} to user {user.email}'s wallet for item {order_item.product_variant.product.book_title}.")
+                refund_message_shown = True
+        
+        # If item is being cancelled/returned and order is paid, handle refund (for direct cancellations, not from request)
+        elif new_status in ['return approved', 'cancelled'] and order.is_paid and old_status not in ['return approved', 'cancelled', 'request to return', 'request to cancel']:
             user = order.user
-            print("hiiiiiiiiiiiiiiiiiii")
-
-            #Stock need to update
-            for item in order.order_items.all():
-                variant = item.product_variant  
-                variant.available_quantity = F('available_quantity') + item.quantity  # db math - more safe and concorency proof
-                variant.save(update_fields=['available_quantity'])  #save only field available_quantity
-                
             
+            # Calculate refund amount for this specific item
+            item_refund_amount = order_item.total_amount()
             
-            #Wallet crediting
-            refund_amount = order.net_amount  # Changed from net_amount to total_amount
+            # Update stock
+            variant = order_item.product_variant
+            variant.available_quantity = F('available_quantity') + order_item.quantity
+            variant.save(update_fields=['available_quantity'])
+            
+            # Wallet crediting
             user_wallet, created = Wallet.objects.get_or_create(user=user)
-            user_wallet.wallet_amount += refund_amount
+            user_wallet.wallet_amount += item_refund_amount
             user_wallet.save()
+            
             try:
                 from users.models import WalletTransaction
                 WalletTransaction.objects.create(
                     user=user,
-                    amount=refund_amount,
+                    amount=item_refund_amount,
                     transaction_type='refund',
-                    description=f'Refund for order {order.order_id}'
+                    description=f'Refund for order item {order_item.id} from order {order.order_id}'
                 )
             except Exception as e:
                 logger.error(f"Failed to log wallet refund: {e}")
-
-            if new_status == 'cancelled':
-                order.status = 'cancelled'
-            else:
-                order.status = 'return approved'
-    
-            order.save()
+            
+            messages.success(request, f"Refunded ₹{item_refund_amount:.2f} to user {user.email}'s wallet for item {order_item.product_variant.product.book_title}.")
+            refund_message_shown = True
         
-            messages.success(request, f"Refunded ₹{refund_amount:.2f} to user {user.email}'s wallet.")
-          
-            return redirect('admin_order_details', order_id=order.id)
-
-        order.status = new_status
-        order.save()
+        # Handle cancel request approval
+        if old_status == 'request to cancel' and new_status == 'cancelled':
+            # Update stock
+            variant = order_item.product_variant
+            variant.available_quantity = F('available_quantity') + order_item.quantity
+            variant.save(update_fields=['available_quantity'])
+            
+            # If order is paid, refund to wallet
+            if order.is_paid and not refund_message_shown:
+                user = order.user
+                item_refund_amount = order_item.total_amount()
+                user_wallet, created = Wallet.objects.get_or_create(user=user)
+                user_wallet.wallet_amount += item_refund_amount
+                user_wallet.save()
+                try:
+                    from users.models import WalletTransaction
+                    WalletTransaction.objects.create(
+                        user=user,
+                        amount=item_refund_amount,
+                        transaction_type='refund',
+                        description=f'Refund for cancelled item {order_item.id} from order {order.order_id}'
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to log wallet refund: {e}")
+                messages.success(request, f"Refunded ₹{item_refund_amount:.2f} to user {user.email}'s wallet for item {order_item.product_variant.product.book_title}.")
+                refund_message_shown = True
         
+        # If item is being cancelled directly (not from request) and order is not paid (COD), just update stock
+        elif new_status == 'cancelled' and not order.is_paid and old_status != 'cancelled' and old_status != 'request to cancel':
+            variant = order_item.product_variant
+            variant.available_quantity = F('available_quantity') + order_item.quantity
+            variant.save(update_fields=['available_quantity'])
+        
+        # Update the item status
+        order_item.status = new_status
+        order_item.save()
+        
+        # Only show generic status update message if we haven't shown a refund message
+        if not refund_message_shown:
+            messages.success(request, f"Order item status updated to {new_status}.")
+        
+        return redirect('admin_order_details', order_id=order.id)
 
     context = {
         'reload': True,

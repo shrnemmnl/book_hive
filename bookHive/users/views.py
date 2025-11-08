@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 
-
+@csrf_exempt
 def signup(request):
 
     if request.user.is_authenticated:
@@ -870,7 +870,7 @@ def order_search(request):
 
 
 @login_required(login_url='login')
-def cancel_order(request, order_id):
+def cancel_order(request, item_id):
 
     if request.method == 'POST':
 
@@ -878,27 +878,27 @@ def cancel_order(request, order_id):
         
         try:
 
-            order = Order.objects.get(id=order_id)
-            logger.info(f"oder status: {order.status}")
+            order_item = OrderItem.objects.get(id=item_id, order__user=request.user)
+            logger.info(f"order item status: {order_item.status}")
 
-            if order.status == 'delivered':
-                order.status = 'request to return'
+            if order_item.status == 'delivered':
+                order_item.status = 'request to return'
             else:
-                order.status = 'request to cancel'
+                order_item.status = 'request to cancel'
 
-            order.is_active = False
-            order.cancel_reason = reason
-            order.save()
+            order_item.cancel_reason = reason
+            order_item.save()
 
             messages.info(
-                request, f"Your order id - {order.order_id} is requested to cancel.")
+                request, f"Your order item from order {order_item.order.order_id} is requested to {'return' if order_item.status == 'request to return' else 'cancel'}.")
             return redirect('user_order')
 
+        except OrderItem.DoesNotExist:
+            messages.error(request, "Order item not found.")
         except Exception as e:
-
             messages.error(request, f"Error - {e}")
 
-    return render(request, 'user/user_order.html',)
+    return redirect('user_order')
 
 
  
