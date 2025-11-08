@@ -1,0 +1,76 @@
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Byte-compiled / optimized / DLL files
+*.pyo
+*.pyd
+
+# ==========================
+# Virtual Environments
+# ==========================
+venv/
+env/
+ENV/
+myenv/
+bookHive/myenv/
+
+# ==========================
+# Django
+# ==========================
+*.log
+*.pot
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+static_root/
+tmp/
+
+# ==========================
+# Environment Variables
+# ==========================
+.env
+*.env
+.env.*
+
+# ==========================
+# IDEs / Editors
+# ==========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ==========================
+# Testing / Coverage
+# ==========================
+.pytest_cache/
+.coverage
+.tox/
+htmlcov/
+
+# ==========================
+# Builds / Packaging
+# ==========================
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ==========================
+# Databases / Backup
+# ==========================
+*.sql
+db/
+
+# ==========================
+# Misc
+# ==========================
+__pypackages__/
