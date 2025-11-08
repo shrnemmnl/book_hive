@@ -7,7 +7,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.conf import settings
 from django.urls import reverse
 # Import your user model
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, WalletTransaction
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, WalletTransaction, CustomerSupport
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache, cache_control
 from django.db.models import Min
@@ -1088,7 +1088,28 @@ def wallet_payment(request):
 
 @login_required(login_url='login')
 def user_cust_care(request):
-
+    if request.method == 'POST':
+        subject = request.POST.get('subject')
+        category = request.POST.get('category')
+        message = request.POST.get('message')
+        
+        if not subject or not category or not message:
+            messages.error(request, 'Please fill in all required fields.')
+            return render(request, 'user/user_cust_care.html')
+        
+        try:
+            CustomerSupport.objects.create(
+                user=request.user,
+                subject=subject,
+                category=category,
+                message=message
+            )
+            messages.success(request, 'Thank you! Your query has been submitted successfully. You will receive a reply in your email within 24 hours.')
+            return redirect('user_cust_care')
+        except Exception as e:
+            logger.error(f"Error creating support query: {e}")
+            messages.error(request, 'An error occurred while submitting your query. Please try again.')
+    
     return render(request, 'user/user_cust_care.html')
 
 

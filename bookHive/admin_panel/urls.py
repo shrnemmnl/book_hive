@@ -39,4 +39,9 @@ urlpatterns = [
     
     path('sales-report/download-pdf', views.download_sales_report_pdf, name='download_sales_report_pdf'),
     path('sales-report/download-excel', views.download_sales_report_excel, name='download_sales_report_excel'),
+    
+    # Customer Support Queries
+    path('customer-queries/<int:user_id>/', views.admin_customer_queries, name='admin_customer_queries'),
+    path('query-details/<int:query_id>/', views.admin_query_details, name='admin_query_details'),
+    path('query-reply/<int:query_id>/', views.admin_query_reply, name='admin_query_reply'),
 ]

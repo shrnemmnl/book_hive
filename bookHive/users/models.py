@@ -255,3 +255,35 @@ class WalletTransaction(models.Model):
 
     def __str__(self):
         return f"{self.transaction_type} ₹{self.amount} - {self.user.email}"
+
+
+class CustomerSupport(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('resolved', 'Resolved'),
+    )
+    
+    CATEGORY_CHOICES = (
+        ('Order Related', 'Order Related'),
+        ('Payment Related', 'Payment Related'),
+        ('Product Related', 'Product Related'),
+        ('Shipping Related', 'Shipping Related'),
+        ('Returns & Refunds', 'Returns & Refunds'),
+        ('Other', 'Other'),
+    )
+    
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='support_queries')
+    subject = models.CharField(max_length=200)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    message = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_reply = models.TextField(blank=True, null=True)
+    replied_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Query from {self.user.email} - {self.subject}"

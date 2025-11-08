@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from users.models import CustomUser,Order,OrderItem,Review, Wallet # Import your user model
+from users.models import CustomUser,Order,OrderItem,Review, Wallet, CustomerSupport # Import your user model
 from .models import Genre, Product, Variant, ProductImage,Coupon,CouponUsage
 from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.cache import never_cache, cache_control
@@ -18,6 +18,8 @@ import base64
 import re
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
+from django.core.mail import send_mail
+from django.conf import settings
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from reportlab.lib import colors
@@ -591,7 +593,9 @@ def admin_logout(request):
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @login_required(login_url='admin_signin')  
 def customer_details(request):
-    users = CustomUser.objects.all().exclude(is_superuser = True).order_by('-date_joined')
+    users = CustomUser.objects.all().exclude(is_superuser = True).annotate(
+        query_count=Count('support_queries')
+    ).order_by('-query_count', '-date_joined')
 
      # Create Paginator object with 10 customers per page
     paginator = Paginator(users, 10)  
@@ -622,7 +626,9 @@ def user_search(request):
     
     
     search_query=request.POST.get('user_search', "").strip()
-    users = CustomUser.objects.filter(first_name__istartswith=search_query).exclude(is_superuser = True).order_by('-date_joined')
+    users = CustomUser.objects.filter(first_name__istartswith=search_query).exclude(is_superuser = True).annotate(
+        query_count=Count('support_queries')
+    ).order_by('-query_count', '-date_joined')
 
     # Create Paginator object with 10 customers per page
     paginator = Paginator(users, 10)  
@@ -1583,3 +1589,76 @@ def download_sales_report_excel(request):
     
     wb.save(response)
     return response
+
+
+@login_required
+def admin_customer_queries(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+    queries = CustomerSupport.objects.filter(user=user).order_by('-created_at')
+    
+    context = {
+        'user': user,
+        'queries': queries,
+    }
+    return render(request, 'admin/customer_queries.html', context)
+
+
+@login_required
+def admin_query_details(request, query_id):
+    query = get_object_or_404(CustomerSupport, id=query_id)
+    
+    context = {
+        'query': query,
+    }
+    return render(request, 'admin/query_details.html', context)
+
+
+@login_required
+def admin_query_reply(request, query_id):
+    query = get_object_or_404(CustomerSupport, id=query_id)
+    
+    if request.method == 'POST':
+        reply_message = request.POST.get('reply_message')
+        mark_resolved = request.POST.get('mark_resolved') == 'on'
+        
+        if not reply_message:
+            messages.error(request, 'Please enter a reply message.')
+            return redirect('admin_query_details', query_id=query_id)
+        
+        try:
+            # Send email to user
+            subject = f'Re: {query.subject}'
+            email_message = f"""
+Dear {query.user.first_name} {query.user.last_name},
+
+Thank you for contacting us. Here is our response to your query:
+
+Your Query:
+{query.message}
+
+Our Reply:
+{reply_message}
+
+If you have any further questions, please don't hesitate to contact us.
+
+Best regards,
+BookHive Support Team
+"""
+            from_email = settings.DEFAULT_FROM_EMAIL
+            send_mail(subject, email_message, from_email, [query.user.email])
+            
+            # Update query
+            query.admin_reply = reply_message
+            query.replied_at = timezone.now()
+            if mark_resolved:
+                query.status = 'resolved'
+            query.save()
+            
+            messages.success(request, f'Reply sent successfully to {query.user.email}')
+            return redirect('admin_query_details', query_id=query_id)
+            
+        except Exception as e:
+            messages.error(request, f'Error sending reply: {str(e)}')
+            return redirect('admin_query_details', query_id=query_id)
+    
+    return redirect('admin_query_details', query_id=query_id)

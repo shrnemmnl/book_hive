@@ -1,0 +1,109 @@
+{% extends "admin/admin_base.html" %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+{% endblock head %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-semibold mb-0" style="font-size: 1.5rem; color: #1e293b;">Query Details</h2>
+        <a href="{% url 'admin_customer_queries' query.user.id %}" class="btn btn-outline-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;"><i class="bi bi-arrow-left me-2"></i>Back to Queries</a>
+    </div>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-size: 0.85rem; border-radius: 6px;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Query Information Card -->
+    <div class="card shadow-sm mb-4" style="border-radius: 10px; border: none;">
+        <div class="card-header" style="border-radius: 10px 10px 0 0; background-color: #f8fafc;">
+            <h5 class="mb-0 fw-medium" style="font-size: 1.1rem; color: #1e293b;">Query Information</h5>
+        </div>
+        <div class="card-body" style="padding: 1.5rem;">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Customer Name</p>
+                    <p class="text-muted" style="font-size: 0.85rem;">{{ query.user.first_name }} {{ query.user.last_name }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Email</p>
+                    <p class="text-muted" style="font-size: 0.85rem;">{{ query.user.email }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Subject</p>
+                    <p class="text-muted" style="font-size: 0.85rem;">{{ query.subject }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Category</p>
+                    <p class="text-muted" style="font-size: 0.85rem;"><span class="badge bg-secondary">{{ query.category }}</span></p>
+                </div>
+                <div class="col-md-6">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Status</p>
+                    <p class="text-muted" style="font-size: 0.85rem;">
+                        {% if query.status == 'pending' %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% else %}
+                            <span class="badge bg-success">Resolved</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Submitted On</p>
+                    <p class="text-muted" style="font-size: 0.85rem;">{{ query.created_at|date:"d M Y, h:i A" }}</p>
+                </div>
+                <div class="col-12">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Message</p>
+                    <div class="text-muted" style="font-size: 0.85rem; background-color: #f8fafc; padding: 1rem; border-radius: 6px; white-space: pre-wrap;">{{ query.message }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Reply Card -->
+    {% if query.admin_reply %}
+    <div class="card shadow-sm mb-4" style="border-radius: 10px; border: none;">
+        <div class="card-header" style="border-radius: 10px 10px 0 0; background-color: #f8fafc;">
+            <h5 class="mb-0 fw-medium" style="font-size: 1.1rem; color: #1e293b;">Admin Reply</h5>
+        </div>
+        <div class="card-body" style="padding: 1.5rem;">
+            <p class="fw-medium mb-2" style="font-size: 0.9rem; color: #1e293b;">Replied On: {{ query.replied_at|date:"d M Y, h:i A" }}</p>
+            <div class="text-muted" style="font-size: 0.85rem; background-color: #f8fafc; padding: 1rem; border-radius: 6px; white-space: pre-wrap;">{{ query.admin_reply }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Reply Form Card -->
+    {% if query.status == 'pending' %}
+    <div class="card shadow-sm mb-4" style="border-radius: 10px; border: none;">
+        <div class="card-header" style="border-radius: 10px 10px 0 0; background-color: #f8fafc;">
+            <h5 class="mb-0 fw-medium" style="font-size: 1.1rem; color: #1e293b;">Send Reply</h5>
+        </div>
+        <div class="card-body" style="padding: 1.5rem;">
+            <form method="POST" action="{% url 'admin_query_reply' query.id %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="reply_message" class="form-label" style="font-size: 0.9rem; color: #1e293b;">Reply Message <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="reply_message" name="reply_message" rows="6" required style="font-size: 0.85rem; border-radius: 6px; border: 1px solid #e2e8f0;"></textarea>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="mark_resolved" name="mark_resolved">
+                    <label class="form-check-label" for="mark_resolved" style="font-size: 0.85rem; color: #1e293b;">
+                        Mark as Resolved
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary" style="font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 6px;">Send Reply</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
