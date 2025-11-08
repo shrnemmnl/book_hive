@@ -68,42 +68,51 @@
         <h5 class="mb-3">Submit a Query</h5>
         <div class="card">
           <div class="card-body">
-            <form>
+            {% if messages %}
+              {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+              {% endfor %}
+            {% endif %}
+            <form method="POST" action="{% url 'user_cust_care' %}">
+              {% csrf_token %}
               <div class="row mb-3">
                 <div class="col-md-6 mb-3">
-                  <label for="querySubject" class="form-label">Subject</label>
+                  <label for="querySubject" class="form-label">Subject <span class="text-danger">*</span></label>
                   <input
                     type="text"
                     class="form-control"
                     id="querySubject"
+                    name="subject"
                     placeholder="Enter subject"
+                    required
                   />
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label for="queryCategory" class="form-label">Category</label>
-                  <select class="form-select" id="queryCategory">
-                    <option selected>Select category</option>
-                    <option>Order Related</option>
-                    <option>Payment Related</option>
-                    <option>Product Related</option>
-                    <option>Shipping Related</option>
-                    <option>Returns & Refunds</option>
-                    <option>Other</option>
+                  <label for="queryCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                  <select class="form-select" id="queryCategory" name="category" required>
+                    <option value="">Select category</option>
+                    <option value="Order Related">Order Related</option>
+                    <option value="Payment Related">Payment Related</option>
+                    <option value="Product Related">Product Related</option>
+                    <option value="Shipping Related">Shipping Related</option>
+                    <option value="Returns & Refunds">Returns & Refunds</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
               <div class="mb-3">
-                <label for="queryMessage" class="form-label">Message</label>
+                <label for="queryMessage" class="form-label">Message <span class="text-danger">*</span></label>
                 <textarea
                   class="form-control"
                   id="queryMessage"
+                  name="message"
                   rows="4"
                   placeholder="Describe your issue in detail"
+                  required
                 ></textarea>
-              </div>
-              <div class="mb-3">
-                <label for="queryAttachment" class="form-label">Attachments (Optional)</label>
-                <input type="file" class="form-control" id="queryAttachment" />
               </div>
               <button type="submit" class="btn btn-primary w-100">Submit Query</button>
             </form>
@@ -113,5 +122,28 @@
     </div> <!-- end main content -->
   </div> <!-- end row -->
 </div> <!-- end container -->
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+{% if messages %}
+<script>
+  $(document).ready(function() {
+    {% for message in messages %}
+      {% if message.tags == 'success' %}
+        if (typeof toastr !== 'undefined') {
+          toastr.success('{{ message }}');
+        } else {
+          alert('{{ message }}');
+        }
+      {% elif message.tags == 'error' %}
+        if (typeof toastr !== 'undefined') {
+          toastr.error('{{ message }}');
+        } else {
+          alert('{{ message }}');
+        }
+      {% endif %}
+    {% endfor %}
+  });
+</script>
+{% endif %}
 
 {% include 'includes/footer.html' %}

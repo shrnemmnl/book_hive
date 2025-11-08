@@ -8,6 +8,7 @@ __pycache__/
 # Byte-compiled / optimized / DLL files
 *.pyo
 *.pyd
+*.pyc
 
 # ==========================
 # Virtual Environments

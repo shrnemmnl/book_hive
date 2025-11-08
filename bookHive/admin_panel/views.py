@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from users.models import CustomUser,Order,OrderItem,Review, Wallet, Transaction # Import your user model
+from users.models import CustomUser,Order,OrderItem,Review, Wallet, Transaction, CustomerSupport # Import your user model
 from .models import Genre, Product, Variant, ProductImage,Coupon,CouponUsage
 from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.cache import never_cache, cache_control
@@ -18,6 +18,8 @@ import base64
 import re
 from django.core.files.base import ContentFile
 from django.http import HttpResponse
+from django.core.mail import send_mail
+from django.conf import settings
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from reportlab.lib import colors
@@ -51,6 +53,7 @@ def admin_signin(request):
         password=request.POST.get('password', "").strip()
 
         isuser=authenticate(request, email=email, password=password)
+        
 
         if isuser is not None and isuser.is_superuser:
             login(request, isuser)
@@ -79,7 +82,10 @@ def admin_dashboard(request):
     orders = Order.objects.filter(
         status__in=['pending', 'shipped', 'delivered'],
         is_active=True
-    )
+    ).select_related('user')
+    
+    now = timezone.now()
+    filter_label = "All Time"
     
     if filter_type == 'today':
         start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -179,6 +185,9 @@ def admin_dashboard(request):
     }
     
     return render(request, 'admin/admin_dashboard.html', context)
+
+
+
     
 
 
@@ -625,7 +634,9 @@ def admin_logout(request):
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @login_required(login_url='admin_signin')  
 def customer_details(request):
-    users = CustomUser.objects.all().exclude(is_superuser = True).order_by('-date_joined')
+    users = CustomUser.objects.all().exclude(is_superuser = True).annotate(
+        query_count=Count('support_queries')
+    ).order_by('-query_count', '-date_joined')
 
      # Create Paginator object with 10 customers per page
     paginator = Paginator(users, 10)  
@@ -656,7 +667,9 @@ def user_search(request):
     
     
     search_query=request.POST.get('user_search', "").strip()
-    users = CustomUser.objects.filter(first_name__istartswith=search_query).exclude(is_superuser = True).order_by('-date_joined')
+    users = CustomUser.objects.filter(first_name__istartswith=search_query).exclude(is_superuser = True).annotate(
+        query_count=Count('support_queries')
+    ).order_by('-query_count', '-date_joined')
 
     # Create Paginator object with 10 customers per page
     paginator = Paginator(users, 10)  
@@ -782,90 +795,139 @@ def admin_order_details(request, order_id):
 
     order = get_object_or_404(Order, id=order_id)
     
-    logger.info(f"admin side status: {order.status} and order status : {"Paid" if order.is_paid else "Not Paid."}")
+    logger.info(f"admin side status: {order_id}")
 
     if request.method == 'POST':
         
+        item_id = request.POST.get('item_id')
         new_status = request.POST.get('status')
-        logger.info(f"admin side status: {new_status} and order status : {"Paid" if order.is_paid else "Not Paid."}")
+        
+        if not item_id:
+            messages.error(request, "Item ID is required.")
+            return redirect('admin_order_details', order_id=order.id)
+        
+        try:
+            order_item = OrderItem.objects.get(id=item_id, order=order)
+        except OrderItem.DoesNotExist:
+            messages.error(request, "Order item not found.")
+            return redirect('admin_order_details', order_id=order.id)
+        
+        logger.info(f"admin side updating item {item_id} status to: {new_status}")
         
         valid_statuses = ['pending', 'shipped', 'delivered', 'cancelled', 'request to cancel','return approved','request to return']
         
-        # for cod
-        if new_status == 'delivered':
-            order.is_paid = True
-            
-            # Create Transaction record for COD order when delivered
-            if order.payment_method == 'cod':
-                Transaction.objects.create(
-                    user=order.user,
-                    order=order,
-                    transaction_type='cod',
-                    amount=order.net_amount,
-                    description=f"COD payment completed for {order.order_id}",
-                    payment_method='cod',
-                    status='completed'
-                )
-
-
-        elif new_status not in valid_statuses:
+        if new_status not in valid_statuses:
             messages.error(request, "Invalid status selected.")
             return redirect('admin_order_details', order_id=order.id)
         
-        #If item cancelled stock needs to update. mainly in cash on delivery.    
-        elif new_status == 'cancelled' and not order.is_paid:
-
-            #Stock need to update
-            for item in order.order_items.all():
-                variant = item.product_variant  
-                variant.available_quantity = F('available_quantity') + item.quantity  # db math - more safe and concorency proof
-                variant.save(update_fields=['available_quantity'])  #save only field available_quantity
-            
-        # Check if the item is being cancelled and the order is paid
-        elif new_status in ['return approved','cancelled'] and order.is_paid:
-
-            user = order.user
-            print("hiiiiiiiiiiiiiiiiiii")
-
-            #Stock need to update
-            for item in order.order_items.all():
-                variant = item.product_variant  
-                variant.available_quantity = F('available_quantity') + item.quantity  # db math - more safe and concorency proof
-                variant.save(update_fields=['available_quantity'])  #save only field available_quantity
-                
-            
-            
-            #Wallet crediting
-            refund_amount = order.net_amount  # Changed from net_amount to total_amount
-            user_wallet, created = Wallet.objects.get_or_create(user=user)
-            user_wallet.wallet_amount += refund_amount
-            user_wallet.save()
-
-            # Create Transaction record for refund
-            transaction_type = 'refund'
-            if new_status == 'cancelled':
-                order.status = 'cancelled'
-            else:
-                order.status = 'return approved'
-            
-            Transaction.objects.create(
-                user=user,
-                order=order,
-                transaction_type=transaction_type,
-                amount=refund_amount,
-                description=f"Refund for {order.order_id}",
-                payment_method=order.payment_method
-            )
-    
+        # Handle status updates per item
+        old_status = order_item.status
+        refund_message_shown = False
+        
+        # If item is being delivered, mark order as paid (for COD)
+        if new_status == 'delivered' and not order.is_paid:
+            order.is_paid = True
             order.save()
         
-            messages.success(request, f"Refunded ₹{refund_amount:.2f} to user {user.email}'s wallet.")
-          
-            return redirect('admin_order_details', order_id=order.id)
-
-        order.status = new_status
-        order.save()
+        # Handle cancel/return request approvals with refunds
+        if old_status == 'request to return' and new_status == 'return approved':
+            # If returning, update stock and refund if paid
+            variant = order_item.product_variant
+            variant.available_quantity = F('available_quantity') + order_item.quantity
+            variant.save(update_fields=['available_quantity'])
+            
+            if order.is_paid:
+                user = order.user
+                item_refund_amount = order_item.total_amount()
+                user_wallet, created = Wallet.objects.get_or_create(user=user)
+                user_wallet.wallet_amount += item_refund_amount
+                user_wallet.save()
+                try:
+                    from users.models import WalletTransaction
+                    WalletTransaction.objects.create(
+                        user=user,
+                        amount=item_refund_amount,
+                        transaction_type='refund',
+                        description=f'Refund for returned item {order_item.id} from order {order.order_id}'
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to log wallet refund: {e}")
+                messages.success(request, f"Refunded ₹{item_refund_amount:.2f} to user {user.email}'s wallet for item {order_item.product_variant.product.book_title}.")
+                refund_message_shown = True
         
+        # If item is being cancelled/returned and order is paid, handle refund (for direct cancellations, not from request)
+        elif new_status in ['return approved', 'cancelled'] and order.is_paid and old_status not in ['return approved', 'cancelled', 'request to return', 'request to cancel']:
+            user = order.user
+            
+            # Calculate refund amount for this specific item
+            item_refund_amount = order_item.total_amount()
+            
+            # Update stock
+            variant = order_item.product_variant
+            variant.available_quantity = F('available_quantity') + order_item.quantity
+            variant.save(update_fields=['available_quantity'])
+            
+            # Wallet crediting
+            user_wallet, created = Wallet.objects.get_or_create(user=user)
+            user_wallet.wallet_amount += item_refund_amount
+            user_wallet.save()
+            
+            try:
+                from users.models import WalletTransaction
+                WalletTransaction.objects.create(
+                    user=user,
+                    amount=item_refund_amount,
+                    transaction_type='refund',
+                    description=f'Refund for order item {order_item.id} from order {order.order_id}'
+                )
+            except Exception as e:
+                logger.error(f"Failed to log wallet refund: {e}")
+            
+            messages.success(request, f"Refunded ₹{item_refund_amount:.2f} to user {user.email}'s wallet for item {order_item.product_variant.product.book_title}.")
+            refund_message_shown = True
+        
+        # Handle cancel request approval
+        if old_status == 'request to cancel' and new_status == 'cancelled':
+            # Update stock
+            variant = order_item.product_variant
+            variant.available_quantity = F('available_quantity') + order_item.quantity
+            variant.save(update_fields=['available_quantity'])
+            
+            # If order is paid, refund to wallet
+            if order.is_paid and not refund_message_shown:
+                user = order.user
+                item_refund_amount = order_item.total_amount()
+                user_wallet, created = Wallet.objects.get_or_create(user=user)
+                user_wallet.wallet_amount += item_refund_amount
+                user_wallet.save()
+                try:
+                    from users.models import WalletTransaction
+                    WalletTransaction.objects.create(
+                        user=user,
+                        amount=item_refund_amount,
+                        transaction_type='refund',
+                        description=f'Refund for cancelled item {order_item.id} from order {order.order_id}'
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to log wallet refund: {e}")
+                messages.success(request, f"Refunded ₹{item_refund_amount:.2f} to user {user.email}'s wallet for item {order_item.product_variant.product.book_title}.")
+                refund_message_shown = True
+        
+        # If item is being cancelled directly (not from request) and order is not paid (COD), just update stock
+        elif new_status == 'cancelled' and not order.is_paid and old_status != 'cancelled' and old_status != 'request to cancel':
+            variant = order_item.product_variant
+            variant.available_quantity = F('available_quantity') + order_item.quantity
+            variant.save(update_fields=['available_quantity'])
+        
+        # Update the item status
+        order_item.status = new_status
+        order_item.save()
+        
+        # Only show generic status update message if we haven't shown a refund message
+        if not refund_message_shown:
+            messages.success(request, f"Order item status updated to {new_status}.")
+        
+        return redirect('admin_order_details', order_id=order.id)
 
     context = {
         'reload': True,
@@ -1568,7 +1630,66 @@ def download_sales_report_excel(request):
     
     wb.save(response)
     return response
+@login_required
+def admin_customer_queries(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+    queries = CustomerSupport.objects.filter(user=user).order_by('-created_at')
+    
+    context = {
+        'user': user,
+        'queries': queries,
+    }
+    return render(request, 'admin/customer_queries.html', context)
 
+@login_required
+def admin_query_reply(request, query_id):
+    query = get_object_or_404(CustomerSupport, id=query_id)
+    
+    if request.method == 'POST':
+        reply_message = request.POST.get('reply_message')
+        mark_resolved = request.POST.get('mark_resolved') == 'on'
+        
+        if not reply_message:
+            messages.error(request, 'Please enter a reply message.')
+            return redirect('admin_query_details', query_id=query_id)
+        
+        try:
+            # Send email to user
+            subject = f'Re: {query.subject}'
+            email_message = f"""
+Dear {query.user.first_name} {query.user.last_name},
+
+Thank you for contacting us. Here is our response to your query:
+
+Your Query:
+{query.message}
+
+Our Reply:
+{reply_message}
+
+If you have any further questions, please don't hesitate to contact us.
+
+Best regards,
+BookHive Support Team
+"""
+            from_email = settings.DEFAULT_FROM_EMAIL
+            send_mail(subject, email_message, from_email, [query.user.email])
+            
+            # Update query
+            query.admin_reply = reply_message
+            query.replied_at = timezone.now()
+            if mark_resolved:
+                query.status = 'resolved'
+            query.save()
+            
+            messages.success(request, f'Reply sent successfully to {query.user.email}')
+            return redirect('admin_query_details', query_id=query_id)
+            
+        except Exception as e:
+            messages.error(request, f'Error sending reply: {str(e)}')
+            return redirect('admin_query_details', query_id=query_id)
+    
+    return redirect('admin_query_details', query_id=query_id)
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)

@@ -66,6 +66,7 @@ class CustomUser(AbstractUser):
         if not self.referral_code:
             self.referral_code = self.generate_referral_code()
         super().save(*args, **kwargs)
+        
     
 class Address(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='addresses')
@@ -186,6 +187,7 @@ class OrderItem(models.Model):
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     status = models.CharField(max_length=50, default='pending')
+    cancel_reason = models.CharField(max_length=500, blank=True, null=True)
     image_url = models.URLField(max_length=500, null=True, blank=True)
     shipping_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
@@ -195,7 +197,20 @@ class OrderItem(models.Model):
     def total_amount(self):
         # discount price is neither unit price or after discounted price
         return self.discount_price*self.quantity
-        
+    
+    def is_refunded(self):
+        """Check if this order item has been refunded by checking wallet transactions"""
+        try:
+            # Use apps.get_model to avoid forward reference issues
+            from django.apps import apps
+            WalletTransaction = apps.get_model('users', 'WalletTransaction')
+            return WalletTransaction.objects.filter(
+                user=self.order.user,
+                transaction_type='refund',
+                description__icontains=f'item {self.id}'
+            ).exists()
+        except:
+            return False
         
     
 
@@ -220,58 +235,55 @@ class Wallet(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-
-class Transaction(models.Model):
-    TRANSACTION_TYPE_CHOICES = [
-        ('razorpay', 'Razorpay'),
-        ('cod', 'COD'),
-        ('refund', 'Refund'),
-        ('wallet_addition', 'Wallet Addition'),
-    ]
     
-    transaction_id = models.CharField(max_length=50, unique=True, blank=False, editable=False)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='transactions')
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
-    transaction_type = models.CharField(max_length=50, choices=TRANSACTION_TYPE_CHOICES)
+
+class WalletTransaction(models.Model):
+    TRANSACTION_TYPES = (
+        ("credit", "Credit"),
+        ("debit", "Debit"),
+        ("refund", "Refund"),
+    )
+
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="wallet_transactions")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    transaction_date = models.DateTimeField(auto_now_add=True)
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
     description = models.CharField(max_length=255, blank=True, null=True)
-    status = models.CharField(max_length=50, default='completed')
-    payment_method = models.CharField(max_length=50, blank=True, null=True)
-    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.transaction_type} ₹{self.amount} - {self.user.email}"
+
+
+class CustomerSupport(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('resolved', 'Resolved'),
+    )
+    
+    CATEGORY_CHOICES = (
+        ('Order Related', 'Order Related'),
+        ('Payment Related', 'Payment Related'),
+        ('Product Related', 'Product Related'),
+        ('Shipping Related', 'Shipping Related'),
+        ('Returns & Refunds', 'Returns & Refunds'),
+        ('Other', 'Other'),
+    )
+    
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='support_queries')
+    subject = models.CharField(max_length=200)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    message = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_reply = models.TextField(blank=True, null=True)
+    replied_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['-transaction_date']
-        indexes = [
-            models.Index(fields=['-transaction_date']),
-            models.Index(fields=['transaction_type']),
-            models.Index(fields=['user', '-transaction_date']),
-        ]
+        ordering = ['-created_at']
     
     def __str__(self):
-        return f"Transaction #{self.transaction_id} - {self.get_transaction_type_display()}"
-    
-    def generate_transaction_id(self):
-        """Generate a unique transaction_id in the format TXN+timestamp."""
-        prefix = "TXN"
-        timestamp = timezone.now()
-        transaction_id = f"{prefix}{timestamp.strftime('%Y%m%d%H%M%S')}{str(timestamp.microsecond)[:3]}"
-        
-        counter = 0
-        while Transaction.objects.filter(transaction_id=transaction_id).exists():
-            counter += 1
-            suffix = str(random.randint(0, 9))
-            transaction_id = f"{prefix}{timestamp.strftime('%Y%m%d%H%M%S')}{str(timestamp.microsecond)[:3]}{suffix}"
-            if counter > 10:
-                raise ValueError("Unable to generate a unique transaction_id after multiple attempts.")
-        return transaction_id
-    
-    def save(self, *args, **kwargs):
-        """Override save to set transaction_id on creation."""
-        if not self.transaction_id:
-            self.transaction_id = self.generate_transaction_id()
-        super().save(*args, **kwargs)
-
+        return f"Query from {self.user.email} - {self.subject}"

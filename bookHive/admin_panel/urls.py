@@ -39,7 +39,12 @@ urlpatterns = [
     path('sales-report', views.sales_report, name='sales_report'),
     path('sales-report/download-pdf', views.download_sales_report_pdf, name='download_sales_report_pdf'),
     path('sales-report/download-excel', views.download_sales_report_excel, name='download_sales_report_excel'),
-    
+
+    # Customer Support Queries
+    path('customer-queries/<int:user_id>/', views.admin_customer_queries, name='admin_customer_queries'),
+    path('query-details/<int:query_id>/', views.admin_query_details, name='admin_query_details'),
+    path('query-reply/<int:query_id>/', views.admin_query_reply, name='admin_query_reply'),
+
     # Transactions
     path('transactions', views.admin_transactions, name='admin_transactions'),
     path('transactions/<str:order_id>/', views.transaction_detail, name='admin_transaction_detail'),

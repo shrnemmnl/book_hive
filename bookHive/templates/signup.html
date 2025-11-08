@@ -108,6 +108,9 @@
                         <input type="password" class="form-control {% if errors.password %}is-invalid{% endif %}" 
                                id="password" name="password" required
                                style="border-radius: 20px;">
+                               {% if errors.new_password %}
+                            <div class="text-danger small">{{ errors.new_password }}</div>
+                        {% endif %}
                     </div>
                     <div class="mb-4">
                         <label for="confirmPassword" class="form-label">Re-enter Password</label>

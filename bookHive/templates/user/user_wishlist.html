@@ -38,6 +38,11 @@
                   class="btn btn-sm btn-primary"
                   >View Product</a
                 >
+                <button
+                  class="btn btn-sm btn-success ms-2 add-to-cart-btn"
+                  data-product-id="{{ item.variant.product.id }}"
+                  data-variant-id="{{ item.variant.id }}"
+                >Add to Cart</button>
               </div>
             </div>
             <div class="col-md-3 text-end p-3">
@@ -47,12 +52,12 @@
             </div>
           </div>
         </div>
-      </div>
       {% empty %}
       <div class="card p-4 text-center border-0 shadow-sm">
         <p class="text-muted mb-0">No items in your wishlist.</p>
       </div>
       {% endfor %}
+      </div>
     </div>
   </div>
 </div>
@@ -60,6 +65,15 @@
 <!-- delete cart-items -->
 <script>
   $(document).ready(function () {
+    function refreshEmptyState() {
+      if ($("#wishlist-container .card").length === 0) {
+        $("#wishlist-container").html(`
+          <div class="card p-4 text-center border-0 shadow-sm">
+            <p class="text-muted mb-0">No items in your wishlist.</p>
+          </div>
+        `);
+      }
+    }
     $(".bi-trash").click(function () {
       const itemId = $(this).data("id");
 
@@ -78,16 +92,44 @@
               .remove();
 
             // 👇 if no more cards left, show empty message
-            if ($("#wishlist-container .card").length === 0) {
-              $("#wishlist-container").html(`
-                <div class="card p-4 text-center border-0 shadow-sm">
-                  <p class="text-muted mb-0">No items in your wishlist.</p>
-                </div>
-              `);
-            }
+            refreshEmptyState();
           } else {
             // error response from backend
             toastr.error("Error: " + response.error);
+          }
+        },
+        error: function () {
+          toastr.error("Something went wrong!");
+        },
+      });
+    });
+
+    $(".add-to-cart-btn").click(function () {
+      const $btn = $(this);
+      const productId = $btn.data("product-id");
+      const variantId = $btn.data("variant-id");
+
+      $.ajax({
+        url: `/add_to_cart/${productId}/`,
+        type: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+          variant_id: variantId,
+          quantity: 1,
+          buy_now: false,
+        }),
+        headers: { "X-CSRFToken": "{{ csrf_token }}" },
+        success: function (response) {
+          if (response.success) {
+            // Show success message
+            toastr.success("Added to cart");
+            
+            // Redirect to cart page after a short delay
+            setTimeout(function() {
+              window.location.href = "{% url 'user_cart' %}";
+            }, 500);
+          } else {
+            toastr.error(response.message || "Could not add to cart");
           }
         },
         error: function () {

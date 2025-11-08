@@ -137,10 +137,15 @@
                   </label>
                 </div>
 
-                <div class="form-check mb-3 d-flex align-items-center">
-                  <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentCOD" value="cod">
-                  <label class="form-check-label fs-5" for="paymentCOD">
+                <div class="form-check mb-3 d-flex align-items-start">
+                  <div class="flex-shrink-0">
+                    <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentCOD" value="cod">
+                  </div>
+                  <label class="form-check-label fs-5" for="paymentCOD" style="flex: 1;">
                     <i class="bi bi-cash-coin me-2"></i> Cash on Delivery
+                    <br><small class="text-muted mt-1 d-block" id="codHelperText">
+                      Available for orders under ₹1000
+                    </small>
                   </label>
                 </div>
               </div>
@@ -164,7 +169,10 @@
 
           <div class="cart-items mb-4">
             {% for item in cart_items %}
-              <div class="card mb-3 border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(5px);">
+              <div class="card mb-3 border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(5px);"
+                   data-available="{{ item.product_variant.available_quantity }}"
+                   data-qty="{{ item.quantity }}"
+                   data-product-url="{% url 'product_details' item.product_variant.product.id %}">
                 <div class="card-body p-3">
                   <div class="row align-items-center">
                     <div class="col-3">
@@ -189,6 +197,7 @@
                           {% if item.product_variant.format %}
                             <small class="text-muted ms-1">({{ item.product_variant.format }})</small>
                           {% endif %}
+                          
                         </div>
                         <div class="price-info text-end">
                           {% if item.product_variant.product.has_active_offer %}
@@ -302,6 +311,13 @@
                 </small>
               </div>
             {% endif %}
+          </div>
+
+          <div class="alert alert-warning mt-2 mb-0 d-none" id="codLimitWarning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <small class="mb-0">
+              <strong>Note:</strong> COD is only available for orders under ₹1000. Please use Razorpay or Wallet for orders above ₹1000.
+            </small>
           </div>
 
           <button type="submit" class="btn btn-primary w-100 mt-3 text-decoration-none shadow-lg" id="checkout-button">
@@ -538,6 +554,17 @@
     border-color: #2563eb;
   }
 
+  .form-check-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .form-check-input:disabled + label,
+  .form-check-label.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   /* Responsive Adjustments */
   @media (max-width: 991px) {
     .order-summary {
@@ -657,6 +684,29 @@
 
 
   document.addEventListener('DOMContentLoaded', function() {
+    // Validate stock on page load (checkout)
+    (function validateStockOnPageLoad(){
+      const cartCards = document.querySelectorAll('.cart-items .card[data-available]');
+      let insufficient = null;
+      for (const card of cartCards) {
+        const available = parseInt(card.getAttribute('data-available') || '0');
+        const qty = parseInt(card.getAttribute('data-qty') || '0');
+        const productUrl = card.getAttribute('data-product-url');
+        if (available === 0) {
+          showToast('A book in your order is out of stock. Redirecting to product page.', 'error');
+          if (productUrl) { setTimeout(() => window.location.href = productUrl, 800); }
+          return;
+        }
+        if (available < qty && !insufficient) {
+          insufficient = { available };
+        }
+      }
+      if (insufficient) {
+        showToast(`One or more items exceed available stock (Available: ${insufficient.available}). Redirecting to cart.`, 'error');
+        setTimeout(() => { window.location.href = '{% url "user_cart" %}'; }, 800);
+      }
+    })();
+
     // Initialize tooltips
     if (typeof bootstrap !== 'undefined') {
       const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
@@ -943,10 +993,64 @@
         e.stopPropagation();
       });
     });
+    
+    // Payment method change listeners - Show COD limit warning only when COD is selected
+    const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
+    const codLimitWarning = document.getElementById('codLimitWarning');
+    const codHelperText = document.getElementById('codHelperText');
+    const totalAmount = parseFloat(document.querySelector('input[name="total_amount"]').value);
+    const paymentCOD = document.getElementById('paymentCOD');
+    
+    paymentMethods.forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.value === 'cod' && totalAmount >= 1000) {
+          // Show warning when COD is selected for orders above ₹1000
+          codLimitWarning.classList.remove('d-none');
+          codHelperText.innerHTML = `<i class="bi bi-info-circle me-1"></i>COD only available for orders under ₹1000. Current total: ₹${totalAmount.toFixed(2)}`;
+          codHelperText.className = 'text-danger mt-1 d-block';
+          
+          // Uncheck COD and disable it
+          this.checked = false;
+          this.disabled = true;
+          
+          // Show toast message
+          showToast('Cash on Delivery is only available for orders under ₹1000. Please choose Razorpay or Wallet.', 'error');
+        } else if (this.value !== 'cod') {
+          // Hide warning when other payment methods are selected
+          codLimitWarning.classList.add('d-none');
+          codHelperText.innerHTML = 'Available for orders under ₹1000';
+          codHelperText.className = 'text-muted mt-1 d-block';
+          
+          // Re-enable COD if it was disabled
+          if (paymentCOD) {
+            paymentCOD.disabled = false;
+          }
+        }
+      });
+    });
+    
+    
     // Handle form submission
     checkoutForm.addEventListener('submit', async function(e) {
       e.preventDefault();
       console.log('Checkout form submitted');
+      // Stock validation before proceeding
+      const cartCards = document.querySelectorAll('.cart-items .card[data-available]');
+      for (const card of cartCards) {
+        const available = parseInt(card.getAttribute('data-available') || '0');
+        const qty = parseInt(card.getAttribute('data-qty') || '0');
+        const productUrl = card.getAttribute('data-product-url');
+        if (available === 0) {
+          showToast('This book is out of stock. Redirecting to product page.', 'error');
+          if (productUrl) { setTimeout(() => window.location.href = productUrl, 800); }
+          return;
+        }
+        if (available < qty) {
+          showToast(`Quantity in order exceeds available stock (Available: ${available}). Redirecting to cart.`, 'error');
+          setTimeout(() => { window.location.href = '{% url "user_cart" %}'; }, 800);
+          return;
+        }
+      }
       const formData = new FormData(checkoutForm);
       const paymentMethod = formData.get('payment_method');
       const addressId = formData.get('shippingAddress');
@@ -961,6 +1065,13 @@
         
         return;
       }
+      
+      // Check COD limit validation
+      if (paymentMethod === 'cod' && parseFloat(totalAmount) >= 1000) {
+        showToast('Cash on Delivery is only available for orders under ₹1000. Please choose another payment method.', 'error');
+        return;
+      }
+      
       if (paymentMethod === 'razorpay') {
         try {
           // Create Razorpay order

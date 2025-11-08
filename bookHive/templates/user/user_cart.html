@@ -18,7 +18,10 @@
           <!-- Cart Items Column -->
           <div class="{% if cart_item %}col-md-8{% else %}col-12{% endif %} cart-items">
             {% for item in cart_item %}
-            <div class="card mb-2 cart-item-card">
+            <div class="card mb-2 cart-item-card" 
+                 data-available="{{ item.product_variant.available_quantity }}"
+                 data-qty="{{ item.quantity }}"
+                 data-product-url="{% url 'product_details' item.product_variant.product.id %}">
               <div class="card-body p-3 shadow-lg">
                 <div class="row align-items-center">
                   <div class="col-md-2 col-3">
@@ -33,6 +36,9 @@
                   <div class="col-md-4 col-3">
                     <h5 class="card-title mb-1 cart-item-title">{{ item.product_variant.product.book_title }}</h5>
                     <p class="text-muted mb-0 cart-item-author">by {{ item.product_variant.product.author }}</p>
+                    {% if item.product_variant.available_quantity < item.quantity %}
+                    <small class="text-muted d-block">Available: {{ item.product_variant.available_quantity }}</small>
+                    {% endif %}
                     {% if item.product_variant.product.has_active_offer %}
                       <small class="badge bg-warning text-dark">{{ item.product_variant.product.get_best_discount_percentage }}% OFF</small>
                     {% endif %}
@@ -146,6 +152,27 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $(document).ready(function () {
+    // Stock validation on cart load
+    const cards = document.querySelectorAll('.cart-item-card');
+    for (const card of cards) {
+      const available = parseInt(card.getAttribute('data-available') || '0');
+      const qty = parseInt(card.getAttribute('data-qty') || '0');
+      const productUrl = card.getAttribute('data-product-url');
+      if (available === 0) {
+        if (typeof toastr !== 'undefined') {
+          toastr.error('This book is currently out of stock. Redirecting to product page.');
+        }
+        if (productUrl) { window.location.href = productUrl; }
+        return; // stop further checks after redirect
+      }
+      if (available < qty) {
+        if (typeof toastr !== 'undefined') {
+          toastr.error('Quantity exceeds available stock. Available: ' + available);
+        }
+        // Stay on cart page so user can adjust
+      }
+    }
+
     $(".btn-increase, .btn-decrease").click(function () {
       const itemId = $(this).data("id");
       const action = $(this).hasClass("btn-increase") ? "increase" : "decrease";

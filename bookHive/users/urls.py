@@ -24,7 +24,7 @@ urlpatterns = [
     #user order
     path('user_order',views.user_order, name='user_order'),
     path('order/search',views.order_search, name='order_search'),
-    path('cancel_order/<int:order_id>/',views.cancel_order, name='cancel_order'),
+    path('cancel_order/<int:item_id>/',views.cancel_order, name='cancel_order'),
     #user wishlist
     path('user-wishlist',views.user_wishlist, name='user_wishlist'),
     path('remove-from-wishlist',views.remove_from_wishlist, name='remove_from_wishlist'),

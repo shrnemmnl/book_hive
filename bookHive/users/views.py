@@ -1,4 +1,3 @@
-
 from datetime import timedelta
 import datetime as dt
 import random
@@ -8,7 +7,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.conf import settings
 from django.urls import reverse
 # Import your user model
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction, WalletTransaction, CustomerSupport
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache, cache_control
 from django.db.models import Min
@@ -45,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 
-
+@csrf_exempt
 def signup(request):
 
     if request.user.is_authenticated:
@@ -82,6 +81,16 @@ def signup(request):
         if not re.match(mobile_pattern, mobile):
             errors['mobile'] = "Mobile number must be 10 digits."
             has_error = True
+
+        # At least one uppercase, one lowercase, one digit, one special char, and 8+ length
+        strong_password_regex = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,}$'
+
+        if not re.match(strong_password_regex, password):
+                errors['new_password'] = (
+                    "Password must be at least 8 characters long, contain an uppercase letter, "
+                    "a lowercase letter, a number, and a special character."
+                )
+                has_error=True
 
         if password != confirmPassword:
             errors['password'] = "Passwords do not match."
@@ -277,19 +286,34 @@ def product_details(request, id):
         genre__is_active=True
     ).exclude(id=book.id)[:4]
 
+    # Check if user has purchased any variant of this product
+    can_review = False
+    if request.user.is_authenticated:
+        # Check if user has purchased and received any variant of this product
+        purchased_orders = OrderItem.objects.filter(
+            order__user=request.user,
+            order__status='delivered',
+            order__is_paid=True,
+            product_variant__product=book
+        ).exists()
+        can_review = purchased_orders
+
     if request.method == "POST" and request.user.is_authenticated:
-        # user_id = request.user.id
-        rating = request.POST.get('overallRating', '').strip()
-        comments = request.POST.get('comment', '').strip()
+        # Verify user has purchased before allowing review
+        if not can_review:
+            messages.error(request, "You haven't purchased this product yet. Only customers who have purchased can write reviews.")
+        else:
+            rating = request.POST.get('overallRating', '').strip()
+            comments = request.POST.get('comment', '').strip()
 
-        review = Review.objects.create(
-            user=request.user,
-            product=book,
-            rating=int(rating),
-            comments=comments,
-        )
+            review = Review.objects.create(
+                user=request.user,
+                product=book,
+                rating=int(rating),
+                comments=comments,
+            )
 
-        messages.success(request, "Your Review is successfully submitted.")
+            messages.success(request, "Your Review is successfully submitted.")
 
     variants = Variant.objects.filter(product=book, is_active=True).prefetch_related('productimage_set')
     default_variant = variants.first()
@@ -318,6 +342,7 @@ def product_details(request, id):
         'average_rating_int': int(round(average_rating)) if average_rating is not None else 0,
         'is_sold_out': is_sold_out,
         'related_books': related_books,
+        'can_review': can_review,
 
     }
 
@@ -843,7 +868,7 @@ def order_search(request):
 
 
 @login_required(login_url='login')
-def cancel_order(request, order_id):
+def cancel_order(request, item_id):
 
     if request.method == 'POST':
 
@@ -851,28 +876,30 @@ def cancel_order(request, order_id):
         
         try:
 
-            order = Order.objects.get(id=order_id)
-            logger.info(f"oder status: {order.status}")
+            order_item = OrderItem.objects.get(id=item_id, order__user=request.user)
+            logger.info(f"order item status: {order_item.status}")
 
-            if order.status == 'delivered':
-                order.status = 'request to return'
+            if order_item.status == 'delivered':
+                order_item.status = 'request to return'
             else:
-                order.status = 'request to cancel'
+                order_item.status = 'request to cancel'
 
-            order.is_active = False
-            order.cancel_reason = reason
-            order.save()
+            order_item.cancel_reason = reason
+            order_item.save()
 
             messages.info(
-                request, f"Your order id - {order.order_id} is requested to cancel.")
+                request, f"Your order item from order {order_item.order.order_id} is requested to {'return' if order_item.status == 'request to return' else 'cancel'}.")
             return redirect('user_order')
 
+        except OrderItem.DoesNotExist:
+            messages.error(request, "Order item not found.")
         except Exception as e:
-
             messages.error(request, f"Error - {e}")
 
-    return render(request, 'user/user_order.html',)
+    return redirect('user_order')
 
+
+ 
 
 @login_required(login_url='login')
 def user_wishlist(request):
@@ -904,6 +931,7 @@ def user_wallet(request):
 
     user_wallet, created = Wallet.objects.get_or_create(user=request.user)
     wallet_amount = user_wallet.wallet_amount
+    transactions = WalletTransaction.objects.filter(user=request.user)
 
     # Get all wallet transactions for this user
     wallet_transactions = Transaction.objects.filter(
@@ -962,6 +990,17 @@ def wallet_payment(request):
             with transaction.atomic():
                 user_wallet.wallet_amount-=int(total_amount)
                 user_wallet.save()
+
+                # Record wallet debit transaction
+                try:
+                    WalletTransaction.objects.create(
+                        user=request.user,
+                        amount=total_amount,
+                        transaction_type='debit',
+                        description='Order payment via wallet'
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to log wallet debit: {e}")
                 
  
                 cart = Cart.objects.filter(user=request.user).latest("created_at")
@@ -1089,7 +1128,28 @@ def wallet_payment(request):
 
 @login_required(login_url='login')
 def user_cust_care(request):
-
+    if request.method == 'POST':
+        subject = request.POST.get('subject')
+        category = request.POST.get('category')
+        message = request.POST.get('message')
+        
+        if not subject or not category or not message:
+            messages.error(request, 'Please fill in all required fields.')
+            return render(request, 'user/user_cust_care.html')
+        
+        try:
+            CustomerSupport.objects.create(
+                user=request.user,
+                subject=subject,
+                category=category,
+                message=message
+            )
+            messages.success(request, 'Thank you! Your query has been submitted successfully. You will receive a reply in your email within 24 hours.')
+            return redirect('user_cust_care')
+        except Exception as e:
+            logger.error(f"Error creating support query: {e}")
+            messages.error(request, 'An error occurred while submitting your query. Please try again.')
+    
     return render(request, 'user/user_cust_care.html')
 
 
@@ -1303,6 +1363,13 @@ def cod_payment(request):
         coupon_discount = float(request.session.get('coupon_discount', 0))
         net_amount = subtotal - coupon_discount
         
+        # COD limit validation - orders above ₹1000 should not be allowed for COD
+        COD_LIMIT = 1000
+        if net_amount >= COD_LIMIT:
+            return JsonResponse({
+                "error": f"Cash on Delivery is only available for orders under ₹{COD_LIMIT}. Your order total is ₹{net_amount:.2f}. Please use Razorpay or Wallet for orders above ₹{COD_LIMIT}."
+            }, status=400)
+        
         try:
             with transaction.atomic():
                 for item in cart_items:
@@ -1483,6 +1550,15 @@ def add_to_cart(request, id):
             cart_item.quantity += quantity
             cart_item.save()
 
+            # Return response immediately after successful update
+            if is_buy_now:
+                return JsonResponse({
+                    'success': True,
+                    'redirect_url': reverse('checkoutpage')
+                })
+            else:
+                return JsonResponse({'success': True})
+
         except CartItem.DoesNotExist:
             if quantity > 5:
                 return JsonResponse({
@@ -1506,11 +1582,11 @@ def add_to_cart(request, id):
             response = {"success": True}
 
             if is_buy_now:
-            # Redirect user to the cart or checkout page
-                response["redirect_url"] = reverse('user_cart')
+                # Redirect user to checkout for Buy Now
+                response["redirect_url"] = reverse('checkoutpage')
             return JsonResponse(response)
 
-        return JsonResponse({'success': True, 'redirect_url': '/user/cart/'})
+        return JsonResponse({'success': True, 'redirect_url': reverse('user_cart')})
 
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'message': 'Invalid JSON'})
@@ -1751,7 +1827,7 @@ def fg_verification(request):
             return redirect('otp_page_fg')
         else:
             messages.error(
-                request, "Email not found or an error occurred. Please check the email you entered. If you haven’t signed up yet, please register first.")
+                request, "Email not found or an error occurred. Please check the email you entered. If you haven't signed up yet, please register first.")
             redirect('fg_verification')
 
     return render(request, 'login/fg_verification.html')
@@ -1805,7 +1881,7 @@ def otp_page_fg(request):
 def password_change(request):
     errors = {}
 
-    # 🚫 If password was changed, don't show this page again
+    # If password was changed, don't show this page again
     if request.session.get('password_changed'):
 
         del request.session['password_changed']
