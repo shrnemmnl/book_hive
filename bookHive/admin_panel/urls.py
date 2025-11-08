@@ -44,6 +44,7 @@ urlpatterns = [
     path('transactions', views.admin_transactions, name='admin_transactions'),
     path('transactions/<str:order_id>/', views.transaction_detail, name='admin_transaction_detail'),
     
+
     # Wallet Management
     path('wallet-management', views.wallet_management, name='wallet_management'),
     path('wallet-management/user/<int:user_id>/', views.wallet_user_details, name='wallet_user_details'),
