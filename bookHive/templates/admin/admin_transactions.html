@@ -77,9 +77,13 @@
                                     <span class="badge bg-danger text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">
                                         <i class="bi bi-arrow-counterclockwise"></i> {{ t.get_transaction_type_display }}
                                     </span>
-                                {% elif t.get_transaction_type_display == 'Wallet Addition' %}
+                                {% elif t.get_transaction_type_display == 'Wallet Addition' or t.transaction_type == 'wallet_addition' %}
                                     <span class="badge bg-info text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">
                                         <i class="bi bi-wallet2"></i> Wallet Payment
+                                    </span>
+                                {% elif t.transaction_type == 'wallet_debit' %}
+                                    <span class="badge bg-info text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">
+                                        <i class="bi bi-wallet2"></i> Wallet Debit
                                     </span>
                                 {% else %}
                                     <span class="badge bg-secondary text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">

@@ -130,13 +130,17 @@
                   </label>
                 </div>
 
-                <div class="form-check mb-3 d-flex align-items-center">
-                  <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentWallet" value="wallet">
-                  <label class="form-check-label fs-5" for="paymentWallet">
+                <div class="form-check mb-3 d-flex align-items-start">
+                  <div class="flex-shrink-0">
+                    <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentWallet" value="wallet">
+                  </div>
+                  <label class="form-check-label fs-5" for="paymentWallet" style="flex: 1;">
                     <i class="bi bi-wallet2 me-2"></i> Wallet
+                    <br><small class="text-muted mt-1 d-block" id="walletHelperText">
+                      Balance: ₹{{ wallet_balance|floatformat:2 }}
+                    </small>
                   </label>
                 </div>
-
                 <div class="form-check mb-3 d-flex align-items-start">
                   <div class="flex-shrink-0">
                     <input class="form-check-input me-2" type="radio" name="payment_method" id="paymentCOD" value="cod">
@@ -317,6 +321,13 @@
             <i class="bi bi-exclamation-triangle-fill me-2"></i>
             <small class="mb-0">
               <strong>Note:</strong> COD is only available for orders under ₹1000. Please use Razorpay or Wallet for orders above ₹1000.
+            </small>
+          </div>
+
+          <div class="alert alert-warning mt-2 mb-0 d-none" id="walletInsufficientWarning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <small class="mb-0">
+              <strong>Insufficient wallet balance.</strong> Your wallet balance (₹<span id="walletBalanceDisplay">{{ wallet_balance|floatformat:2 }}</span>) is less than the order total (₹<span id="orderTotalDisplay">{{ total|floatformat:2 }}</span>). Please use Razorpay or COD.
             </small>
           </div>
 
@@ -838,6 +849,7 @@
           // Close modal
           const modal = bootstrap.Modal.getInstance(couponsModal);
           modal.hide();
+          // Reload page to update totals and re-check wallet balance
           setTimeout(() => window.location.reload(), 1000);
         } else {
           showToast(data.error || 'Failed to apply coupon', 'error');
@@ -870,6 +882,7 @@
           
           if (data.success) {
             showToast('Coupon applied successfully!', 'success');
+            // Reload page to update totals and re-check wallet balance
             setTimeout(() => window.location.reload(), 1000);
           } else {
             showToast(data.error || 'Invalid coupon code', 'error');
@@ -896,6 +909,7 @@
           
           if (data.success) {
             showToast('Coupon removed', 'success');
+            // Reload page to update totals and re-check wallet balance
             setTimeout(() => window.location.reload(), 1000);
           } else {
             showToast('Failed to remove coupon', 'error');
@@ -994,15 +1008,68 @@
       });
     });
     
-    // Payment method change listeners - Show COD limit warning only when COD is selected
+    // Payment method change listeners - Show COD limit warning and Wallet balance check
     const paymentMethods = document.querySelectorAll('input[name="payment_method"]');
     const codLimitWarning = document.getElementById('codLimitWarning');
     const codHelperText = document.getElementById('codHelperText');
+    const walletInsufficientWarning = document.getElementById('walletInsufficientWarning');
+    const walletHelperText = document.getElementById('walletHelperText');
+    const walletBalanceDisplay = document.getElementById('walletBalanceDisplay');
     const totalAmount = parseFloat(document.querySelector('input[name="total_amount"]').value);
     const paymentCOD = document.getElementById('paymentCOD');
+    const paymentWallet = document.getElementById('paymentWallet');
+    const walletBalance = parseFloat({{ wallet_balance|default:0 }});
+    const orderTotalDisplay = document.getElementById('orderTotalDisplay');
+    
+    // Check wallet balance on page load and disable wallet option if insufficient
+    function checkWalletBalance() {
+      // Use the actual total amount (after coupon discount) for comparison
+      const netTotal = parseFloat(totalAmount);
+      
+      if (walletBalance <= 0 || walletBalance < netTotal) {
+        // Disable wallet payment option
+        if (paymentWallet) {
+          paymentWallet.disabled = true;
+          paymentWallet.checked = false;
+          if (walletHelperText) {
+            walletHelperText.innerHTML = `Balance: ₹${walletBalance.toFixed(2)} <span class="text-danger">(Insufficient)</span>`;
+            walletHelperText.className = 'text-muted mt-1 d-block';
+          }
+        }
+        // Show warning message
+        if (walletInsufficientWarning) {
+          if (walletBalanceDisplay) {
+            walletBalanceDisplay.textContent = walletBalance.toFixed(2);
+          }
+          if (orderTotalDisplay) {
+            orderTotalDisplay.textContent = netTotal.toFixed(2);
+          }
+          walletInsufficientWarning.classList.remove('d-none');
+        }
+        return false;
+      } else {
+        // Enable wallet payment option
+        if (paymentWallet) {
+          paymentWallet.disabled = false;
+          if (walletHelperText) {
+            walletHelperText.innerHTML = `Balance: ₹${walletBalance.toFixed(2)}`;
+            walletHelperText.className = 'text-muted mt-1 d-block';
+          }
+        }
+        // Hide warning message
+        if (walletInsufficientWarning) {
+          walletInsufficientWarning.classList.add('d-none');
+        }
+        return true;
+      }
+    }
+    
+    // Check wallet balance on page load
+    checkWalletBalance();
     
     paymentMethods.forEach(radio => {
       radio.addEventListener('change', function() {
+        // Handle COD validation
         if (this.value === 'cod' && totalAmount >= 1000) {
           // Show warning when COD is selected for orders above ₹1000
           codLimitWarning.classList.remove('d-none');
@@ -1016,7 +1083,7 @@
           // Show toast message
           showToast('Cash on Delivery is only available for orders under ₹1000. Please choose Razorpay or Wallet.', 'error');
         } else if (this.value !== 'cod') {
-          // Hide warning when other payment methods are selected
+          // Hide COD warning when other payment methods are selected
           codLimitWarning.classList.add('d-none');
           codHelperText.innerHTML = 'Available for orders under ₹1000';
           codHelperText.className = 'text-muted mt-1 d-block';
@@ -1024,6 +1091,34 @@
           // Re-enable COD if it was disabled
           if (paymentCOD) {
             paymentCOD.disabled = false;
+          }
+        }
+        
+        // Handle Wallet validation
+        if (this.value === 'wallet') {
+          const netTotal = parseFloat(totalAmount);
+          if (walletBalance <= 0 || walletBalance < netTotal) {
+            // Show warning and prevent wallet payment
+            if (walletBalanceDisplay) {
+              walletBalanceDisplay.textContent = walletBalance.toFixed(2);
+            }
+            if (orderTotalDisplay) {
+              orderTotalDisplay.textContent = netTotal.toFixed(2);
+            }
+            walletInsufficientWarning.classList.remove('d-none');
+            this.checked = false;
+            this.disabled = true;
+            showToast('Insufficient wallet balance. Your wallet balance (₹' + walletBalance.toFixed(2) + ') is less than the order total (₹' + netTotal.toFixed(2) + '). Please use Razorpay or COD.', 'error');
+          } else {
+            // Hide warning if balance is sufficient
+            walletInsufficientWarning.classList.add('d-none');
+          }
+        } else {
+          // Hide wallet warning when other payment methods are selected
+          walletInsufficientWarning.classList.add('d-none');
+          // Re-enable wallet if it was disabled (balance might have changed)
+          if (paymentWallet && !checkWalletBalance()) {
+            paymentWallet.disabled = true;
           }
         }
       });
@@ -1070,6 +1165,15 @@
       if (paymentMethod === 'cod' && parseFloat(totalAmount) >= 1000) {
         showToast('Cash on Delivery is only available for orders under ₹1000. Please choose another payment method.', 'error');
         return;
+      }
+      
+      // Check Wallet balance validation
+      if (paymentMethod === 'wallet') {
+        const walletBalance = parseFloat({{ wallet_balance|default:0 }});
+        if (walletBalance <= 0 || walletBalance < parseFloat(totalAmount)) {
+          showToast('Insufficient wallet balance. Your wallet balance (₹' + walletBalance.toFixed(2) + ') is less than the order total (₹' + parseFloat(totalAmount).toFixed(2) + '). Please use Razorpay or COD.', 'error');
+          return;
+        }
       }
       
       if (paymentMethod === 'razorpay') {

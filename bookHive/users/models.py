@@ -1,7 +1,6 @@
 # Create your models here.
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
 from admin_panel.models import Variant
 from django.contrib.auth.models import BaseUserManager
 from django.utils import timezone
@@ -199,12 +198,9 @@ class OrderItem(models.Model):
         return self.discount_price*self.quantity
     
     def is_refunded(self):
-        """Check if this order item has been refunded by checking wallet transactions"""
+        """Check if this order item has been refunded by checking transactions"""
         try:
-            # Use apps.get_model to avoid forward reference issues
-            from django.apps import apps
-            WalletTransaction = apps.get_model('users', 'WalletTransaction')
-            return WalletTransaction.objects.filter(
+            return Transaction.objects.filter(
                 user=self.order.user,
                 transaction_type='refund',
                 description__icontains=f'item {self.id}'
@@ -237,24 +233,59 @@ class Wallet(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
 
-class WalletTransaction(models.Model):
-    TRANSACTION_TYPES = (
-        ("credit", "Credit"),
-        ("debit", "Debit"),
-        ("refund", "Refund"),
-    )
-
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="wallet_transactions")
+class Transaction(models.Model):
+    TRANSACTION_TYPE_CHOICES = [
+        ('razorpay', 'Razorpay'),
+        ('cod', 'COD'),
+        ('refund', 'Refund'),
+        ('wallet_addition', 'Wallet Addition'),
+        ('wallet_debit', 'Wallet Debit'),
+    ]
+    
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='transactions')
+    order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    transaction_id = models.CharField(max_length=50, unique=True, editable=False)
+    transaction_type = models.CharField(max_length=50, choices=TRANSACTION_TYPE_CHOICES)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
+    transaction_date = models.DateTimeField(auto_now_add=True)
     description = models.CharField(max_length=255, blank=True, null=True)
+    status = models.CharField(max_length=50, default='completed')
+    payment_method = models.CharField(max_length=50, blank=True, null=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    updated_at = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        ordering = ["-created_at"]
-
+        ordering = ['-transaction_date']
+        indexes = [
+            models.Index(fields=['-transaction_date'], name='users_trans_transac_12a4ad_idx'),
+            models.Index(fields=['transaction_type'], name='users_trans_transac_dd58bb_idx'),
+            models.Index(fields=['user', '-transaction_date'], name='users_trans_user_id_b50875_idx'),
+        ]
+    
+    def generate_transaction_id(self):
+        """Generate a unique transaction_id in the format TXN + timestamp + random."""
+        prefix = "TXN"
+        timestamp = timezone.now()
+        base_id = f"{prefix}{timestamp.strftime('%Y%m%d%H%M%S')}{random.randint(1000, 9999)}"
+        
+        transaction_id = base_id
+        counter = 0
+        while Transaction.objects.filter(transaction_id=transaction_id).exists():
+            counter += 1
+            transaction_id = f"{base_id}{random.randint(100, 999)}"
+            if counter > 10:
+                raise ValueError("Unable to generate a unique transaction_id after multiple attempts.")
+        return transaction_id
+    
+    def save(self, *args, **kwargs):
+        """Override save to set transaction_id on creation."""
+        if not self.transaction_id:
+            self.transaction_id = self.generate_transaction_id()
+        super().save(*args, **kwargs)
+    
     def __str__(self):
-        return f"{self.transaction_type} ₹{self.amount} - {self.user.email}"
+        return f"{self.transaction_id} - {self.get_transaction_type_display()} - ₹{self.amount}"
 
 
 class CustomerSupport(models.Model):

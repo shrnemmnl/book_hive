@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from users.models import CustomUser,Order,OrderItem,Review, Wallet, Transaction, CustomerSupport # Import your user model
+from users.models import CustomUser, Order, OrderItem, Review, Wallet, Transaction, CustomerSupport # Import your user model
 from .models import Genre, Product, Variant, ProductImage,Coupon,CouponUsage
 from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.cache import never_cache, cache_control
@@ -824,10 +824,16 @@ def admin_order_details(request, order_id):
         old_status = order_item.status
         refund_message_shown = False
         
-        # If item is being delivered, mark order as paid (for COD)
+        # If item is being delivered, mark order as paid (for COD) and update transaction status
         if new_status == 'delivered' and not order.is_paid:
             order.is_paid = True
             order.save()
+            # Update COD transaction status to completed
+            Transaction.objects.filter(
+                order=order,
+                transaction_type='cod',
+                status='pending'
+            ).update(status='completed')
         
         # Handle cancel/return request approvals with refunds
         if old_status == 'request to return' and new_status == 'return approved':
@@ -843,12 +849,14 @@ def admin_order_details(request, order_id):
                 user_wallet.wallet_amount += item_refund_amount
                 user_wallet.save()
                 try:
-                    from users.models import WalletTransaction
-                    WalletTransaction.objects.create(
+                    Transaction.objects.create(
                         user=user,
-                        amount=item_refund_amount,
+                        order=order,
                         transaction_type='refund',
-                        description=f'Refund for returned item {order_item.id} from order {order.order_id}'
+                        amount=item_refund_amount,
+                        description=f'Refund for returned item {order_item.id} from order {order.order_id}',
+                        payment_method='wallet',
+                        status='completed'
                     )
                 except Exception as e:
                     logger.error(f"Failed to log wallet refund: {e}")
@@ -873,12 +881,14 @@ def admin_order_details(request, order_id):
             user_wallet.save()
             
             try:
-                from users.models import WalletTransaction
-                WalletTransaction.objects.create(
+                Transaction.objects.create(
                     user=user,
-                    amount=item_refund_amount,
+                    order=order,
                     transaction_type='refund',
-                    description=f'Refund for order item {order_item.id} from order {order.order_id}'
+                    amount=item_refund_amount,
+                    description=f'Refund for order item {order_item.id} from order {order.order_id}',
+                    payment_method='wallet',
+                    status='completed'
                 )
             except Exception as e:
                 logger.error(f"Failed to log wallet refund: {e}")
@@ -901,12 +911,14 @@ def admin_order_details(request, order_id):
                 user_wallet.wallet_amount += item_refund_amount
                 user_wallet.save()
                 try:
-                    from users.models import WalletTransaction
-                    WalletTransaction.objects.create(
+                    Transaction.objects.create(
                         user=user,
-                        amount=item_refund_amount,
+                        order=order,
                         transaction_type='refund',
-                        description=f'Refund for cancelled item {order_item.id} from order {order.order_id}'
+                        amount=item_refund_amount,
+                        description=f'Refund for cancelled item {order_item.id} from order {order.order_id}',
+                        payment_method='wallet',
+                        status='completed'
                     )
                 except Exception as e:
                     logger.error(f"Failed to log wallet refund: {e}")
@@ -1718,6 +1730,8 @@ def admin_transactions(request):
             'cod': 'cod',
             'refund': 'refund',
             'wallet addition': 'wallet_addition',
+            'wallet debit': 'wallet_debit',
+            'wallet payment': 'wallet_debit',
         }
         trans_type = type_mapping.get(filter_method.lower(), '')
         if trans_type:
@@ -1825,10 +1839,13 @@ def wallet_user_details(request, user_id):
     except Wallet.DoesNotExist:
         wallet = Wallet.objects.create(user=user, wallet_amount=0)
     
-    # Get all wallet transactions for this user
+    # Get all wallet-related transactions for this user (wallet payments, refunds, wallet debits)
     wallet_transactions = Transaction.objects.filter(
-        user=user,
-        payment_method='wallet'
+        user=user
+    ).filter(
+        Q(transaction_type='wallet_debit') | 
+        Q(transaction_type='refund') |
+        Q(payment_method='wallet')
     ).select_related('order').order_by('-transaction_date')
     
     # Calculate statistics
@@ -1848,3 +1865,13 @@ def wallet_user_details(request, user_id):
     }
     
     return render(request, 'admin/wallet_user_details.html', context)
+
+
+@login_required
+def admin_query_details(request, query_id):
+    query = get_object_or_404(CustomerSupport, id=query_id)
+    
+    context = {
+        'query': query,
+    }
+    return render(request, 'admin/query_details.html', context)

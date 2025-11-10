@@ -7,7 +7,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.conf import settings
 from django.urls import reverse
 # Import your user model
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction, WalletTransaction, CustomerSupport
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction, CustomerSupport
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache, cache_control
 from django.db.models import Min
@@ -18,15 +18,15 @@ from django.db.models import Min, Max
 import json
 import re
 from .utils import send_verification_email, generate_otp
-from django.core.paginator import Paginator
-from django.db.models import Avg, Sum, F, ExpressionWrapper, DecimalField
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Avg, Sum, F, ExpressionWrapper, DecimalField, Q
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 import logging
-from django.db import transaction
+from django.db import transaction as db_transaction
 from django.utils import timezone
 import tempfile
 import subprocess
@@ -721,7 +721,7 @@ def user_address(request):
 def default_address(request, address_id):
     print(request.user, address_id)
     try:
-        with transaction.atomic():
+        with db_transaction.atomic():
 
             # Reset all default flags for this user
             Address.objects.filter(
@@ -931,32 +931,36 @@ def user_wallet(request):
 
     user_wallet, created = Wallet.objects.get_or_create(user=request.user)
     wallet_amount = user_wallet.wallet_amount
-    transactions = WalletTransaction.objects.filter(user=request.user)
 
-    # Get all wallet transactions for this user
+    # Get all wallet-related transactions for this user (wallet payments and refunds)
     wallet_transactions = Transaction.objects.filter(
-        user=request.user,
-        payment_method='wallet'
+        user=request.user
+    ).filter(
+        Q(transaction_type='wallet_debit') | 
+        Q(transaction_type='refund') |
+        Q(payment_method='wallet')
     ).select_related('order').order_by('-transaction_date')
     
     # Calculate statistics
     total_transactions = wallet_transactions.count()
+    # Credits are refunds (money added to wallet)
     total_credits = wallet_transactions.filter(transaction_type='refund').aggregate(
         total=Sum('amount'))['total'] or 0
-    total_debits = wallet_transactions.exclude(transaction_type='refund').aggregate(
+    # Debits are wallet payments and wallet_debit transactions (money deducted from wallet)
+    total_debits = wallet_transactions.filter(
+        Q(transaction_type='wallet_debit') | Q(payment_method='wallet')
+    ).exclude(transaction_type='refund').aggregate(
         total=Sum('amount'))['total'] or 0
     
-    # Pagination - only if more than 5 entries
-    transactions_page = None
-    if total_transactions > 5:
-        paginator = Paginator(wallet_transactions, 10)
-        page = request.GET.get('page', 1)
-        try:
-            transactions_page = paginator.page(page)
-        except:
-            transactions_page = paginator.page(1)
-    else:
-        transactions_page = wallet_transactions[:5] if total_transactions > 0 else []
+    # Pagination
+    paginator = Paginator(wallet_transactions, 10)
+    page = request.GET.get('page', 1)
+    try:
+        transactions_page = paginator.page(page)
+    except PageNotAnInteger:
+        transactions_page = paginator.page(1)
+    except EmptyPage:
+        transactions_page = paginator.page(paginator.num_pages)
 
     context = {
         'wallet_amount': wallet_amount,
@@ -965,7 +969,6 @@ def user_wallet(request):
         'total_credits': total_credits,
         'total_debits': total_debits,
         'wallet_transactions': transactions_page,
-        'has_pagination': total_transactions > 5,
     }
 
     return render(request, 'user/user_wallet.html', context)
@@ -987,20 +990,9 @@ def wallet_payment(request):
 
         if user_wallet.wallet_amount>=int(total_amount):
             prev_amount=user_wallet.wallet_amount
-            with transaction.atomic():
+            with db_transaction.atomic():
                 user_wallet.wallet_amount-=int(total_amount)
                 user_wallet.save()
-
-                # Record wallet debit transaction
-                try:
-                    WalletTransaction.objects.create(
-                        user=request.user,
-                        amount=total_amount,
-                        transaction_type='debit',
-                        description='Order payment via wallet'
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to log wallet debit: {e}")
                 
  
                 cart = Cart.objects.filter(user=request.user).latest("created_at")
@@ -1099,13 +1091,13 @@ def wallet_payment(request):
                 if 'coupon_discount' in request.session:
                     del request.session['coupon_discount']
                 
-                # Create Transaction record for wallet payment
+                # Create Transaction records for wallet payment (debit from wallet)
                 Transaction.objects.create(
                     user=request.user,
                     order=order,
-                    transaction_type='wallet_addition',
+                    transaction_type='wallet_debit',
                     amount=net_amount,
-                    description=f"Wallet payment for {order.order_id}",
+                    description=f"Wallet payment for order {order.order_id}",
                     payment_method='wallet',
                     status='completed'
                 )
@@ -1206,6 +1198,15 @@ def checkoutpage(request):
     
     total = subtotal - coupon_discount
     addresses = Address.objects.filter(user=request.user, is_active=True)
+    
+    # Get wallet balance for the user
+    wallet_balance = 0
+    if request.user.is_authenticated:
+        try:
+            wallet = Wallet.objects.get(user=request.user)
+            wallet_balance = float(wallet.wallet_amount)
+        except Wallet.DoesNotExist:
+            wallet_balance = 0
 
     # print(request.method)
 
@@ -1246,7 +1247,7 @@ def checkoutpage(request):
 
         if payment_method == "cod":
             try:
-                with transaction.atomic():
+                with db_transaction.atomic():
                     for item in cart_items:
                         variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                         if not variant.is_active:
@@ -1284,6 +1285,17 @@ def checkoutpage(request):
                     
                     cart.delete()
                     
+                    # Create Transaction record for COD order
+                    Transaction.objects.create(
+                        user=request.user,
+                        order=order,
+                        transaction_type='cod',
+                        amount=net_amount,
+                        description=f"Order payment via COD for {order.order_id}",
+                        payment_method='cod',
+                        status='pending'  # COD is pending until delivered
+                    )
+                    
             except Exception as e:
                 logger.error(f"Error in checkoutpage cod: {str(e)}")
                 messages.error(request, "Failed to process order. Please try again.")
@@ -1308,7 +1320,8 @@ def checkoutpage(request):
         "total": total,
         "razorpay_key_id": settings.RAZORPAY_KEY_ID,
         "applied_coupon": applied_coupon,
-        "coupon_discount": coupon_discount
+        "coupon_discount": coupon_discount,
+        "wallet_balance": wallet_balance
     })
 
 
@@ -1371,7 +1384,7 @@ def cod_payment(request):
             }, status=400)
         
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 for item in cart_items:
                     variant = Variant.objects.select_for_update().get(id=item.product_variant.id)
                     if not variant.is_active:
@@ -1435,6 +1448,17 @@ def cod_payment(request):
                     del request.session['applied_coupon_id']
                 if 'coupon_discount' in request.session:
                     del request.session['coupon_discount']
+
+                # Create Transaction record for COD order
+                Transaction.objects.create(
+                    user=request.user,
+                    order=order,
+                    transaction_type='cod',
+                    amount=net_amount,
+                    description=f"Order payment via COD for {order.order_id}",
+                    payment_method='cod',
+                    status='pending'  # COD is pending until delivered
+                )
                 
         except Exception as e:
             logger.error(f"Error in cod_payment: {str(e)}")
@@ -2237,7 +2261,7 @@ def verify_razorpay_payment(request):
         
         # Payment is verified, now process the order like COD flow
         try:
-            with transaction.atomic():
+            with db_transaction.atomic():
                 cart = Cart.objects.filter(user=request.user).latest("created_at")
                 cart_items = cart.cart_items.filter(product_variant__is_active=True, product_variant__product__is_active=True, product_variant__product__genre__is_active=True)
                 

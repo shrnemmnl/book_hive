@@ -220,16 +220,7 @@
                         <p class="text-muted">No address available</p>
                       {% endif %}
                       
-                      <h6 class="fw-bold mb-2 mt-3">Payment Method</h6>
-                      {% if order.payment_method == 'razorpay' %}
-                        <span class="badge bg-primary"><i class="bi bi-credit-card"></i> Razorpay</span>
-                      {% elif order.payment_method == 'wallet' %}
-                        <span class="badge bg-info"><i class="bi bi-wallet2"></i> Wallet</span>
-                      {% elif order.payment_method == 'cod' %}
-                        <span class="badge bg-warning text-dark"><i class="bi bi-cash-coin"></i> Cash on Delivery</span>
-                      {% else %}
-                        <span class="badge bg-secondary">Not specified</span>
-                      {% endif %}
+                      
                     </div>
                     <div class="col-md-6 text-md-end">
                       {% if order.original_subtotal > order.subtotal %}

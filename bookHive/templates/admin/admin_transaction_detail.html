@@ -44,9 +44,13 @@
                         <span class="badge bg-danger text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">
                             <i class="bi bi-arrow-counterclockwise"></i> {{ transaction.get_transaction_type_display }}
                         </span>
-                    {% elif transaction.get_transaction_type_display == 'Wallet Addition' %}
+                    {% elif transaction.get_transaction_type_display == 'Wallet Addition' or transaction.transaction_type == 'wallet_addition' %}
                         <span class="badge bg-info text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">
                             <i class="bi bi-wallet2"></i> Wallet Payment
+                        </span>
+                    {% elif transaction.transaction_type == 'wallet_debit' %}
+                        <span class="badge bg-info text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">
+                            <i class="bi bi-wallet2"></i> Wallet Debit
                         </span>
                     {% else %}
                         <span class="badge bg-secondary text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">
@@ -156,7 +160,7 @@
                             <td>
                                 <div>
                                     <h6 class="mb-1" style="font-size: 0.9rem; font-weight: 600;">{{ item.product_variant.product.book_title }}</h6>
-                                    <small class="text-muted" style="font-size: 0.8rem;">{{ item.product_variant.product.author }} - {{ item.product_variant.format }}</small>
+                                    <small class="text-muted" style="font-size: 0.8rem;">{{ item.product_variant.product.author }} - {{ item.product_variant.language }}</small>
                                 </div>
                             </td>
                             <td>{{ item.quantity }}</td>
