@@ -1285,16 +1285,7 @@ def checkoutpage(request):
                     
                     cart.delete()
                     
-                    # Create Transaction record for COD order
-                    Transaction.objects.create(
-                        user=request.user,
-                        order=order,
-                        transaction_type='cod',
-                        amount=net_amount,
-                        description=f"Order payment via COD for {order.order_id}",
-                        payment_method='cod',
-                        status='pending'  # COD is pending until delivered
-                    )
+                    # COD transactions will be created per order item when delivered
                     
             except Exception as e:
                 logger.error(f"Error in checkoutpage cod: {str(e)}")
@@ -1449,16 +1440,7 @@ def cod_payment(request):
                 if 'coupon_discount' in request.session:
                     del request.session['coupon_discount']
 
-                # Create Transaction record for COD order
-                Transaction.objects.create(
-                    user=request.user,
-                    order=order,
-                    transaction_type='cod',
-                    amount=net_amount,
-                    description=f"Order payment via COD for {order.order_id}",
-                    payment_method='cod',
-                    status='pending'  # COD is pending until delivered
-                )
+                # COD transactions will be created per order item when delivered
                 
         except Exception as e:
             logger.error(f"Error in cod_payment: {str(e)}")

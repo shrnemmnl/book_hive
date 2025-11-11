@@ -169,26 +169,35 @@
                     <table class="table table-sm" style="font-size: 0.9rem;">
                         <tbody>
                             <tr>
-                                <td class="fw-medium" style="color: #1e293b;">Subtotal</td>
-                                <td class="text-end text-muted">₹{{ order.net_amount|floatformat:2 }}</td>
+                                <td class="fw-medium" style="color: #1e293b;">Gross Price</td>
+                                <td class="text-end text-muted">₹{{ gross_price|floatformat:2 }}</td>
                             </tr>
-                            {% if order.discount_amount %}
+                            {% if total_product_discount > 0 %}
                             <tr>
-                                <td class="fw-medium" style="color: #1e293b;">Discount</td>
-                                <td class="text-end text-muted">-₹{{ order.discount_amount|floatformat:2 }}</td>
+                                <td class="fw-medium" style="color: #1e293b;">Product/Genre Discount</td>
+                                <td class="text-end text-success">-₹{{ total_product_discount|floatformat:2 }}</td>
                             </tr>
                             {% endif %}
+                            {% if coupon_discount > 0 %}
                             <tr>
-                                <td class="fw-medium" style="color: #1e293b;">Shipping</td>
-                                <td class="text-end text-muted">₹{{ order.shipping_cost|default:"0.00" }}</td>
+                                <td class="fw-medium" style="color: #1e293b;">
+                                    Coupon Discount
+                                    {% if order.coupon_code %}
+                                        <small class="badge bg-success ms-1" style="font-size: 0.7rem;">{{ order.coupon_code }}</small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end text-success">-₹{{ coupon_discount|floatformat:2 }}</td>
                             </tr>
-                            <tr>
-                                <td class="fw-medium" style="color: #1e293b;">Tax</td>
-                                <td class="text-end text-muted">₹{{ order.tax_amount|default:"0.00" }}</td>
+                            {% endif %}
+                            {% if total_discount > 0 %}
+                            <tr style="border-top: 1px solid #e2e8f0;">
+                                <td class="fw-semibold" style="color: #1e293b;">Total Discount</td>
+                                <td class="text-end fw-semibold text-success">-₹{{ total_discount|floatformat:2 }}</td>
                             </tr>
+                            {% endif %}
                             <tr class="table-active">
                                 <td class="fw-semibold" style="color: #1e293b; font-size: 1rem;">Grand Total</td>
-                                <td class="text-end fw-semibold" style="color: #1e293b; font-size: 1rem;">₹{{ order.net_amount|floatformat:2 }}</td>
+                                <td class="text-end fw-semibold" style="color: #1e293b; font-size: 1rem;">₹{{ grand_total|floatformat:2 }}</td>
                             </tr>
                         </tbody>
                     </table>

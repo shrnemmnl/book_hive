@@ -824,16 +824,44 @@ def admin_order_details(request, order_id):
         old_status = order_item.status
         refund_message_shown = False
         
-        # If item is being delivered, mark order as paid (for COD) and update transaction status
-        if new_status == 'delivered' and not order.is_paid:
-            order.is_paid = True
-            order.save()
-            # Update COD transaction status to completed
-            Transaction.objects.filter(
+        # If item is being delivered, create COD transaction for this specific order item
+        if new_status == 'delivered' and order.payment_method == 'cod':
+            # Check if COD transaction already exists for this order item
+            existing_transaction = Transaction.objects.filter(
                 order=order,
-                transaction_type='cod',
-                status='pending'
-            ).update(status='completed')
+                order_item=order_item,
+                transaction_type='cod'
+            ).first()
+            
+            if not existing_transaction:
+                # Calculate amount for this order item (with proportional coupon discount)
+                from decimal import Decimal
+                item_gross = Decimal(str(order_item.unit_price)) * order_item.quantity
+                item_product_discount = (Decimal(str(order_item.unit_price)) - Decimal(str(order_item.discount_price))) * order_item.quantity
+                coupon_discount_per_item = Decimal('0.00')
+                if order.coupon_discount and order.coupon_discount > 0:
+                    total_items = order.order_items.count()
+                    if total_items > 0:
+                        coupon_discount_per_item = Decimal(str(order.coupon_discount)) / total_items
+                item_net_amount = item_gross - item_product_discount - coupon_discount_per_item
+                
+                # Create COD transaction for this order item
+                Transaction.objects.create(
+                    user=order.user,
+                    order=order,
+                    order_item=order_item,
+                    transaction_type='cod',
+                    amount=item_net_amount,
+                    description=f'COD payment for item {order_item.product_variant.product.book_title} from order {order.order_id}',
+                    payment_method='cod',
+                    status='completed'
+                )
+            
+            # Mark order as paid if all items are delivered
+            all_delivered = order.order_items.exclude(status='delivered').count() == 0
+            if all_delivered:
+                order.is_paid = True
+                order.save()
         
         # Handle cancel/return request approvals with refunds
         if old_status == 'request to return' and new_status == 'return approved':
@@ -844,7 +872,17 @@ def admin_order_details(request, order_id):
             
             if order.is_paid:
                 user = order.user
-                item_refund_amount = order_item.total_amount()
+                # Calculate accurate refund amount (gross - product discount - proportional coupon discount)
+                from decimal import Decimal
+                item_gross = Decimal(str(order_item.unit_price)) * order_item.quantity
+                item_product_discount = (Decimal(str(order_item.unit_price)) - Decimal(str(order_item.discount_price))) * order_item.quantity
+                coupon_discount_per_item = Decimal('0.00')
+                if order.coupon_discount and order.coupon_discount > 0:
+                    total_items = order.order_items.count()
+                    if total_items > 0:
+                        coupon_discount_per_item = Decimal(str(order.coupon_discount)) / total_items
+                item_refund_amount = item_gross - item_product_discount - coupon_discount_per_item
+                
                 user_wallet, created = Wallet.objects.get_or_create(user=user)
                 user_wallet.wallet_amount += item_refund_amount
                 user_wallet.save()
@@ -852,9 +890,10 @@ def admin_order_details(request, order_id):
                     Transaction.objects.create(
                         user=user,
                         order=order,
+                        order_item=order_item,
                         transaction_type='refund',
                         amount=item_refund_amount,
-                        description=f'Refund for returned item {order_item.id} from order {order.order_id}',
+                        description=f'Refund for returned item {order_item.id} ({order_item.product_variant.product.book_title}) from order {order.order_id}',
                         payment_method='wallet',
                         status='completed'
                     )
@@ -867,8 +906,16 @@ def admin_order_details(request, order_id):
         elif new_status in ['return approved', 'cancelled'] and order.is_paid and old_status not in ['return approved', 'cancelled', 'request to return', 'request to cancel']:
             user = order.user
             
-            # Calculate refund amount for this specific item
-            item_refund_amount = order_item.total_amount()
+            # Calculate accurate refund amount (gross - product discount - proportional coupon discount)
+            from decimal import Decimal
+            item_gross = Decimal(str(order_item.unit_price)) * order_item.quantity
+            item_product_discount = (Decimal(str(order_item.unit_price)) - Decimal(str(order_item.discount_price))) * order_item.quantity
+            coupon_discount_per_item = Decimal('0.00')
+            if order.coupon_discount and order.coupon_discount > 0:
+                total_items = order.order_items.count()
+                if total_items > 0:
+                    coupon_discount_per_item = Decimal(str(order.coupon_discount)) / total_items
+            item_refund_amount = item_gross - item_product_discount - coupon_discount_per_item
             
             # Update stock
             variant = order_item.product_variant
@@ -884,9 +931,10 @@ def admin_order_details(request, order_id):
                 Transaction.objects.create(
                     user=user,
                     order=order,
+                    order_item=order_item,
                     transaction_type='refund',
                     amount=item_refund_amount,
-                    description=f'Refund for order item {order_item.id} from order {order.order_id}',
+                    description=f'Refund for order item {order_item.id} ({order_item.product_variant.product.book_title}) from order {order.order_id}',
                     payment_method='wallet',
                     status='completed'
                 )
@@ -906,7 +954,17 @@ def admin_order_details(request, order_id):
             # If order is paid, refund to wallet
             if order.is_paid and not refund_message_shown:
                 user = order.user
-                item_refund_amount = order_item.total_amount()
+                # Calculate accurate refund amount (gross - product discount - proportional coupon discount)
+                from decimal import Decimal
+                item_gross = Decimal(str(order_item.unit_price)) * order_item.quantity
+                item_product_discount = (Decimal(str(order_item.unit_price)) - Decimal(str(order_item.discount_price))) * order_item.quantity
+                coupon_discount_per_item = Decimal('0.00')
+                if order.coupon_discount and order.coupon_discount > 0:
+                    total_items = order.order_items.count()
+                    if total_items > 0:
+                        coupon_discount_per_item = Decimal(str(order.coupon_discount)) / total_items
+                item_refund_amount = item_gross - item_product_discount - coupon_discount_per_item
+                
                 user_wallet, created = Wallet.objects.get_or_create(user=user)
                 user_wallet.wallet_amount += item_refund_amount
                 user_wallet.save()
@@ -914,9 +972,10 @@ def admin_order_details(request, order_id):
                     Transaction.objects.create(
                         user=user,
                         order=order,
+                        order_item=order_item,
                         transaction_type='refund',
                         amount=item_refund_amount,
-                        description=f'Refund for cancelled item {order_item.id} from order {order.order_id}',
+                        description=f'Refund for cancelled item {order_item.id} ({order_item.product_variant.product.book_title}) from order {order.order_id}',
                         payment_method='wallet',
                         status='completed'
                     )
@@ -941,10 +1000,40 @@ def admin_order_details(request, order_id):
         
         return redirect('admin_order_details', order_id=order.id)
 
+    # Calculate order summary breakdown
+    from decimal import Decimal
+    gross_price = Decimal('0.00')
+    total_product_discount = Decimal('0.00')
+    
+    for item in order.order_items.all():
+        # Gross price = unit_price * quantity
+        item_gross = Decimal(str(item.unit_price)) * item.quantity
+        gross_price += item_gross
+        
+        # Product/Genre discount = (unit_price - discount_price) * quantity
+        item_product_discount = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        total_product_discount += item_product_discount
+    
+    # Coupon discount
+    coupon_discount = Decimal('0.00')
+    if order.coupon_discount:
+        coupon_discount = Decimal(str(order.coupon_discount))
+    
+    # Total discount = product discount + coupon discount
+    total_discount = total_product_discount + coupon_discount
+    
+    # Grand total = gross price - total discount
+    grand_total = gross_price - total_discount
+    
     context = {
         'reload': True,
         'order': order,
-        'heading': {'name': f'Order Details #{ order.id }'}
+        'heading': {'name': f'Order Details #{ order.id }'},
+        'gross_price': gross_price,
+        'total_product_discount': total_product_discount,
+        'coupon_discount': coupon_discount,
+        'total_discount': total_discount,
+        'grand_total': grand_total,
     }
 
     return render(request, 'admin/admin_order_details.html', context)
@@ -1297,7 +1386,8 @@ def sales_report(request):
     
     orders = Order.objects.filter(
         status__in=['pending', 'shipped', 'delivered'],
-        is_active=True
+        is_active=True,
+        is_paid=True  # Only show paid orders
     ).select_related('user', 'address').prefetch_related('order_items__product_variant__product')
     
     now = timezone.now()
@@ -1325,35 +1415,149 @@ def sales_report(request):
         except ValueError:
             messages.error(request, "Invalid date format")
     
-    summary = orders.aggregate(
-        total_orders=Count('id'),
-        total_amount=Sum('net_amount'),
-        total_discount=Sum('coupon_discount'),
-        total_subtotal=Sum('subtotal')
+    # Calculate summary from orders (count unique orders)
+    # Get unique order count before aggregating
+    unique_orders_count = orders.count()
+    
+    # Get order items to calculate gross total and product discounts
+    from users.models import OrderItem
+    order_items_for_summary = OrderItem.objects.filter(order__in=orders)
+    
+    # Calculate total gross total (sum of unit_price * quantity for all items)
+    from django.db.models import F, Sum
+    total_gross_total = order_items_for_summary.aggregate(
+        total=Sum(F('unit_price') * F('quantity'))
+    )['total'] or 0
+    
+    # Calculate total product discount (sum of (unit_price - discount_price) * quantity)
+    total_product_discount = order_items_for_summary.aggregate(
+        total=Sum((F('unit_price') - F('discount_price')) * F('quantity'))
+    )['total'] or 0
+    
+    # Calculate total coupon discount from orders
+    total_coupon_discount = orders.aggregate(
+        total=Sum('coupon_discount')
+    )['total'] or 0
+    
+    # Total deductions = product discount + coupon discount
+    total_deductions = total_product_discount + total_coupon_discount
+    
+    # Calculate total refunds as sum of net amounts of cancelled/return approved order items
+    from decimal import Decimal
+    # Get cancelled and return approved order items
+    refunded_items = OrderItem.objects.filter(
+        order__in=orders,
+        status__in=['cancelled', 'return approved']
     )
     
-    # Handle None values
-    summary['total_orders'] = summary['total_orders'] or 0
-    summary['total_amount'] = summary['total_amount'] or 0
-    summary['total_discount'] = summary['total_discount'] or 0
-    summary['total_subtotal'] = summary['total_subtotal'] or 0
+    # Calculate total refund by summing net amounts of refunded items
+    total_refund = Decimal('0.00')
+    for item in refunded_items:
+        # Gross Price = unit_price * quantity
+        gross = Decimal(str(item.unit_price)) * item.quantity
+        
+        # Product/Genre Discount = (unit_price - discount_price) * quantity
+        product_disc = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        
+        # Coupon Discount per item = (order coupon_discount / number of items in order)
+        coupon_disc_per_item = Decimal('0.00')
+        if item.order.coupon_discount and item.order.coupon_discount > 0:
+            total_items = item.order.order_items.count()
+            if total_items > 0:
+                coupon_disc_per_item = Decimal(str(item.order.coupon_discount)) / total_items
+        
+        # Total Discount = Product Discount + Coupon Discount per item
+        total_disc = product_disc + coupon_disc_per_item
+        
+        # Net Amount = Gross Price - Discount Price
+        net_amt = gross - total_disc
+        total_refund += net_amt
     
-    # Get detailed order list
-    orders_list = orders.order_by('-created_at')
+    # Convert to Decimal for precise calculation
+    total_gross_total = Decimal(str(total_gross_total))
+    total_deductions = Decimal(str(total_deductions))
+    # total_refund is already Decimal from the loop above
     
-    # Pagination
-    paginator = Paginator(orders_list, 20)
+    # Get order items from filtered orders (OrderItem already imported above)
+    order_items = OrderItem.objects.filter(
+        order__in=orders
+    ).select_related(
+        'order', 
+        'order__user', 
+        'product_variant', 
+        'product_variant__product'
+    ).prefetch_related('order__order_items').order_by('-order__created_at', '-id')
+    
+    # Calculate total net amount from all order items (before pagination)
+    total_net_amount_from_items = Decimal('0.00')
+    for item in order_items:
+        # Gross Price = unit_price * quantity
+        gross = Decimal(str(item.unit_price)) * item.quantity
+        
+        # Product/Genre Discount = (unit_price - discount_price) * quantity
+        product_disc = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        
+        # Coupon Discount per item = (order coupon_discount / number of items in order)
+        coupon_disc_per_item = Decimal('0.00')
+        if item.order.coupon_discount and item.order.coupon_discount > 0:
+            # Use prefetched order_items to avoid extra queries
+            total_items = len(item.order.order_items.all())
+            if total_items > 0:
+                coupon_disc_per_item = Decimal(str(item.order.coupon_discount)) / total_items
+        
+        # Total Discount = Product Discount + Coupon Discount per item
+        total_disc = product_disc + coupon_disc_per_item
+        
+        # Net Amount = Gross Price - Discount Price
+        net_amt = gross - total_disc
+        total_net_amount_from_items += net_amt
+    
+    # Total Net Amount = Sum of all row net amounts - Total Refund
+    total_net_amount = total_net_amount_from_items - total_refund
+    
+    summary = {
+        'total_orders': unique_orders_count,
+        'total_gross_total': total_gross_total,
+        'total_deductions': total_deductions,
+        'total_refund': total_refund,
+        'total_net_amount': total_net_amount,
+    }
+    
+    # Pagination for order items (after calculating totals)
+    paginator = Paginator(order_items, 20)
     page = request.GET.get('page', 1)
     
     try:
-        orders_page = paginator.page(page)
+        order_items_page = paginator.page(page)
     except PageNotAnInteger:
-        orders_page = paginator.page(1)
+        order_items_page = paginator.page(1)
     except EmptyPage:
-        orders_page = paginator.page(paginator.num_pages)
+        order_items_page = paginator.page(paginator.num_pages)
+    
+    # Add calculated fields to each order item in the paginated page for display
+    for item in order_items_page:
+        # Gross Price = unit_price * quantity
+        item.gross_price = Decimal(str(item.unit_price)) * item.quantity
+        
+        # Product/Genre Discount = (unit_price - discount_price) * quantity
+        product_discount = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        
+        # Coupon Discount per item = (order coupon_discount / number of items in order)
+        coupon_discount_per_item = Decimal('0.00')
+        if item.order.coupon_discount and item.order.coupon_discount > 0:
+            # Use prefetched order_items to avoid extra queries
+            total_items_in_order = len(item.order.order_items.all())
+            if total_items_in_order > 0:
+                coupon_discount_per_item = Decimal(str(item.order.coupon_discount)) / total_items_in_order
+        
+        # Total Discount Amount = Product Discount + Coupon Discount per item
+        item.discount_amount = product_discount + coupon_discount_per_item
+        
+        # Net Amount per row = Gross Price - Discount Price
+        item.net_amount = item.gross_price - item.discount_amount
     
     context = {
-        'orders': orders_page,
+        'order_items': order_items_page,
         'summary': summary,
         'filter_type': filter_type,
         'filter_label': filter_label,
@@ -1365,17 +1569,18 @@ def sales_report(request):
 
 
 def download_sales_report_pdf(request):
-    """Download sales report as PDF"""
+    """Download sales report as PDF with order items"""
     # Get same filters as main report
     filter_type = request.GET.get('filter', 'all')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     
-    # Apply same filtering logic
+    # Apply same filtering logic as main view
     orders = Order.objects.filter(
         status__in=['pending', 'shipped', 'delivered'],
-        is_active=True
-    ).select_related('user')
+        is_active=True,
+        is_paid=True  # Only show paid orders
+    ).select_related('user', 'address').prefetch_related('order_items__product_variant__product')
     
     now = timezone.now()
     filter_label = "All Time"
@@ -1402,17 +1607,73 @@ def download_sales_report_pdf(request):
         except ValueError:
             pass
     
-    # Calculate summary
-    summary = orders.aggregate(
-        total_orders=Count('id'),
-        total_amount=Sum('net_amount'),
-        total_discount=Sum('coupon_discount'),
-        total_subtotal=Sum('subtotal')
+    # Calculate summary using same logic as main view
+    unique_orders_count = orders.count()
+    
+    from users.models import OrderItem
+    from decimal import Decimal
+    from django.db.models import F, Sum
+    
+    order_items_for_summary = OrderItem.objects.filter(order__in=orders)
+    
+    total_gross_total = order_items_for_summary.aggregate(
+        total=Sum(F('unit_price') * F('quantity'))
+    )['total'] or 0
+    
+    total_product_discount = order_items_for_summary.aggregate(
+        total=Sum((F('unit_price') - F('discount_price')) * F('quantity'))
+    )['total'] or 0
+    
+    total_coupon_discount = orders.aggregate(
+        total=Sum('coupon_discount')
+    )['total'] or 0
+    
+    total_deductions = total_product_discount + total_coupon_discount
+    
+    # Calculate total refunds from cancelled/return approved items
+    refunded_items = OrderItem.objects.filter(
+        order__in=orders,
+        status__in=['cancelled', 'return approved']
     )
     
-    # Create PDF
+    total_refund = Decimal('0.00')
+    for item in refunded_items:
+        gross = Decimal(str(item.unit_price)) * item.quantity
+        product_disc = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        coupon_disc_per_item = Decimal('0.00')
+        if item.order.coupon_discount and item.order.coupon_discount > 0:
+            total_items = item.order.order_items.count()
+            if total_items > 0:
+                coupon_disc_per_item = Decimal(str(item.order.coupon_discount)) / total_items
+        total_disc = product_disc + coupon_disc_per_item
+        net_amt = gross - total_disc
+        total_refund += net_amt
+    
+    # Calculate total net amount
+    total_net_amount_from_items = Decimal('0.00')
+    order_items_all = OrderItem.objects.filter(order__in=orders).select_related('order', 'product_variant', 'product_variant__product').prefetch_related('order__order_items')
+    
+    for item in order_items_all:
+        gross = Decimal(str(item.unit_price)) * item.quantity
+        product_disc = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        coupon_disc_per_item = Decimal('0.00')
+        if item.order.coupon_discount and item.order.coupon_discount > 0:
+            total_items = len(item.order.order_items.all())
+            if total_items > 0:
+                coupon_disc_per_item = Decimal(str(item.order.coupon_discount)) / total_items
+        total_disc = product_disc + coupon_disc_per_item
+        net_amt = gross - total_disc
+        total_net_amount_from_items += net_amt
+    
+    total_net_amount = total_net_amount_from_items - total_refund
+    
+    # Convert to Decimal
+    total_gross_total = Decimal(str(total_gross_total))
+    total_deductions = Decimal(str(total_deductions))
+    
+    # Create PDF with wider margins to accommodate table
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=18)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=20, leftMargin=20, topMargin=30, bottomMargin=18)
     
     elements = []
     styles = getSampleStyleSheet()
@@ -1434,10 +1695,11 @@ def download_sales_report_pdf(request):
     # Summary table
     summary_data = [
         ['Metric', 'Value'],
-        ['Total Orders', str(summary['total_orders'] or 0)],
-        ['Subtotal', f"{summary['total_subtotal'] or 0:.2f} Rs."],
-        ['Total Discount', f"{summary['total_discount'] or 0:.2f} Rs."],
-        ['Net Amount', f"{summary['total_amount'] or 0:.2f} Rs."],
+        ['Total Orders', str(unique_orders_count)],
+        ['Total Gross Total', f"Rs.{float(total_gross_total):.2f}"],
+        ['Total Deductions', f"Rs.{float(total_deductions):.2f}"],
+        ['Total Refund', f"Rs.{float(total_refund):.2f}"],
+        ['Total Net Amount', f"Rs.{float(total_net_amount):.2f}"],
     ]
     
     summary_table = Table(summary_data, colWidths=[3*inch, 3*inch])
@@ -1454,36 +1716,145 @@ def download_sales_report_pdf(request):
     elements.append(summary_table)
     elements.append(Spacer(1, 30))
     
-    # Orders table
-    elements.append(Paragraph("Order Details", styles['Heading2']))
+    # Order Items table
+    elements.append(Paragraph("Order Items Details", styles['Heading2']))
     elements.append(Spacer(1, 12))
     
-    orders_data = [['Order ID', 'Date', 'Customer', 'Subtotal', 'Discount', 'Net Amount']]
+    # Get order items with calculated fields
+    order_items = OrderItem.objects.filter(
+        order__in=orders
+    ).select_related(
+        'order', 'order__user', 'product_variant', 'product_variant__product'
+    ).prefetch_related('order__order_items').order_by('-order__created_at', '-id')[:200]  # Limit to 200 items for PDF
     
-    for order in orders.order_by('-created_at')[:50]:  # Limit to 50 orders for PDF
-        orders_data.append([
-            order.order_id,
-            order.created_at.strftime('%Y-%m-%d'),
-            f"{order.user.first_name} {order.user.last_name}",
-            f"{order.subtotal:.2f} Rs.",
-            f"{order.coupon_discount:.2f} Rs.",
-            f"{order.net_amount:.2f} Rs.",
+    # Calculate fields for each item
+    for item in order_items:
+        item.gross_price = Decimal(str(item.unit_price)) * item.quantity
+        product_discount = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        coupon_discount_per_item = Decimal('0.00')
+        if item.order.coupon_discount and item.order.coupon_discount > 0:
+            total_items = len(item.order.order_items.all())
+            if total_items > 0:
+                coupon_discount_per_item = Decimal(str(item.order.coupon_discount)) / total_items
+        item.discount_amount = product_discount + coupon_discount_per_item
+        item.net_amount = item.gross_price - item.discount_amount
+    
+    # Create styles for table cells with text wrapping
+    cell_style_normal = ParagraphStyle(
+        'CellNormal',
+        parent=styles['Normal'],
+        fontSize=7,
+        leading=8.5,
+        wordWrap='CJK',  # Enable word wrapping for all languages
+        spaceAfter=1,
+        spaceBefore=1,
+        leftIndent=2,
+        rightIndent=2,
+    )
+    
+    cell_style_header = ParagraphStyle(
+        'CellHeader',
+        parent=styles['Normal'],
+        fontSize=7.5,
+        leading=9,
+        fontName='Helvetica-Bold',
+        textColor=colors.whitesmoke,
+        wordWrap='CJK',
+        spaceAfter=1,
+        spaceBefore=1,
+        leftIndent=2,
+        rightIndent=2,
+    )
+    
+    # Special style for narrow columns (Qty, Status, Coupon) - smaller font
+    cell_style_narrow = ParagraphStyle(
+        'CellNarrow',
+        parent=styles['Normal'],
+        fontSize=6.5,
+        leading=8,
+        wordWrap='CJK',
+        spaceAfter=1,
+        spaceBefore=1,
+        leftIndent=2,
+        rightIndent=2,
+        alignment=1,  # Center alignment
+    )
+    
+    # Build table data with Paragraph objects for text wrapping
+    order_items_data = []
+    
+    # Header row with Paragraph objects
+    header_row = [
+        Paragraph('Order ID', cell_style_header),
+        Paragraph('Date', cell_style_header),
+        Paragraph('Customer', cell_style_header),
+        Paragraph('Product', cell_style_header),
+        Paragraph('Qty', cell_style_narrow),
+        Paragraph('Gross Price', cell_style_header),
+        Paragraph('Discount', cell_style_header),
+        Paragraph('Net Amount', cell_style_header),
+        Paragraph('Coupon', cell_style_narrow),
+        Paragraph('Status', cell_style_narrow),
+    ]
+    order_items_data.append(header_row)
+    
+    # Data rows with Paragraph objects
+    for item in order_items:
+        customer_name = f"{item.order.user.first_name} {item.order.user.last_name}"
+        product_name = item.product_variant.product.book_title  # Full name, will wrap
+        coupon_code = item.order.coupon_code or 'N/A'
+        status_text = item.status.title()
+        
+        order_items_data.append([
+            Paragraph(str(item.order.order_id), cell_style_normal),
+            Paragraph(item.order.created_at.strftime('%d-%m-%Y'), cell_style_normal),
+            Paragraph(customer_name, cell_style_normal),
+            Paragraph(product_name, cell_style_normal),
+            Paragraph(str(item.quantity), cell_style_narrow),
+            Paragraph(f"Rs.{float(item.gross_price):.2f}", cell_style_normal),
+            Paragraph(f"Rs.{float(item.discount_amount):.2f}", cell_style_normal),
+            Paragraph(f"Rs.{float(item.net_amount):.2f}", cell_style_normal),
+            Paragraph(coupon_code, cell_style_narrow),
+            Paragraph(status_text, cell_style_narrow),
         ])
     
-    orders_table = Table(orders_data, colWidths=[1.2*inch, 1*inch, 1.5*inch, 1*inch, 1*inch, 1*inch])
-    orders_table.setStyle(TableStyle([
+    # Adjust column widths for order items table - ensure all content fits on A4 page
+    # A4 width = 8.27 inches, minus margins (0.2 + 0.2 = 0.4) = 7.87 inches available
+    # Distribute widths to ensure all columns are visible and text wraps properly
+    col_widths = [
+        0.95*inch,  # Order ID - enough for longer IDs
+        0.7*inch,   # Date
+        0.95*inch,  # Customer - enough for full names
+        1.5*inch,   # Product - increased for long book titles (will wrap)
+        0.4*inch,   # Qty
+        0.8*inch,    # Gross Price
+        0.8*inch,    # Discount
+        0.8*inch,    # Net Amount
+        0.65*inch,  # Coupon
+        0.65*inch,   # Status
+    ]
+    # Total: 7.8 inches (fits within 7.87 inches available with small buffer)
+    order_items_table = Table(order_items_data, colWidths=col_widths, repeatRows=1)  # repeatRows=1 to repeat header on each page
+    order_items_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2563eb')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 0), (3, -1), 'LEFT'),
+        ('ALIGN', (4, 0), (4, -1), 'CENTER'),  # Qty
+        ('ALIGN', (5, 0), (7, -1), 'RIGHT'),  # Price columns
+        ('ALIGN', (8, 0), (9, -1), 'CENTER'),  # Coupon, Status
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('FONTSIZE', (0, 0), (-1, 0), 7.5),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),  # TOP alignment for better wrapping
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
     ]))
-    elements.append(orders_table)
+    elements.append(order_items_table)
     
     # Build PDF
     doc.build(elements)
@@ -1497,17 +1868,18 @@ def download_sales_report_pdf(request):
 
 
 def download_sales_report_excel(request):
-    """Download sales report as Excel"""
+    """Download sales report as Excel with order items"""
     # Get same filters as main report
     filter_type = request.GET.get('filter', 'all')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     
-    # Apply same filtering logic
+    # Apply same filtering logic as main view
     orders = Order.objects.filter(
         status__in=['pending', 'shipped', 'delivered'],
-        is_active=True
-    ).select_related('user')
+        is_active=True,
+        is_paid=True  # Only show paid orders
+    ).select_related('user', 'address').prefetch_related('order_items__product_variant__product')
     
     now = timezone.now()
     filter_label = "All Time"
@@ -1534,13 +1906,69 @@ def download_sales_report_excel(request):
         except ValueError:
             pass
     
-    # Calculate summary
-    summary = orders.aggregate(
-        total_orders=Count('id'),
-        total_amount=Sum('net_amount'),
-        total_discount=Sum('coupon_discount'),
-        total_subtotal=Sum('subtotal')
+    # Calculate summary using same logic as main view
+    unique_orders_count = orders.count()
+    
+    from users.models import OrderItem
+    from decimal import Decimal
+    from django.db.models import F, Sum
+    
+    order_items_for_summary = OrderItem.objects.filter(order__in=orders)
+    
+    total_gross_total = order_items_for_summary.aggregate(
+        total=Sum(F('unit_price') * F('quantity'))
+    )['total'] or 0
+    
+    total_product_discount = order_items_for_summary.aggregate(
+        total=Sum((F('unit_price') - F('discount_price')) * F('quantity'))
+    )['total'] or 0
+    
+    total_coupon_discount = orders.aggregate(
+        total=Sum('coupon_discount')
+    )['total'] or 0
+    
+    total_deductions = total_product_discount + total_coupon_discount
+    
+    # Calculate total refunds from cancelled/return approved items
+    refunded_items = OrderItem.objects.filter(
+        order__in=orders,
+        status__in=['cancelled', 'return approved']
     )
+    
+    total_refund = Decimal('0.00')
+    for item in refunded_items:
+        gross = Decimal(str(item.unit_price)) * item.quantity
+        product_disc = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        coupon_disc_per_item = Decimal('0.00')
+        if item.order.coupon_discount and item.order.coupon_discount > 0:
+            total_items = item.order.order_items.count()
+            if total_items > 0:
+                coupon_disc_per_item = Decimal(str(item.order.coupon_discount)) / total_items
+        total_disc = product_disc + coupon_disc_per_item
+        net_amt = gross - total_disc
+        total_refund += net_amt
+    
+    # Calculate total net amount
+    total_net_amount_from_items = Decimal('0.00')
+    order_items_all = OrderItem.objects.filter(order__in=orders).select_related('order', 'product_variant', 'product_variant__product').prefetch_related('order__order_items')
+    
+    for item in order_items_all:
+        gross = Decimal(str(item.unit_price)) * item.quantity
+        product_disc = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        coupon_disc_per_item = Decimal('0.00')
+        if item.order.coupon_discount and item.order.coupon_discount > 0:
+            total_items = len(item.order.order_items.all())
+            if total_items > 0:
+                coupon_disc_per_item = Decimal(str(item.order.coupon_discount)) / total_items
+        total_disc = product_disc + coupon_disc_per_item
+        net_amt = gross - total_disc
+        total_net_amount_from_items += net_amt
+    
+    total_net_amount = total_net_amount_from_items - total_refund
+    
+    # Convert to Decimal
+    total_gross_total = Decimal(str(total_gross_total))
+    total_deductions = Decimal(str(total_deductions))
     
     # Create Excel workbook
     wb = openpyxl.Workbook()
@@ -1560,7 +1988,7 @@ def download_sales_report_excel(request):
     # Title
     ws['A1'] = "Book Hive - Sales Report"
     ws['A1'].font = Font(bold=True, size=16, color="2563eb")
-    ws.merge_cells('A1:F1')
+    ws.merge_cells('A1:J1')
     
     ws['A2'] = f"Period: {filter_label}"
     ws['A3'] = f"Generated: {now.strftime('%Y-%m-%d %H:%M')}"
@@ -1578,61 +2006,86 @@ def download_sales_report_excel(request):
         cell.alignment = Alignment(horizontal='center')
     
     summary_data = [
-        ['Total Orders', summary['total_orders'] or 0],
-        ['Subtotal', f"₹{summary['total_subtotal'] or 0:.2f}"],
-        ['Total Discount', f"₹{summary['total_discount'] or 0:.2f}"],
-        ['Net Amount', f"₹{summary['total_amount'] or 0:.2f}"],
+        ['Total Orders', unique_orders_count],
+        ['Total Gross Total', f"Rs.{float(total_gross_total):.2f}"],
+        ['Total Deductions', f"Rs.{float(total_deductions):.2f}"],
+        ['Total Refund', f"Rs.{float(total_refund):.2f}"],
+        ['Total Net Amount', f"Rs.{float(total_net_amount):.2f}"],
     ]
     
     for row_idx, (metric, value) in enumerate(summary_data, 7):
         ws.cell(row=row_idx, column=1, value=metric).border = border
         ws.cell(row=row_idx, column=2, value=value).border = border
     
-    # Orders section
-    ws['A12'] = "Order Details"
-    ws['A12'].font = Font(bold=True, size=14)
+    # Order Items section
+    ws['A13'] = "Order Items Details"
+    ws['A13'].font = Font(bold=True, size=14)
     
-    # Headers for orders
-    headers = ['Order ID', 'Date', 'Customer', 'Email', 'Subtotal', 'Discount', 'Coupon Code', 'Net Amount', 'Status']
+    # Headers for order items
+    headers = ['Order ID', 'Date', 'Customer', 'Product', 'Quantity', 'Gross Price', 'Discount Price', 'Net Amount', 'Coupon', 'Status']
     for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=13, column=col, value=header)
+        cell = ws.cell(row=14, column=col, value=header)
         cell.fill = header_fill
         cell.font = header_font
         cell.border = border
-        cell.alignment = Alignment(horizontal='center')
+        cell.alignment = Alignment(horizontal='center', vertical='center')
     
-    # Orders data
-    row_num = 14
-    for order in orders.order_by('-created_at'):
-        ws.cell(row=row_num, column=1, value=order.order_id).border = border
-        ws.cell(row=row_num, column=2, value=order.created_at.strftime('%Y-%m-%d %H:%M')).border = border
-        ws.cell(row=row_num, column=3, value=f"{order.user.first_name} {order.user.last_name}").border = border
-        ws.cell(row=row_num, column=4, value=order.user.email).border = border
-        ws.cell(row=row_num, column=5, value=f"₹{order.subtotal:.2f}").border = border
-        ws.cell(row=row_num, column=6, value=f"₹{order.coupon_discount:.2f}").border = border
-        ws.cell(row=row_num, column=7, value=order.coupon_code or 'N/A').border = border
-        ws.cell(row=row_num, column=8, value=f"₹{order.net_amount:.2f}").border = border
-        ws.cell(row=row_num, column=9, value=order.status.title()).border = border
+    # Get order items with calculated fields
+    order_items = OrderItem.objects.filter(
+        order__in=orders
+    ).select_related(
+        'order', 'order__user', 'product_variant', 'product_variant__product'
+    ).prefetch_related('order__order_items').order_by('-order__created_at', '-id')
+    
+    # Calculate fields for each item
+    for item in order_items:
+        item.gross_price = Decimal(str(item.unit_price)) * item.quantity
+        product_discount = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        coupon_discount_per_item = Decimal('0.00')
+        if item.order.coupon_discount and item.order.coupon_discount > 0:
+            total_items = len(item.order.order_items.all())
+            if total_items > 0:
+                coupon_discount_per_item = Decimal(str(item.order.coupon_discount)) / total_items
+        item.discount_amount = product_discount + coupon_discount_per_item
+        item.net_amount = item.gross_price - item.discount_amount
+    
+    # Order items data
+    row_num = 15
+    for item in order_items:
+        ws.cell(row=row_num, column=1, value=item.order.order_id).border = border
+        ws.cell(row=row_num, column=2, value=item.order.created_at.strftime('%Y-%m-%d %H:%M')).border = border
+        ws.cell(row=row_num, column=3, value=f"{item.order.user.first_name} {item.order.user.last_name}").border = border
+        ws.cell(row=row_num, column=4, value=item.product_variant.product.book_title).border = border
+        ws.cell(row=row_num, column=5, value=item.quantity).border = border
+        ws.cell(row=row_num, column=5).alignment = Alignment(horizontal='center')
+        ws.cell(row=row_num, column=6, value=float(item.gross_price)).border = border
+        ws.cell(row=row_num, column=6).number_format = 'Rs.#,##0.00'
+        ws.cell(row=row_num, column=7, value=float(item.discount_amount)).border = border
+        ws.cell(row=row_num, column=7).number_format = 'Rs.#,##0.00'
+        ws.cell(row=row_num, column=8, value=float(item.net_amount)).border = border
+        ws.cell(row=row_num, column=8).number_format = 'Rs.#,##0.00'
+        ws.cell(row=row_num, column=9, value=item.order.coupon_code or 'N/A').border = border
+        ws.cell(row=row_num, column=9).alignment = Alignment(horizontal='center')
+        ws.cell(row=row_num, column=10, value=item.status.title()).border = border
+        ws.cell(row=row_num, column=10).alignment = Alignment(horizontal='center')
         row_num += 1
     
     # Adjust column widths
-    for column_cells in ws.columns:
-        max_length = 0
-        column_letter = None
-        
-        for cell in column_cells:
-            # Skip merged cells
-            if hasattr(cell, 'column_letter'):
-                column_letter = cell.column_letter
-                try:
-                    if cell.value and len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-        
-        if column_letter:
-            adjusted_width = min(max_length + 2, 50)  # Cap at 50 to avoid too wide columns
-            ws.column_dimensions[column_letter].width = adjusted_width
+    column_widths = {
+        'A': 15,  # Order ID
+        'B': 18,  # Date
+        'C': 20,  # Customer
+        'D': 35,  # Product
+        'E': 10,  # Quantity
+        'F': 12,  # Gross Price
+        'G': 12,  # Discount Price
+        'H': 12,  # Net Amount
+        'I': 12,  # Coupon
+        'J': 12,  # Status
+    }
+    
+    for col_letter, width in column_widths.items():
+        ws.column_dimensions[col_letter].width = width
     
     # Save to response
     response = HttpResponse(
@@ -1706,9 +2159,11 @@ BookHive Support Team
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 def admin_transactions(request):
-    """Display list of all transactions"""
-    # Get all transactions only (not orders)
-    transactions = Transaction.objects.select_related('user', 'order').all().order_by('-transaction_date')
+    """Display list of all transactions including order item level transactions"""
+    # Get all transactions with order_item information
+    transactions = Transaction.objects.select_related(
+        'user', 'order', 'order_item', 'order_item__product_variant', 'order_item__product_variant__product'
+    ).all().order_by('-transaction_date')
     
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -1718,7 +2173,8 @@ def admin_transactions(request):
             Q(user__email__icontains=search_query) |
             Q(user__first_name__icontains=search_query) |
             Q(user__last_name__icontains=search_query) |
-            Q(order__order_id__icontains=search_query)
+            Q(order__order_id__icontains=search_query) |
+            Q(order_item__product_variant__product__book_title__icontains=search_query)
         )
     
     # Filter by transaction type
@@ -1771,16 +2227,46 @@ def admin_transactions(request):
 def transaction_detail(request, order_id):
     """Display detailed view of a specific transaction"""
     # Find transaction by transaction_id
-    transaction = get_object_or_404(Transaction.objects.select_related('user', 'order', 'order__address'), transaction_id=order_id)
+    transaction = get_object_or_404(
+        Transaction.objects.select_related('user', 'order', 'order__address', 'order_item', 'order_item__product_variant', 'order_item__product_variant__product'),
+        transaction_id=order_id
+    )
     
     context = {
         'transaction': transaction,
     }
     
-    # If transaction has an associated order, fetch order items
-    if transaction.order:
-        order_items = OrderItem.objects.filter(order=transaction.order).select_related('product_variant__product')
-        context['order_items'] = order_items
+    # If transaction has an associated order item, calculate pricing breakdown
+    if transaction.order_item:
+        from decimal import Decimal
+        item = transaction.order_item
+        
+        # Gross price (unit price * quantity)
+        gross_price = Decimal(str(item.unit_price)) * item.quantity
+        
+        # Product/Genre discount (unit_price - discount_price) * quantity
+        product_discount = (Decimal(str(item.unit_price)) - Decimal(str(item.discount_price))) * item.quantity
+        
+        # Coupon discount per item
+        coupon_discount_per_item = Decimal('0.00')
+        if transaction.order and transaction.order.coupon_discount and transaction.order.coupon_discount > 0:
+            total_items = transaction.order.order_items.count()
+            if total_items > 0:
+                coupon_discount_per_item = Decimal(str(transaction.order.coupon_discount)) / total_items
+        
+        # Total discount = product discount + coupon discount
+        total_discount = product_discount + coupon_discount_per_item
+        
+        # Net amount (should match transaction.amount)
+        net_amount = gross_price - total_discount
+        
+        context['item_pricing'] = {
+            'gross_price': gross_price,
+            'product_discount': product_discount,
+            'coupon_discount': coupon_discount_per_item,
+            'total_discount': total_discount,
+            'net_amount': net_amount,
+        }
     
     return render(request, 'admin/admin_transaction_detail.html', context)
 

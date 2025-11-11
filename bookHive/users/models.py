@@ -244,6 +244,7 @@ class Transaction(models.Model):
     
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='transactions')
     order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    order_item = models.ForeignKey('OrderItem', on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
     transaction_id = models.CharField(max_length=50, unique=True, editable=False)
     transaction_type = models.CharField(max_length=50, choices=TRANSACTION_TYPE_CHOICES)
     amount = models.DecimalField(max_digits=10, decimal_places=2)

@@ -111,86 +111,77 @@
         </div>
         <div class="card-body" style="padding: 1.5rem;">
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Order ID</p>
                     <p class="text-muted" style="font-size: 0.85rem;">{{ transaction.order.order_id }}</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Order Date</p>
                     <p class="text-muted" style="font-size: 0.85rem;">{{ transaction.order.created_at|date:"d M Y, h:i A" }}</p>
-                </div>
-                <div class="col-md-4">
-                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Order Status</p>
-                    {% if transaction.order.status == 'pending' %}
-                        <span class="badge bg-warning text-dark" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Pending</span>
-                    {% elif transaction.order.status == 'shipped' %}
-                        <span class="badge bg-info text-dark" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Shipped</span>
-                    {% elif transaction.order.status == 'delivered' %}
-                        <span class="badge bg-success text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Delivered</span>
-                    {% elif transaction.order.status == 'cancelled' %}
-                        <span class="badge bg-danger text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Cancelled</span>
-                    {% else %}
-                        <span class="badge bg-secondary text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">{{ transaction.order.status|capfirst }}</span>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Order Items Card -->
-    {% if order_items %}
-    <div class="card shadow-sm mb-4" style="border-radius: 10px; border: none;">
-        <div class="card-header" style="border-radius: 10px 10px 0 0; background-color: #f8fafc;">
-            <h5 class="mb-0 fw-medium" style="font-size: 1.1rem; color: #1e293b;">Order Items</h5>
+    <!-- Specific Order Item Card (if this transaction is for a specific order item) -->
+    {% if transaction.order_item and item_pricing %}
+    {% with item=transaction.order_item %}
+    <div class="card shadow-sm mb-4 border-primary" style="border-radius: 10px; border-width: 2px !important;">
+        <div class="card-header bg-primary text-white" style="border-radius: 10px 10px 0 0;">
+            <h5 class="mb-0 fw-medium d-flex align-items-center" style="font-size: 1.1rem;">
+                <i class="bi bi-box-seam me-2"></i>Transaction Item Details
+            </h5>
         </div>
         <div class="card-body" style="padding: 1.5rem;">
-            <div class="table-responsive">
-                <table class="table" style="font-size: 0.9rem;">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Product</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Quantity</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Unit Price</th>
-                            <th scope="col" style="color: #1e293b; font-weight: 500;">Total Price</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in order_items %}
-                        <tr>
-                            <td>
-                                <div>
-                                    <h6 class="mb-1" style="font-size: 0.9rem; font-weight: 600;">{{ item.product_variant.product.book_title }}</h6>
-                                    <small class="text-muted" style="font-size: 0.8rem;">{{ item.product_variant.product.author }} - {{ item.product_variant.language }}</small>
-                                </div>
-                            </td>
-                            <td>{{ item.quantity }}</td>
-                            <td>₹{{ item.unit_price|floatformat:2 }}</td>
-                            <td>₹{{ item.total_amount|floatformat:2 }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3" class="text-end fw-bold">Subtotal:</td>
-                            <td class="fw-bold">₹{{ transaction.order.subtotal|floatformat:2 }}</td>
-                        </tr>
-                        {% if transaction.order.coupon_discount %}
-                        <tr>
-                            <td colspan="3" class="text-end text-success">
-                                Coupon Discount ({{ transaction.order.coupon_code }}):
-                            </td>
-                            <td class="text-success">-₹{{ transaction.order.coupon_discount|floatformat:2 }}</td>
-                        </tr>
-                        {% endif %}
-                        <tr class="table-active">
-                            <td colspan="3" class="text-end fw-bold">Grand Total:</td>
-                            <td class="fw-bold text-primary" style="font-size: 1.1rem;">₹{{ transaction.order.net_amount|floatformat:2 }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Product</p>
+                    <p class="text-muted mb-0" style="font-size: 0.95rem; font-weight: 500;">{{ item.product_variant.product.book_title }}</p>
+                    <small class="text-muted" style="font-size: 0.85rem;">{{ item.product_variant.product.author }} - {{ item.product_variant.language }}</small>
+                </div>
+                <div class="col-md-3">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Quantity</p>
+                    <p class="text-muted mb-0" style="font-size: 0.95rem;">{{ item.quantity }}</p>
+                </div>
+                <div class="col-md-3">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Item Status</p>
+                    {% if item.status == 'delivered' %}
+                        <span class="badge bg-success text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Delivered</span>
+                    {% elif item.status == 'shipped' %}
+                        <span class="badge bg-info text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Shipped</span>
+                    {% elif item.status == 'pending' %}
+                        <span class="badge bg-warning text-dark" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Pending</span>
+                    {% elif item.status == 'cancelled' %}
+                        <span class="badge bg-danger text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Cancelled</span>
+                    {% elif item.status == 'return approved' %}
+                        <span class="badge bg-danger text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">Return Approved</span>
+                    {% else %}
+                        <span class="badge bg-secondary text-white" style="font-size: 0.8rem; padding: 0.4em 0.7em;">{{ item.status|title }}</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Unit Price (Actual)</p>
+                    <p class="text-muted mb-0" style="font-size: 0.95rem;">₹{{ item.unit_price|floatformat:2 }}</p>
+                    <small class="text-muted" style="font-size: 0.8rem;">× {{ item.quantity }} = ₹{{ item_pricing.gross_price|floatformat:2 }}</small>
+                </div>
+                <div class="col-md-4">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Total Discount</p>
+                    <p class="text-danger mb-0" style="font-size: 0.95rem;">-₹{{ item_pricing.total_discount|floatformat:2 }}</p>
+                    {% if item_pricing.coupon_discount > 0 %}
+                        <small class="text-muted" style="font-size: 0.8rem;">Product: ₹{{ item_pricing.product_discount|floatformat:2 }} + Coupon: ₹{{ item_pricing.coupon_discount|floatformat:2 }}</small>
+                    {% else %}
+                        <small class="text-muted" style="font-size: 0.8rem;">Product/Genre Discount</small>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <p class="fw-medium mb-1" style="font-size: 0.9rem; color: #1e293b;">Total Amount</p>
+                    <p class="text-success fw-bold mb-0" style="font-size: 1rem;">₹{{ transaction.amount|floatformat:2 }}</p>
+                    <small class="text-muted" style="font-size: 0.8rem;">Transaction Amount</small>
+                </div>
             </div>
         </div>
     </div>
+    {% endwith %}
     {% endif %}
     {% endif %}
 
