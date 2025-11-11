@@ -1,140 +1,372 @@
 {% extends "base.html" %}
 {% block page_heading %}SignUp{% endblock %}
 {% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-    /* Signup section with book watermark background */
-    .signup-wrapper {
-        min-height: calc(100vh - 200px);
-        padding: 2rem 0;
-        position: relative;
+  :root {
+    --primary-color: #4a00e0;
+    --primary-hover: #3b00b3;
+    --secondary-color: #8e2de2;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --bg-light: #f8fafc;
+  }
+
+  * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  .signup-section {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+    position: relative;
+  }
+
+  .signup-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(74, 0, 224, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(142, 45, 226, 0.05) 0%, transparent 50%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .signup-container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .signup-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .signup-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    padding: 2rem 1.5rem;
+    text-align: center;
+    border: none;
+  }
+
+  .signup-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  .signup-subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-top: 0.5rem;
+    font-weight: 400;
+  }
+
+  .card-body {
+    padding: 2rem 1.5rem;
+  }
+
+  .form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 0.95rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 10px;
+    background: #ffffff;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 0, 224, 0.1);
+  }
+
+  .form-control.is-invalid {
+    border-color: #ef4444;
+  }
+
+  .form-control.is-invalid:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+
+  .invalid-feedback {
+    display: block;
+    font-size: 0.8rem;
+    color: #ef4444;
+    margin-top: 0.25rem;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border: none;
+    border-radius: 10px;
+    color: #ffffff;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(74, 0, 224, 0.2);
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-hover), #7b27c6);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 0, 224, 0.3);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .card-footer {
+    background: var(--bg-light);
+    border: none;
+    border-top: 1px solid var(--border-color);
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .card-footer p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .card-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+  }
+
+  .card-footer a:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+  }
+
+  .alert {
+    border-radius: 10px;
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  .alert-danger {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+  }
+
+  .alert-success {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .signup-section {
+      padding: 1rem;
     }
 
-    .signup-wrapper::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.5) 0%, rgba(255, 229, 207, 0.3) 100%);
-        z-index: -1;
-        pointer-events: none;
+    .card-body {
+      padding: 1.5rem 1rem;
     }
 
-    .signup-wrapper .card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    .card-header {
+      padding: 1.5rem 1rem;
     }
+
+    .signup-title {
+      font-size: 1.5rem;
+    }
+  }
 </style>
 {% endblock %}
-{%block page_content %} 
+
+{% block page_content %}
 {% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endfor %}
-{% endif %}
-<div class="signup-wrapper">
-<div class="container">
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card" style="border-radius: 15px;">
-            <div class="card-body p-4">
-                <h3 class="text-center mb-4">Create an Account</h3>
-
-                <form method="POST">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="firstName" class="form-label">First Name</label>
-                            <input type="text" class="form-control {% if errors.firstName %}is-invalid{% endif %}" 
-                                   id="firstName" name="firstName" value="{{ request.POST.firstName|default:'' }}" required 
-                                   style="border-radius: 20px;">
-                            {% if errors.firstName %}
-                                <div class="text-danger small">{{ errors.firstName }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="lastName" class="form-label">Last Name</label>
-                            <input type="text" class="form-control {% if errors.lastName %}is-invalid{% endif %}" 
-                                   id="lastName" name="lastName" value="{{ request.POST.lastName|default:'' }}" required
-                                   style="border-radius: 20px;">
-                            {% if errors.lastName %}
-                                <div class="text-danger small">{{ errors.lastName }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control {% if errors.email %}is-invalid{% endif %}" 
-                               id="email" name="email" value="{{ request.POST.email|default:'' }}" required
-                               style="border-radius: 20px;">
-                        {% if errors.email %}
-                            <div class="text-danger small">{{ errors.email }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="mobile" class="form-label">Mobile Number</label>
-                        <input type="tel" class="form-control {% if errors.mobile %}is-invalid{% endif %}" 
-                               id="mobile" name="mobile" value="{{ request.POST.mobile|default:'' }}" required
-                               style="border-radius: 20px;">
-                        {% if errors.mobile %}
-                            <div class="text-danger small">{{ errors.mobile }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="referral_code" class="form-label">Referral Code <span class="text-muted">(Optional)</span></label>
-                        <input type="text" class="form-control {% if errors.referral_code %}is-invalid{% endif %}" 
-                               id="referral_code" name="referral_code" value="{{ request.POST.referral_code|default:'' }}" 
-                               placeholder="Enter referral code if you have one"
-                               style="border-radius: 20px; text-transform: uppercase;">
-                        {% if errors.referral_code %}
-                            <div class="text-danger small">{{ errors.referral_code }}</div>
-                        {% else %}
-                            <small class="text-muted">Have a referral code? Enter it to help your friend earn rewards!</small>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control {% if errors.password %}is-invalid{% endif %}" 
-                               id="password" name="password" required
-                               style="border-radius: 20px;">
-                               {% if errors.new_password %}
-                            <div class="text-danger small">{{ errors.new_password }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="mb-4">
-                        <label for="confirmPassword" class="form-label">Re-enter Password</label>
-                        <input type="password" class="form-control {% if errors.password %}is-invalid{% endif %}" 
-                               id="confirmPassword" name="confirmPassword" required
-                               style="border-radius: 20px;">
-                        {% if errors.password %}
-                            <div class="text-danger small">{{ errors.password }}</div>
-                        {% endif %}
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100" style="border-radius: 20px; padding: 10px;">
-                        Sign Up
-                    </button>
-                </form>
-                
-                <div class="text-center mt-3">
-                    {% comment %} <p>Already have an account? <a href="{% url 'login' %}">Login</a></p> {% endcomment %}
-                </div>
-            </div>
-        </div>
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-</div>
-</div>
-</div>
+  {% endfor %}
+{% endif %}
 
-{% endblock%}
+<div class="signup-section">
+  <div class="signup-container">
+    <div class="signup-card">
+      <div class="card-header">
+        <h3 class="signup-title">Create an Account</h3>
+        <p class="signup-subtitle">Join BookHive and start your reading journey</p>
+      </div>
+      <div class="card-body">
+        <form method="POST" class="needs-validation" novalidate>
+          {% csrf_token %}
+          
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="firstName" class="form-label">First Name</label>
+              <input type="text" class="form-control {% if errors.firstName %}is-invalid{% endif %}" 
+                     id="firstName" name="firstName" value="{{ request.POST.firstName|default:'' }}" required />
+              {% if errors.firstName %}
+                <div class="invalid-feedback">{{ errors.firstName }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="lastName" class="form-label">Last Name</label>
+              <input type="text" class="form-control {% if errors.lastName %}is-invalid{% endif %}" 
+                     id="lastName" name="lastName" value="{{ request.POST.lastName|default:'' }}" required />
+              {% if errors.lastName %}
+                <div class="invalid-feedback">{{ errors.lastName }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Email Address</label>
+            <input type="email" class="form-control {% if errors.email %}is-invalid{% endif %}" 
+                   id="email" name="email" value="{{ request.POST.email|default:'' }}" required autocomplete="email" />
+            {% if errors.email %}
+              <div class="invalid-feedback">{{ errors.email }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="mobile" class="form-label">Mobile Number</label>
+            <input type="tel" class="form-control {% if errors.mobile %}is-invalid{% endif %}" 
+                   id="mobile" name="mobile" value="{{ request.POST.mobile|default:'' }}" required />
+            {% if errors.mobile %}
+              <div class="invalid-feedback">{{ errors.mobile }}</div>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3">
+            <label for="referral_code" class="form-label">
+              Referral Code <span class="text-muted" style="font-weight: 400;">(Optional)</span>
+            </label>
+            <input type="text" class="form-control {% if errors.referral_code %}is-invalid{% endif %}" 
+                   id="referral_code" name="referral_code" value="{{ request.POST.referral_code|default:'' }}" 
+                   placeholder="Enter referral code if you have one" style="text-transform: uppercase;" />
+            {% if errors.referral_code %}
+              <div class="invalid-feedback">{{ errors.referral_code }}</div>
+            {% else %}
+              <small class="text-muted" style="font-size: 0.8rem;">
+                <i class="bi bi-info-circle me-1"></i>Have a referral code? Enter it to help your friend earn rewards!
+              </small>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control {% if errors.password %}is-invalid{% endif %}" 
+                   id="password" name="password" required minlength="8" autocomplete="new-password" />
+            {% if errors.new_password %}
+              <div class="invalid-feedback">{{ errors.new_password }}</div>
+            {% endif %}
+            <small class="text-muted" style="font-size: 0.8rem;">Must be at least 8 characters long</small>
+          </div>
+          
+          <div class="mb-4">
+            <label for="confirmPassword" class="form-label">Confirm Password</label>
+            <input type="password" class="form-control {% if errors.password %}is-invalid{% endif %}" 
+                   id="confirmPassword" name="confirmPassword" required minlength="8" autocomplete="new-password" />
+            {% if errors.password %}
+              <div class="invalid-feedback">{{ errors.password }}</div>
+            {% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-person-plus me-2"></i>Create Account
+          </button>
+        </form>
+      </div>
+      <div class="card-footer">
+        <p class="mb-0">
+          Already have an account?
+          <a href="{% url 'login' %}">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Form validation
+    const forms = document.getElementsByClassName('needs-validation');
+    Array.from(forms).forEach(form => {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+
+    // Password match validation
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirmPassword');
+    
+    function validatePasswordMatch() {
+      if (confirmPassword.value && password.value !== confirmPassword.value) {
+        confirmPassword.setCustomValidity('Passwords do not match');
+      } else {
+        confirmPassword.setCustomValidity('');
+      }
+    }
+    
+    password.addEventListener('input', validatePasswordMatch);
+    confirmPassword.addEventListener('input', validatePasswordMatch);
+  });
+</script>
+{% endblock %}

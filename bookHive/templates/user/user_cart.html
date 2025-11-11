@@ -2,148 +2,281 @@
 {% load price_filters %}
 {% include 'includes/header.html' %}
 
-<div class="container-fluid">
-  <div class="row">
-    <!-- Include sidebar -->
-    <div class="col-lg-2">
-      {% include 'user/UserProfile/sidebar.html' %}
-    </div>
+<style>
+  .cart-page {
+    background: #f8fafc;
+    min-height: calc(100vh - 200px);
+    padding: 2rem 0;
+  }
+  
+  .cart-header {
+    background: linear-gradient(135deg, #4a00e0, #8e2de2);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
+  }
+  
+  .cart-content {
+    background: white;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+  }
+  
+  .cart-item-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  
+  .cart-item-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  .cart-item-image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  
+  .quantity-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .quantity-selector .btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    transition: all 0.2s ease;
+  }
+  
+  .quantity-selector .btn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+  }
+  
+  .quantity-selector input {
+    width: 50px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+  
+  .cart-summary-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    position: sticky;
+    top: 20px;
+  }
+  
+  .cart-summary-header {
+    background: #f8fafc;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    border-radius: 12px 12px 0 0;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .summary-row:last-child {
+    border-bottom: none;
+  }
+  
+  .summary-total {
+    background: #f8fafc;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #1e293b;
+    border-radius: 0 0 12px 12px;
+  }
+  
+  .empty-cart {
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+  
+  .empty-cart-icon {
+    font-size: 4rem;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+  }
+</style>
 
-    <!-- Main Content Column -->
-    <div class="col-lg-10 py-3">
-      <div class="content-wrapper bg-white p-4 shadow-lg rounded">
-        <h4 class="mb-4">My Cart</h4>
+<div class="cart-page">
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <div class="col-lg-2 d-none d-lg-block">
+        {% include 'user/UserProfile/sidebar.html' %}
+      </div>
 
-        <div class="row">
-          <!-- Cart Items Column -->
-          <div class="{% if cart_item %}col-md-8{% else %}col-12{% endif %} cart-items">
-            {% for item in cart_item %}
-            <div class="card mb-2 cart-item-card" 
-                 data-available="{{ item.product_variant.available_quantity }}"
-                 data-qty="{{ item.quantity }}"
-                 data-product-url="{% url 'product_details' item.product_variant.product.id %}">
-              <div class="card-body p-3 shadow-lg">
-                <div class="row align-items-center">
-                  <div class="col-md-2 col-3">
-                    {% with item.product_variant.productimage_set.first as image %}
-                    {% if image %}
-                    <img src="{{ image.image1.url }}" alt="Book Cover" class="img-fluid cart-item-image" />
-                    {% else %}
-                    <img src="{% static 'default_image.jpg' %}" alt="No Image" class="img-fluid cart-item-image" />
-                    {% endif %}
-                    {% endwith %}
-                  </div>
-                  <div class="col-md-4 col-3">
-                    <h5 class="card-title mb-1 cart-item-title">{{ item.product_variant.product.book_title }}</h5>
-                    <p class="text-muted mb-0 cart-item-author">by {{ item.product_variant.product.author }}</p>
-                    {% if item.product_variant.available_quantity < item.quantity %}
-                    <small class="text-muted d-block">Available: {{ item.product_variant.available_quantity }}</small>
-                    {% endif %}
-                    {% if item.product_variant.product.has_active_offer %}
-                      <small class="badge bg-warning text-dark">{{ item.product_variant.product.get_best_discount_percentage }}% OFF</small>
-                    {% endif %}
-                  </div>
-                  <div class="col-md-2 col-2 text-center">
-                    <div class="quantity-selector d-flex align-items-center justify-content-center">
-                      <button class="btn btn-sm btn-outline-secondary btn-decrease cart-btn"
-                        data-id="{{ item.id }}">-</button>
-                      <input type="text" class="form-control form-control-sm mx-1 text-center quantity cart-input"
-                        value="{{ item.quantity }}" style="width: 35px" data-id="{{ item.id }}" readonly />
-                      <button class="btn btn-sm btn-outline-secondary btn-increase cart-btn"
-                        data-id="{{ item.id }}">+</button>
+      <!-- Main Content -->
+      <div class="col-lg-10">
+        <div class="cart-header">
+          <h4 class="mb-0 d-flex align-items-center">
+            <i class="bi bi-cart3 me-2"></i>My Shopping Cart
+          </h4>
+          <p class="mb-0 mt-1" style="opacity: 0.9; font-size: 0.9rem;">
+            {% if cart_item %}
+              {{ cart_item|length }} item{{ cart_item|length|pluralize }} in your cart
+            {% else %}
+              Your cart is empty
+            {% endif %}
+          </p>
+        </div>
+        
+        <div class="cart-content">
+          {% if cart_item %}
+          <div class="row">
+            <!-- Cart Items -->
+            <div class="col-lg-8">
+              {% for item in cart_item %}
+              <div class="cart-item-card" 
+                   data-available="{{ item.product_variant.available_quantity }}"
+                   data-qty="{{ item.quantity }}"
+                   data-product-url="{% url 'product_details' item.product_variant.product.id %}">
+                <div class="card-body p-3">
+                  <div class="row align-items-center">
+                    <div class="col-md-2 col-3">
+                      {% with item.product_variant.productimage_set.first as image %}
+                      {% if image %}
+                        <img src="{{ image.image1.url }}" alt="Book Cover" class="cart-item-image" />
+                      {% else %}
+                        <img src="{% static 'default_image.jpg' %}" alt="No Image" class="cart-item-image" />
+                      {% endif %}
+                      {% endwith %}
                     </div>
-                  </div>
-                  <div class="col-md-2 col-2 text-center">
-                    {% if item.product_variant.product.has_active_offer %}
-                      <p class="fw-bold mb-0 text-success cart-item-price" id="item-total-{{ item.id }}">
-                        ₹{{ item.total_price|floatformat:0 }}
+                    <div class="col-md-4 col-5">
+                      <h6 class="mb-1 fw-semibold" style="color: #1e293b; font-size: 0.95rem;">
+                        {{ item.product_variant.product.book_title }}
+                      </h6>
+                      <p class="text-muted mb-1" style="font-size: 0.85rem;">
+                        by {{ item.product_variant.product.author }}
                       </p>
-                      <p class="text-muted text-decoration-line-through mb-0" style="font-size: 0.75rem;">
-                        ₹{{ item.original_total_price|floatformat:0 }}
-                      </p>
-                    {% else %}
-                      <p class="fw-bold mb-0 cart-item-price" id="item-total-{{ item.id }}">₹{{ item.get_total_price }}
-                      </p>
-                    {% endif %}
-                  </div>
-                  <div class="col-md-2 col-2 text-end">
-                    <button class="btn btn-sm btn-outline-danger cart-btn" data-id="{{ item.id }}">
-                      <i class="bi bi-trash" data-id="{{ item.id }}"></i>
-                    </button>
+                      {% if item.product_variant.available_quantity < item.quantity %}
+                        <small class="text-danger d-block" style="font-size: 0.75rem;">
+                          <i class="bi bi-exclamation-triangle"></i> Only {{ item.product_variant.available_quantity }} available
+                        </small>
+                      {% endif %}
+                      {% if item.product_variant.product.has_active_offer %}
+                        <span class="badge bg-warning text-dark" style="font-size: 0.7rem;">
+                          {{ item.product_variant.product.get_best_discount_percentage }}% OFF
+                        </span>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-2 col-4 text-center">
+                      <div class="quantity-selector justify-content-center">
+                        <button class="btn btn-sm btn-decrease cart-btn" data-id="{{ item.id }}">-</button>
+                        <input type="text" class="form-control form-control-sm quantity cart-input"
+                          value="{{ item.quantity }}" data-id="{{ item.id }}" readonly />
+                        <button class="btn btn-sm btn-increase cart-btn" data-id="{{ item.id }}">+</button>
+                      </div>
+                    </div>
+                    <div class="col-md-2 col-6 text-center">
+                      {% if item.product_variant.product.has_active_offer %}
+                        <p class="fw-bold mb-0 text-success" style="font-size: 0.95rem;" id="item-total-{{ item.id }}">
+                          ₹{{ item.total_price|floatformat:0 }}
+                        </p>
+                        <p class="text-muted text-decoration-line-through mb-0" style="font-size: 0.75rem;">
+                          ₹{{ item.original_total_price|floatformat:0 }}
+                        </p>
+                      {% else %}
+                        <p class="fw-bold mb-0" style="font-size: 0.95rem; color: #1e293b;" id="item-total-{{ item.id }}">
+                          ₹{{ item.get_total_price }}
+                        </p>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-2 col-6 text-end">
+                      <button class="btn btn-sm btn-outline-danger cart-btn" data-id="{{ item.id }}" title="Remove item">
+                        <i class="bi bi-trash" data-id="{{ item.id }}"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
+              {% endfor %}
             </div>
-            {% empty %}
-            <p>Your cart is empty.</p>
-            {% endfor %}
-          </div>
 
-          <!-- Cart Summary Column -->
-          {% if cart_item %}
-          <div class="col-md-4">
-            <div class="card cart-summary-card">
-              <div class="card-body p-3 shadow-lg">
-                <div class="cart-summary">
+            <!-- Cart Summary -->
+            <div class="col-lg-4">
+              <div class="cart-summary-card">
+                <div class="cart-summary-header">
+                  <i class="bi bi-receipt me-2"></i>Order Summary
+                </div>
+                <div class="cart-summary p-0">
                   <div id="discount-section" {% if original_subtotal > subtotal %}style="display: block;"{% else %}style="display: none;"{% endif %}>
-                    <div class="d-flex justify-content-between mb-2">
-                      <span>Total MRP:</span>
+                    <div class="summary-row">
+                      <span style="color: #64748b;">Total MRP:</span>
                       <span class="text-muted text-decoration-line-through" id="cart-original-total">₹{{ original_subtotal|floatformat:0 }}</span>
                     </div>
-                    <div class="d-flex justify-content-between mb-2 text-success">
-                      <span>Discount:</span>
-                      <span>-₹<span id="cart-discount">{{ total_discount|floatformat:0 }}</span></span>
+                    <div class="summary-row">
+                      <span class="text-success">Discount:</span>
+                      <span class="text-success fw-semibold">-₹<span id="cart-discount">{{ total_discount|floatformat:0 }}</span></span>
                     </div>
                   </div>
-                  <div class="d-flex justify-content-between mb-2">
-                    <span>Subtotal:</span>
-                    <span id="cart-subtotal">₹{{ subtotal|floatformat:0 }}</span>
+                  <div class="summary-row">
+                    <span style="color: #64748b;">Subtotal:</span>
+                    <span class="fw-semibold" id="cart-subtotal">₹{{ subtotal|floatformat:0 }}</span>
                   </div>
-                  <div class="d-flex justify-content-between mb-2">
-                    <span>Shipping:</span>
-                    <span>Free</span>
+                  <div class="summary-row">
+                    <span style="color: #64748b;">Shipping:</span>
+                    <span class="text-success fw-semibold">Free</span>
                   </div>
-                  <div class="d-flex justify-content-between fw-bold">
+                  <div id="savings-message" class="summary-row text-center text-success" {% if original_subtotal > subtotal %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                    <small>
+                      <i class="bi bi-tag-fill"></i> You saved ₹<span id="savings-amount">{{ total_discount|floatformat:0 }}</span>!
+                    </small>
+                  </div>
+                  <div class="summary-row summary-total">
                     <span>Total:</span>
                     <span id="cart-nettotal">₹{{ subtotal|floatformat:0 }}</span>
                   </div>
-                  <div id="savings-message" class="text-center text-success mb-2" {% if original_subtotal > subtotal %}style="display: block;"{% else %}style="display: none;"{% endif %}>
-                    <small><i class="bi bi-tag-fill"></i> You saved ₹<span id="savings-amount">{{ total_discount|floatformat:0 }}</span>!</small>
+                  <div class="p-3">
+                    <a href="{% url 'checkoutpage' %}" class="btn btn-primary w-100" id="checkout-button" style="border-radius: 8px; padding: 0.75rem;">
+                      <i class="bi bi-arrow-right me-2"></i>Proceed to Checkout
+                    </a>
                   </div>
-                  <a href="{% url 'checkoutpage' %}" class="btn btn-primary w-100 mt-3 text-decoration-none"
-                    id="checkout-button">
-                    Proceed to Checkout
-                  </a>
                 </div>
               </div>
             </div>
           </div>
+          {% else %}
+          <div class="empty-cart">
+            <div class="empty-cart-icon">
+              <i class="bi bi-cart-x"></i>
+            </div>
+            <h5 class="mb-2" style="color: #1e293b;">Your cart is empty</h5>
+            <p class="text-muted mb-4">Looks like you haven't added any items to your cart yet.</p>
+            <a href="{% url 'loading_page' %}" class="btn btn-primary" style="border-radius: 8px;">
+              <i class="bi bi-arrow-left me-2"></i>Continue Shopping
+            </a>
+          </div>
           {% endif %}
         </div>
-
-        <!-- Cart Summary Below on Empty Cart -->
-        {% if not cart_item %}
-        <div class="card mt-4 cart-summary-card">
-          <div class="card-body p-3">
-            <div class="cart-summary">
-              <div class="d-flex justify-content-between mb-2">
-                <span>Subtotal:</span>
-                <span id="cart-subtotal">₹{{ subtotal }}</span>
-              </div>
-              <div class="d-flex justify-content-between mb-2">
-                <span>Shipping:</span>
-                <span>Free</span>
-              </div>
-              <div class="d-flex justify-content-between fw-bold">
-                <span>Total:</span>
-                <span id="cart-nettotal">₹{{ subtotal }}</span>
-              </div>
-              <a href="#" class="btn w-100 mt-3 disabled text-decoration-none" id="checkout-button">Proceed to
-                Checkout</a>
-            </div>
-          </div>
-        </div>
-        {% endif %}
       </div>
     </div>
   </div>
@@ -163,13 +296,12 @@
           toastr.error('This book is currently out of stock. Redirecting to product page.');
         }
         if (productUrl) { window.location.href = productUrl; }
-        return; // stop further checks after redirect
+        return;
       }
       if (available < qty) {
         if (typeof toastr !== 'undefined') {
           toastr.error('Quantity exceeds available stock. Available: ' + available);
         }
-        // Stay on cart page so user can adjust
       }
     }
 
@@ -179,9 +311,12 @@
       const input = $('input.quantity[data-id="' + itemId + '"]');
       let currentQty = parseInt(input.val());
 
-      // 👇 Client-side limit
       if (action === "increase" && currentQty >= 5) {
-        toastr.warning("Maximum quantity is 5"); // ✅ toast instead of alert
+        if (typeof toastr !== 'undefined') {
+          toastr.warning("Maximum quantity is 5");
+        } else {
+          alert("Maximum quantity is 5");
+        }
         return;
       }
 
@@ -197,14 +332,12 @@
           if (response.success) {
             input.val(response.new_quantity);
             $('#item-total-' + itemId).html('₹' + response.item_total_price);
-            // Update original price if exists
             if (response.item_original_total && response.item_original_total != response.item_total_price) {
               $('#item-total-' + itemId).next('p').html('<span class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">₹' + response.item_original_total + '</span>');
             }
             $('#cart-subtotal').text('₹' + Math.round(response.cart_total));
             $('#cart-nettotal').text('₹' + Math.round(response.cart_total));
             
-            // Update discount section if discount exists
             if (response.total_discount && response.total_discount > 0) {
               $('#cart-original-total').text('₹' + Math.round(response.original_subtotal));
               $('#cart-discount').text(Math.round(response.total_discount));
@@ -216,21 +349,25 @@
               $('#savings-message').hide();
             }
           } else {
-            alert("Error: " + response.error);
+            if (typeof toastr !== 'undefined') {
+              toastr.error(response.error || "Error updating quantity");
+            } else {
+              alert("Error: " + response.error);
+            }
           }
         },
         error: function () {
-          alert("Something went wrong!");
+          if (typeof toastr !== 'undefined') {
+            toastr.error("Something went wrong!");
+          } else {
+            alert("Something went wrong!");
+          }
         }
       });
     });
   });
 
-
-</script>
-
-<!-- delete cart-items -->
-<script>
+  // Delete cart items
   $(document).ready(function () {
     $(".bi-trash").click(function () {
       const itemId = $(this).data("id");
@@ -244,14 +381,13 @@
         },
         success: function (response) {
           if (response.success) {
-            // Remove item card from DOM
-            $(`.btn-outline-danger:has([data-id="${itemId}"])`).closest(".card").remove();
+            $(`.btn-outline-danger:has([data-id="${itemId}"])`).closest(".cart-item-card").fadeOut(300, function() {
+              $(this).remove();
+            });
 
-            // Update cart total
             $('#cart-subtotal').text('₹' + response.cart_total);
             $('#cart-nettotal').text('₹' + response.cart_total);
             
-            // Update discount section if discount exists
             if (response.total_discount && response.total_discount > 0) {
               $('#cart-original-total').text('₹' + Math.round(response.original_subtotal));
               $('#cart-discount').text(Math.round(response.total_discount));
@@ -263,31 +399,34 @@
               $('#savings-message').hide();
             }
 
-            // 🧠 Update checkout button based on item count
             if (response.count > 0) {
               $('#checkout-button')
                 .removeClass('disabled')
                 .addClass('btn-primary')
                 .attr('href', '{% url "checkoutpage" %}');
             } else {
-              $('#checkout-button')
-                .addClass('disabled')
-                .removeClass('btn-primary')
-                .attr('href', '#');
-
+              location.reload();
             }
-          }
-          else {
-            alert("Error: " + response.error);
+          } else {
+            if (typeof toastr !== 'undefined') {
+              toastr.error(response.error || "Error removing item");
+            } else {
+              alert("Error: " + response.error);
+            }
           }
         },
         error: function () {
-          alert("Something went wrong!");
+          if (typeof toastr !== 'undefined') {
+            toastr.error("Something went wrong!");
+          } else {
+            alert("Something went wrong!");
+          }
         }
       });
     });
   });
 </script>
 
+{% include 'includes/footer.html' %}
 
 {% include 'includes/footer.html' %}

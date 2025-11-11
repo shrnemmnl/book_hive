@@ -2,251 +2,277 @@
 {% include 'includes/header.html' %}
 
 <style>
-    .verification-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        padding: 40px;
-        max-width: 500px;
-        margin: 0 auto;
+  .email-change-page {
+    background: #f8fafc;
+    min-height: calc(100vh - 200px);
+    padding: 2rem 0;
+  }
+  
+  .email-change-header {
+    background: linear-gradient(135deg, #4a00e0, #8e2de2);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
+  }
+  
+  .email-change-content {
+    background: white;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 2rem;
+    max-width: 600px;
+  }
+  
+  .verification-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+  }
+  
+  .icon-circle {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #4a00e0, #8e2de2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+  }
+  
+  .icon-circle i {
+    color: white;
+    font-size: 35px;
+  }
+  
+  .form-label {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .form-control {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+  }
+  
+  .form-control:focus {
+    border-color: #4a00e0;
+    box-shadow: 0 0 0 3px rgba(74, 0, 224, 0.1);
+  }
+  
+  .otp-input {
+    width: 100%;
+    height: 50px;
+    font-size: 24px;
+    text-align: center;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    letter-spacing: 10px;
+    font-weight: bold;
+  }
+  
+  .otp-input:focus {
+    border-color: #4a00e0;
+    box-shadow: 0 0 0 3px rgba(74, 0, 224, 0.1);
+  }
+  
+  .btn-primary {
+    background: linear-gradient(135deg, #4a00e0, #8e2de2);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 0, 224, 0.3);
+  }
+  
+  .timer {
+    font-size: 18px;
+    font-weight: 600;
+    color: #4a00e0;
+  }
+  
+  .timer.expired {
+    color: #dc2626;
+  }
+  
+  .email-display {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    word-break: break-all;
+    font-weight: 600;
+    color: #4a00e0;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.5s;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
     }
-
-    .icon-circle {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
-
-    .icon-circle i {
-        color: white;
-        font-size: 35px;
-    }
-
-    .otp-input {
-        width: 100%;
-        height: 50px;
-        font-size: 24px;
-        text-align: center;
-        border: 2px solid #e0e0e0;
-        border-radius: 10px;
-        letter-spacing: 10px;
-        font-weight: bold;
-    }
-
-    .otp-input:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    }
-
-    .btn-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        color: white;
-        padding: 12px;
-        font-size: 16px;
-        font-weight: 600;
-        border-radius: 10px;
-        transition: transform 0.2s;
-    }
-
-    .btn-gradient:hover {
-        background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        color: white;
-    }
-
-    .timer {
-        font-size: 18px;
-        font-weight: 600;
-        color: #667eea;
-    }
-
-    .timer.expired {
-        color: #dc3545;
-    }
-
-    .fade-in {
-        animation: fadeIn 0.5s;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .email-display {
-        background: #f8f9fa;
-        padding: 10px;
-        border-radius: 8px;
-        word-break: break-all;
-        font-weight: 600;
-        color: #667eea;
-    }
-
-    .page-title {
-        font-size: 28px;
-        font-weight: 700;
-        color: #333;
-        margin-bottom: 30px;
-        padding-bottom: 15px;
-        border-bottom: 3px solid #667eea;
-    }
+  }
 </style>
 
-<div class="container-fluid">
+<div class="email-change-page">
+  <div class="container-fluid">
     <div class="row">
-        <!-- Include sidebar -->
-        <div class="col-lg-2">
-            {% include 'user/UserProfile/sidebar.html' %}
+      <!-- Sidebar -->
+      <div class="col-lg-2 d-none d-lg-block">
+        {% include 'user/UserProfile/sidebar.html' %}
+      </div>
+
+      <!-- Main Content -->
+      <div class="col-lg-10">
+        <div class="email-change-header">
+          <h4 class="mb-0 d-flex align-items-center">
+            <i class="bi bi-envelope me-2"></i>Change Email Address
+          </h4>
+          <p class="mb-0 mt-1" style="opacity: 0.9; font-size: 0.9rem;">Update your email address securely</p>
         </div>
+        
+        <div class="email-change-content">
+          <div class="verification-card">
+            <!-- Email Input Section -->
+            <div id="emailSection" {% if otp_sent %}style="display: none;" {% endif %}>
+              <div class="icon-circle">
+                <i class="bi bi-envelope"></i>
+              </div>
+              <h3 class="text-center mb-3" style="color: #1e293b;">Email Change</h3>
+              <p class="text-center text-muted mb-4">Enter your new email address and we'll send you a verification code.</p>
 
-        <!-- Main Content Column -->
-        <div class="col-lg-10 py-5">
-
-
-            <div class="verification-card">
-
-
-                <!-- Email Input Section -->
-                <div id="emailSection" {% if otp_sent %}style="display: none;" {% endif %}>
-
-                    <h3 class="text-center mb-3">Email Change</h3>
-                    <p class="text-center text-muted mb-4">Enter your new email address here and click to send otp.</p>
-
-                    <form method="POST" id="emailForm">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="send_otp">
-                        <div class="mb-3">
-                            <label for="emailInput" class="form-label">Email Address</label>
-                            <input type="email"
-                                class="form-control form-control-lg {% if error.duplicate_email %}is-invalid{% endif %}"
-                                id="emailInput" name="email" placeholder="your.email@example.com" required>
-                        </div>
-                        
-                        {% if error.duplicate_email %}
-                        <div class="text-danger mt-1">{{ error.duplicate_email }}</div>
-                        {% endif %}
-                        <button type="submit" class="btn btn-gradient w-100">
-                            <i class="fas fa-paper-plane me-2"></i>Send Verification Code
-                        </button>
-                    </form>
+              <form method="POST" id="emailForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="send_otp">
+                <div class="mb-3">
+                  <label for="emailInput" class="form-label">New Email Address</label>
+                  <input type="email" class="form-control form-control-lg {% if error.duplicate_email %}is-invalid{% endif %}" 
+                         id="emailInput" name="email" placeholder="your.email@example.com" required />
+                  {% if error.duplicate_email %}
+                    <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.duplicate_email }}</div>
+                  {% endif %}
                 </div>
-
-                <!-- OTP Verification Section -->
-                <div id="otpSection" class="fade-in" {% if not otp_sent %}style="display: none;" {% endif %}>
-                    
-                    <h3 class="text-center mb-3">Enter Verification Code</h3>
-                    <p class="text-center text-muted mb-3">Please enter the 6-digit code sent to</p>
-                    <div class="email-display mb-4 text-center" id="emailDisplay">
-                        {{ email }}
-                    </div>
-
-                    <form method="POST" id="otpForm">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="verify_otp">
-                        <input type="hidden" name="email" value="{{ email }}" id="hiddenEmail">
-
-                        <div class="mb-3">
-                            <label for="otpInput" class="form-label">Verification Code</label>
-                            <input type="text" class="form-control otp-input" id="otpInput" name="otp" maxlength="6"
-                                pattern="\d{6}" placeholder="000000" required autocomplete="off">
-                        </div>
-
-                        <div class="text-center mb-3">
-                            <div class="timer" id="timer">Time remaining: 5:00</div>
-                        </div>
-
-                        <button type="submit" class="btn btn-gradient w-100 mb-2" id="verifyBtn">
-                            <i class="fas fa-check me-2"></i>Verify Code
-                        </button>
-                    </form>
-
-                    <button class="btn btn-outline-secondary w-100 mb-2" id="resendBtn" style="display: none;">
-                        <i class="fas fa-redo me-2"></i>Resend Code
-                    </button>
-
-
-                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="bi bi-send me-2"></i>Send Verification Code
+                </button>
+              </form>
             </div>
+
+            <!-- OTP Verification Section -->
+            <div id="otpSection" class="fade-in" {% if not otp_sent %}style="display: none;" {% endif %}>
+              <div class="icon-circle">
+                <i class="bi bi-shield-check"></i>
+              </div>
+              <h3 class="text-center mb-3" style="color: #1e293b;">Enter Verification Code</h3>
+              <p class="text-center text-muted mb-3">Please enter the 6-digit code sent to</p>
+              <div class="email-display mb-4 text-center" id="emailDisplay">
+                {{ email }}
+              </div>
+
+              <form method="POST" id="otpForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="verify_otp">
+                <input type="hidden" name="email" value="{{ email }}" id="hiddenEmail">
+
+                <div class="mb-3">
+                  <label for="otpInput" class="form-label">Verification Code</label>
+                  <input type="text" class="form-control otp-input" id="otpInput" name="otp" maxlength="6"
+                    pattern="\d{6}" placeholder="000000" required autocomplete="off" />
+                </div>
+
+                <div class="text-center mb-3">
+                  <div class="timer" id="timer">Time remaining: 5:00</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mb-2" id="verifyBtn">
+                  <i class="bi bi-check-circle me-2"></i>Verify Code
+                </button>
+              </form>
+
+              <button class="btn btn-outline-secondary w-100 mb-2" id="resendBtn" style="display: none; border-radius: 8px;">
+                <i class="bi bi-arrow-clockwise me-2"></i>Resend Code
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <script>
-    let timeLeft = 5 * 60;
-    let countdownTimer;
+  let timeLeft = 5 * 60;
+  let countdownTimer;
 
-    function startTimer() {
-        timeLeft = 5 * 60;
+  function startTimer() {
+    timeLeft = 5 * 60;
+    clearInterval(countdownTimer);
+    const timerElement = document.getElementById('timer');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const resendBtn = document.getElementById('resendBtn');
+    const otpInput = document.querySelector('input[name="otp"]');
+
+    countdownTimer = setInterval(() => {
+      if (timeLeft <= 0) {
         clearInterval(countdownTimer);
-        const timerElement = document.getElementById('timer');
-        const verifyBtn = document.getElementById('verifyBtn');
-        const resendBtn = document.getElementById('resendBtn');
-        const otpInput = document.querySelector('input[name="otp"]');
+        timerElement.textContent = 'Time expired';
+        timerElement.classList.add('expired');
+        verifyBtn.style.display = 'none';
+        resendBtn.style.display = 'block';
+        otpInput.disabled = true;
+        return;
+      }
 
-        countdownTimer = setInterval(() => {
-            if (timeLeft <= 0) {
-                clearInterval(countdownTimer);
-                timerElement.textContent = 'Time expired';
-                timerElement.classList.add('expired');
-                verifyBtn.style.display = 'none';
-                resendBtn.style.display = 'block';
-                otpInput.disabled = true;
-                return;
-            }
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerElement.textContent = `Time remaining: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+      timeLeft--;
+    }, 1000);
+  }
 
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerElement.textContent = `Time remaining: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-            timeLeft--;
-        }, 1000);
-    }
+  document.getElementById('resendBtn')?.addEventListener('click', function () {
+    const email = document.getElementById('hiddenEmail').value;
+    const formData = new FormData();
+    formData.append('action', 'send_otp');
+    formData.append('email', email);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
-    document.getElementById('changeEmailBtn')?.addEventListener('click', function () {
-        document.getElementById('otpSection').style.display = 'none';
-        document.getElementById('emailSection').style.display = 'block';
-        clearInterval(countdownTimer);
+    fetch(window.location.href, {
+      method: 'POST',
+      body: formData
+    }).then(response => {
+      if (response.ok) {
+        location.reload();
+      }
     });
+  });
 
-    document.getElementById('resendBtn')?.addEventListener('click', function () {
-        const email = document.getElementById('hiddenEmail').value;
-        const formData = new FormData();
-        formData.append('action', 'send_otp');
-        formData.append('email', email);
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+  // Auto-format OTP input - only numbers
+  document.querySelector('input[name="otp"]')?.addEventListener('input', function (e) {
+    this.value = this.value.replace(/\D/g, '').slice(0, 6);
+  });
 
-        fetch(window.location.href, {
-            method: 'POST',
-            body: formData
-        }).then(response => {
-            if (response.ok) {
-                location.reload();
-            }
-        });
-    });
-
-    // Auto-format OTP input - only numbers
-    document.querySelector('input[name="otp"]')?.addEventListener('input', function (e) {
-        this.value = this.value.replace(/\D/g, '').slice(0, 6);
-    });
-
-    // Start timer if OTP section is visible
-    if (document.getElementById('otpSection') && document.getElementById('otpSection').style.display !== 'none') {
-        startTimer();
-    }
+  // Start timer if OTP section is visible
+  if (document.getElementById('otpSection') && document.getElementById('otpSection').style.display !== 'none') {
+    startTimer();
+  }
 </script>
 
 {% include 'includes/footer.html' %}
