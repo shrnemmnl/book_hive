@@ -89,7 +89,7 @@ class Cart(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Cart #{self.id} - {self.user.username}"
+        return f"Cart #{self.id} - {self.user.email}"
 
     def total_price(self):
         return sum(item.get_total_price() for item in self.cart_items.all())
@@ -143,7 +143,7 @@ class Order(models.Model):
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def __str__(self):
-        return f"Order #{self.order_id} - {self.user.username}"
+        return f"Order #{self.order_id} - {self.user.email}"
 
     def generate_order_id(self):
         """Generate a unique order_id in the format BKDDMMYYYYHHMMSSmmm."""
