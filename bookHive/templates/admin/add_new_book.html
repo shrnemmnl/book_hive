@@ -2,6 +2,8 @@
 
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Cropper.js CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 {% endblock head %}
 
 {% block content %}
@@ -9,30 +11,63 @@
     <form id="addBookForm" method="POST" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="mb-3">
-            <label for="book_name" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Title</label>
-            <input type="text" class="form-control" id="book_name" placeholder="Enter book title" name="book_name" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <label for="book_name" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control {% if error.book_name %}is-invalid{% endif %}" id="book_name" placeholder="Enter book title" name="book_name" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="book_name-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.book_name %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.book_name }}</div>
+            {% endif %}
+            <small class="text-muted">Minimum 3 characters, maximum 200 characters. Only letters, numbers, spaces, and basic punctuation allowed.</small>
         </div>
         <div class="mb-3">
-            <label for="author" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Author Name</label>
-            <input type="text" class="form-control" id="author" placeholder="Enter author name" name="author" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <label for="author" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Author Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control {% if error.author %}is-invalid{% endif %}" id="author" placeholder="Enter author name" name="author" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="author-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.author %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.author }}</div>
+            {% endif %}
+            <small class="text-muted">Minimum 2 characters, maximum 100 characters. Only letters, spaces, hyphens, and apostrophes allowed.</small>
         </div>
         <div class="mb-3">
-            <label for="image" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Image</label>
-            <input type="file" class="form-control" id="image" name="image" multiple accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <label for="image" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Image <span class="text-danger">*</span></label>
+            
+            <!-- Existing Image Preview (if editing) -->
+            {% if book_image %}
+            <div class="mb-2">
+                <img src="{{ book_image.url }}" alt="Book Image" class="img-fluid rounded"
+                    style="max-width: 100px; border-radius: 6px;">
+            </div>
+            {% endif %}
+
+            <!-- New Cropper Preview -->
+            <img id="preview" style="max-width: 300px; display: none; border-radius: 6px; margin-bottom: 10px;">
+
+            <!-- File Input -->
+            <input type="file" class="form-control {% if error.image %}is-invalid{% endif %}" id="image" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" required style="font-size: 0.9rem; padding: 0.65rem;">
             <div id="image-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.image %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.image }}</div>
+            {% endif %}
+            <small class="text-muted">Upload an image (jpg, jpeg, png, gif, webp). Max 5MB. You can crop the image after selection.</small>
         </div>
         <div class="mb-3">
             <label for="genre_id" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Genre</label>
-            <select class="form-select" id="genre_id" name="genre_id" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <select class="form-select {% if error.genre_id %}is-invalid{% endif %}" id="genre_id" name="genre_id" required style="font-size: 0.9rem; padding: 0.65rem;">
                 <option value="" disabled selected>Select Genre</option>
                 {% for genre in all_genres %}
                 <option value="{{ genre.id }}">{{ genre.genre_name }}</option>
                 {% endfor %}
             </select>
+            {% if error.genre_id %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.genre_id }}</div>
+            {% endif %}
         </div>
         <div class="mb-3">
             <label for="description" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Description</label>
-            <textarea class="form-control" id="description" placeholder="Enter book description" rows="4" name="description" required style="font-size: 0.9rem; padding: 0.65rem;"></textarea>
+            <textarea class="form-control {% if error.description %}is-invalid{% endif %}" id="description" placeholder="Enter book description" rows="4" name="description" required style="font-size: 0.9rem; padding: 0.65rem;"></textarea>
+            {% if error.description %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.description }}</div>
+            {% endif %}
         </div>
         <button type="submit" class="btn btn-primary w-100" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Add Book</button>
 
@@ -59,70 +94,253 @@
     </form>
 </div>
 
+<!-- Cropper.js CSS and JS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const imageInput = document.getElementById('image');
     const imageError = document.getElementById('image-error');
+    const bookNameInput = document.getElementById('book_name');
+    const authorInput = document.getElementById('author');
+    const bookNameError = document.getElementById('book_name-error');
+    const authorError = document.getElementById('author-error');
     const form = document.getElementById('addBookForm');
+    
+    let cropper = null;
 
     // Valid image extensions
     const validImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     const validImageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
 
-    // Function to validate image file
-    function validateImage() {
-        const files = imageInput.files;
+    // Validation functions
+    function validateBookTitle() {
+        const value = bookNameInput.value.trim();
         
-        if (files.length === 0) {
-            // No files selected - required field
+        if (!value) {
+            bookNameInput.classList.add('is-invalid');
+            bookNameError.style.display = 'block';
+            bookNameError.textContent = 'Book title is required.';
+            return false;
+        }
+        
+        if (value.length < 3) {
+            bookNameInput.classList.add('is-invalid');
+            bookNameError.style.display = 'block';
+            bookNameError.textContent = 'Book title must be at least 3 characters long.';
+            return false;
+        }
+        
+        if (value.length > 200) {
+            bookNameInput.classList.add('is-invalid');
+            bookNameError.style.display = 'block';
+            bookNameError.textContent = 'Book title must not exceed 200 characters.';
+            return false;
+        }
+        
+        // Allow letters, numbers, spaces, and basic punctuation
+        const validPattern = /^[a-zA-Z0-9\s.,!?;:'"()-]+$/;
+        if (!validPattern.test(value)) {
+            bookNameInput.classList.add('is-invalid');
+            bookNameError.style.display = 'block';
+            bookNameError.textContent = 'Book title contains invalid characters. Only letters, numbers, spaces, and basic punctuation are allowed.';
+            return false;
+        }
+        
+        bookNameInput.classList.remove('is-invalid');
+        bookNameError.style.display = 'none';
+        return true;
+    }
+
+    function validateAuthor() {
+        const value = authorInput.value.trim();
+        
+        if (!value) {
+            authorInput.classList.add('is-invalid');
+            authorError.style.display = 'block';
+            authorError.textContent = 'Author name is required.';
+            return false;
+        }
+        
+        if (value.length < 2) {
+            authorInput.classList.add('is-invalid');
+            authorError.style.display = 'block';
+            authorError.textContent = 'Author name must be at least 2 characters long.';
+            return false;
+        }
+        
+        if (value.length > 100) {
+            authorInput.classList.add('is-invalid');
+            authorError.style.display = 'block';
+            authorError.textContent = 'Author name must not exceed 100 characters.';
+            return false;
+        }
+        
+        // Allow letters, spaces, hyphens, and apostrophes
+        const validPattern = /^[a-zA-Z\s'-]+$/;
+        if (!validPattern.test(value)) {
+            authorInput.classList.add('is-invalid');
+            authorError.style.display = 'block';
+            authorError.textContent = 'Author name contains invalid characters. Only letters, spaces, hyphens, and apostrophes are allowed.';
+            return false;
+        }
+        
+        authorInput.classList.remove('is-invalid');
+        authorError.style.display = 'none';
+        return true;
+    }
+
+    function validateImage() {
+        const file = imageInput.files[0];
+        
+        if (!file) {
             imageInput.classList.add('is-invalid');
             imageError.style.display = 'block';
             imageError.textContent = 'Book image is required.';
             return false;
         }
 
-        // Check each file
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const fileName = file.name.toLowerCase();
-            const fileExtension = fileName.split('.').pop();
-            const fileType = file.type;
+        const fileName = file.name.toLowerCase();
+        const fileExtension = fileName.split('.').pop();
+        const fileType = file.type;
 
-            // Check file extension
-            if (!validImageExtensions.includes(fileExtension)) {
-                imageInput.classList.add('is-invalid');
-                imageError.style.display = 'block';
-                imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
-                return false;
-            }
-
-            // Check MIME type (if available)
-            if (fileType && !validImageMimeTypes.includes(fileType)) {
-                imageInput.classList.add('is-invalid');
-                imageError.style.display = 'block';
-                imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
-                return false;
-            }
+        // Check file size
+        if (file.size > maxFileSize) {
+            imageInput.classList.add('is-invalid');
+            imageError.style.display = 'block';
+            imageError.textContent = `File "${file.name}" exceeds 5MB limit. Please choose a smaller file.`;
+            return false;
         }
 
-        // All files are valid
+        // Check file extension
+        if (!validImageExtensions.includes(fileExtension)) {
+            imageInput.classList.add('is-invalid');
+            imageError.style.display = 'block';
+            imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+            return false;
+        }
+
+        // Check MIME type
+        if (fileType && !validImageMimeTypes.includes(fileType)) {
+            imageInput.classList.add('is-invalid');
+            imageError.style.display = 'block';
+            imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+            return false;
+        }
+
+        // File is valid
         imageInput.classList.remove('is-invalid');
         imageError.style.display = 'none';
-        imageError.textContent = '';
         return true;
     }
 
-    // Event listener for image validation
-    imageInput.addEventListener('change', function() {
-        validateImage();
+    // Event listeners for validation
+    bookNameInput.addEventListener('blur', validateBookTitle);
+    bookNameInput.addEventListener('input', function() {
+        if (bookNameInput.classList.contains('is-invalid')) {
+            validateBookTitle();
+        }
     });
 
-    // Form submission validation
-    form.addEventListener('submit', function(e) {
+    authorInput.addEventListener('blur', validateAuthor);
+    authorInput.addEventListener('input', function() {
+        if (authorInput.classList.contains('is-invalid')) {
+            validateAuthor();
+        }
+    });
+
+    // Image preview and cropping (inline like variant_edit.html)
+    imageInput.addEventListener('change', function(e) {
         if (!validateImage()) {
+            return;
+        }
+
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const preview = document.getElementById('preview');
+            preview.src = event.target.result;
+            preview.style.display = 'block';
+
+            // Destroy previous cropper if exists
+            if (cropper) {
+                cropper.destroy();
+            }
+
+            // Initialize cropper inline (like variant_edit.html)
+            cropper = new Cropper(preview, {
+                aspectRatio: 3 / 4, // Book cover aspect ratio
+                viewMode: 1
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Form submission validation and handling (like variant_edit.html and add_variant.html)
+    form.addEventListener('submit', function(e) {
+        // Validate all fields first
+        const isBookTitleValid = validateBookTitle();
+        const isAuthorValid = validateAuthor();
+        const isImageValid = validateImage();
+        
+        if (!isBookTitleValid || !isAuthorValid || !isImageValid) {
             e.preventDefault();
+            // Scroll to first error
+            if (!isBookTitleValid) {
+                bookNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isAuthorValid) {
+                authorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isImageValid) {
+                imageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return false;
         }
+
+        // If cropper exists, get cropped image and submit as file (not base64)
+        if (cropper) {
+            e.preventDefault();
+            cropper.getCroppedCanvas().toBlob(function(blob) {
+                // Create FormData with cropped image as file
+                const formData = new FormData();
+                
+                // Add all form fields
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                formData.append('book_name', bookNameInput.value.trim());
+                formData.append('author', authorInput.value.trim());
+                formData.append('genre_id', document.getElementById('genre_id').value);
+                formData.append('description', document.getElementById('description').value.trim());
+                
+                // Add image: use cropped blob
+                const file = imageInput.files[0];
+                formData.append('image', blob, file ? file.name : 'book_image.jpg');
+                
+                // Submit using fetch
+                fetch(form.action || window.location.pathname, {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        return response.text().then(html => {
+                            document.open();
+                            document.write(html);
+                            document.close();
+                        });
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while submitting the form. Please try again.');
+                });
+            }, 'image/jpeg', 0.9);
+        }
+        // If no cropper, form will submit normally with original file
     });
 });
 </script>
@@ -164,6 +382,12 @@ document.addEventListener('DOMContentLoaded', function() {
     .is-invalid:focus {
         border-color: #dc3545 !important;
         box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+    
+    /* Cropper Preview Styles */
+    #preview {
+        max-width: 100%;
+        max-height: 400px;
     }
 </style>
 {% endblock %}

@@ -240,3 +240,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://nonresponsively-mustachioed-yoshie.ngrok-free.dev",
 ]
 
+# File upload settings - increase limits for image uploads
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB (for form data including base64 if needed)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB (for file uploads in memory)
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 1000
+

@@ -2,6 +2,8 @@
 
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Cropper.js CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
 {% endblock head %}
 
 {% block content %}
@@ -15,29 +17,49 @@
                 <!-- Book Title -->
                 <div class="mb-3">
                     <label for="bookTitle" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Title</label>
-                    <input type="text" name="book_title" value="{{ book.book_title }}" id="bookTitle" class="form-control" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <input type="text" name="book_title" value="{{ book.book_title }}" id="bookTitle" class="form-control {% if error.book_title %}is-invalid{% endif %}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {% if error.book_title %}
+                    <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.book_title }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Book Author -->
                 <div class="mb-3">
                     <label for="bookAuthor" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Author</label>
-                    <input type="text" name="book_author" value="{{ book.author }}" id="bookAuthor" class="form-control" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <input type="text" name="book_author" value="{{ book.author }}" id="bookAuthor" class="form-control {% if error.book_author %}is-invalid{% endif %}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    {% if error.book_author %}
+                    <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.book_author }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Book Image -->
                 <div class="mb-3">
                     <label for="bookImage" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Image</label>
-                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="bookImage" name="image" multiple accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    
+                    <!-- Existing Image Preview (if editing) -->
+                    {% if book.image %}
+                    <div class="mb-2">
+                        <img src="{{ book.image.url }}" alt="Book Image" class="img-fluid rounded"
+                            style="max-width: 100px; border-radius: 6px;">
+                    </div>
+                    {% endif %}
+
+                    <!-- New Cropper Preview -->
+                    <img id="preview" style="max-width: 300px; display: none; border-radius: 6px; margin-bottom: 10px;">
+
+                    <!-- File Input -->
+                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="bookImage" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                     <div id="image-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
                     {% if error.valid_image %}
                     <div class="text-danger mt-1">{{ error.valid_image }}</div>
                     {% endif %}
+                    <small class="text-muted">Upload an image (jpg, jpeg, png, gif, webp). Max 5MB. You can crop the image after selection.</small>
                 </div>
 
                 <!-- Genre -->
                 <div class="mb-3">
                     <label for="bookGenre" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Genre</label>
-                    <select class="form-select" id="bookGenre" name="genre_id" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <select class="form-select {% if error.genre_id %}is-invalid{% endif %}" id="bookGenre" name="genre_id" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                         <option value="{{ book.genre.id }}" selected>{{ book.genre.genre_name }}</option>
                         {% for genre in genres %}
                         {% if genre.id != book.genre.id %}
@@ -45,6 +67,9 @@
                         {% endif %}
                         {% endfor %}
                     </select>
+                    {% if error.genre_id %}
+                    <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.genre_id }}</div>
+                    {% endif %}
                 </div>
 
                 <!-- Offer Fields -->
@@ -59,18 +84,22 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="discount" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Discount (%)</label>
-                    <input type="number" class="form-control {% if error.discount_percentage %}is-invalid{% endif %}" id="discount" name="discount_percentage" value="{{ book.discount_percentage }}" min="0" max="99" placeholder="Enter discount from 0 to 99 (must be less than 100%)" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="discount" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Discount (%) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control {% if error.discount_percentage %}is-invalid{% endif %}" id="discount" name="discount_percentage" value="{{ book.discount_percentage }}" min="0" max="99" step="0.01" placeholder="Enter discount from 0 to 99 (must be less than 100%)" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                     <div id="discount-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
                     {% if error.discount_percentage %}
                     <div class="text-danger mt-1">{{ error.discount_percentage }}</div>
                     {% endif %}
+                    <small class="text-muted">Enter a discount percentage between 0 and 99 (must be less than 100%).</small>
                 </div>
 
                 <!-- Book Description -->
                 <div class="mb-3">
                     <label for="bookDescription" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Description</label>
-                    <textarea class="form-control" id="bookDescription" name="book_description" rows="4" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">{{ book.description }}</textarea>
+                    <textarea class="form-control {% if error.book_description %}is-invalid{% endif %}" id="bookDescription" name="book_description" rows="4" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">{{ book.description }}</textarea>
+                    {% if error.book_description %}
+                    <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.book_description }}</div>
+                    {% endif %}
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Save Book</button>
@@ -100,72 +129,147 @@
     </div>
 </div>
 
+<!-- Cropper.js JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
     const imageInput = document.getElementById('bookImage');
     const discountInput = document.getElementById('discount');
     const isOfferCheckbox = document.getElementById('isOffer');
     const imageError = document.getElementById('image-error');
     const discountError = document.getElementById('discount-error');
-    const form = document.querySelector('form');
+    const bookTitleInput = document.getElementById('bookTitle');
+    const bookAuthorInput = document.getElementById('bookAuthor');
 
     // Valid image extensions
     const validImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     const validImageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
 
-    // Function to validate image file
-    function validateImage() {
-        const files = imageInput.files;
+    let cropper = null;
+
+    // Validation functions
+    function validateBookTitle() {
+        const value = bookTitleInput.value.trim();
         
-        if (files.length === 0) {
-            // No files selected - this is okay for edit (optional field)
+        if (!value) {
+            bookTitleInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        if (value.length < 3) {
+            bookTitleInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        if (value.length > 200) {
+            bookTitleInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        const validPattern = /^[a-zA-Z0-9\s.,!?;:'"()-]+$/;
+        if (!validPattern.test(value)) {
+            bookTitleInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        bookTitleInput.classList.remove('is-invalid');
+        return true;
+    }
+
+    function validateAuthor() {
+        const value = bookAuthorInput.value.trim();
+        
+        if (!value) {
+            bookAuthorInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        if (value.length < 2) {
+            bookAuthorInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        if (value.length > 100) {
+            bookAuthorInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        const validPattern = /^[a-zA-Z\s'-]+$/;
+        if (!validPattern.test(value)) {
+            bookAuthorInput.classList.add('is-invalid');
+            return false;
+        }
+        
+        bookAuthorInput.classList.remove('is-invalid');
+        return true;
+    }
+
+    function validateImage() {
+        const file = imageInput.files[0];
+        
+        if (!file) {
+            // No file selected - this is okay for edit (optional field)
             imageInput.classList.remove('is-invalid');
             imageError.style.display = 'none';
             imageError.textContent = '';
             return true;
         }
 
-        // Check each file
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            const fileName = file.name.toLowerCase();
-            const fileExtension = fileName.split('.').pop();
-            const fileType = file.type;
+        const fileName = file.name.toLowerCase();
+        const fileExtension = fileName.split('.').pop();
+        const fileType = file.type;
 
-            // Check file extension
-            if (!validImageExtensions.includes(fileExtension)) {
-                imageInput.classList.add('is-invalid');
-                imageError.style.display = 'block';
-                imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
-                return false;
-            }
-
-            // Check MIME type (if available)
-            if (fileType && !validImageMimeTypes.includes(fileType)) {
-                imageInput.classList.add('is-invalid');
-                imageError.style.display = 'block';
-                imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
-                return false;
-            }
+        // Check file size
+        if (file.size > maxFileSize) {
+            imageInput.classList.add('is-invalid');
+            imageError.style.display = 'block';
+            imageError.textContent = `File "${file.name}" exceeds 5MB limit. Please choose a smaller file.`;
+            return false;
         }
 
-        // All files are valid
+        // Check file extension
+        if (!validImageExtensions.includes(fileExtension)) {
+            imageInput.classList.add('is-invalid');
+            imageError.style.display = 'block';
+            imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+            return false;
+        }
+
+        // Check MIME type
+        if (fileType && !validImageMimeTypes.includes(fileType)) {
+            imageInput.classList.add('is-invalid');
+            imageError.style.display = 'block';
+            imageError.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+            return false;
+        }
+
+        // File is valid
         imageInput.classList.remove('is-invalid');
         imageError.style.display = 'none';
         imageError.textContent = '';
         return true;
     }
 
-    // Function to validate discount percentage
     function validateDiscount() {
         const discountValue = discountInput.value.trim();
 
-        // Only validate if offer is checked and discount is provided
-        if (!isOfferCheckbox.checked || discountValue === '') {
+        // Only validate if offer is checked
+        if (!isOfferCheckbox.checked) {
             discountInput.classList.remove('is-invalid');
             discountError.style.display = 'none';
             discountError.textContent = '';
             return true;
+        }
+
+        // If offer is checked, discount is required
+        if (discountValue === '') {
+            discountInput.classList.add('is-invalid');
+            discountError.style.display = 'block';
+            discountError.textContent = 'Discount percentage is required when offer is active.';
+            return false;
         }
 
         const discount = parseFloat(discountValue);
@@ -188,8 +292,6 @@ document.addEventListener('DOMContentLoaded', function() {
             discountInput.classList.add('is-invalid');
             discountError.style.display = 'block';
             discountError.textContent = 'Discount percentage must be less than 100%.';
-            // Auto-correct if value is >= 100
-            discountInput.value = 99;
             return false;
         }
 
@@ -200,19 +302,54 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
-    // Event listeners for image validation
-    imageInput.addEventListener('change', function() {
-        validateImage();
+    // Event listeners for validation
+    bookTitleInput.addEventListener('blur', validateBookTitle);
+    bookTitleInput.addEventListener('input', function() {
+        if (bookTitleInput.classList.contains('is-invalid')) {
+            validateBookTitle();
+        }
+    });
+
+    bookAuthorInput.addEventListener('blur', validateAuthor);
+    bookAuthorInput.addEventListener('input', function() {
+        if (bookAuthorInput.classList.contains('is-invalid')) {
+            validateAuthor();
+        }
+    });
+
+    // Image preview and cropping (inline like add_new_book.html)
+    imageInput.addEventListener('change', function(e) {
+        if (!validateImage()) {
+            return;
+        }
+
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const preview = document.getElementById('preview');
+            preview.src = event.target.result;
+            preview.style.display = 'block';
+
+            // Destroy previous cropper if exists
+            if (cropper) {
+                cropper.destroy();
+            }
+
+            // Initialize cropper inline (like add_new_book.html)
+            cropper = new Cropper(preview, {
+                aspectRatio: 3 / 4, // Book cover aspect ratio
+                viewMode: 1
+            });
+        };
+        reader.readAsDataURL(file);
     });
 
     // Event listeners for discount validation
     discountInput.addEventListener('input', function() {
-        if (isOfferCheckbox.checked) {
-            validateDiscount();
-        }
-    });
-
-    discountInput.addEventListener('change', function() {
         if (isOfferCheckbox.checked) {
             validateDiscount();
         }
@@ -235,34 +372,75 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Form submission validation
+    // Form submission validation and handling
     form.addEventListener('submit', function(e) {
-        let isValid = true;
-
-        // Validate image if files are selected
-        if (imageInput.files.length > 0) {
-            if (!validateImage()) {
-                isValid = false;
-            }
-        }
-
-        // Validate discount if offer is checked
-        if (isOfferCheckbox.checked && discountInput.value.trim() !== '') {
-            if (!validateDiscount()) {
-                isValid = false;
-            }
-        }
-
-        if (!isValid) {
+        // Validate all fields first
+        const isBookTitleValid = validateBookTitle();
+        const isAuthorValid = validateAuthor();
+        const isImageValid = validateImage();
+        const isDiscountValid = validateDiscount();
+        
+        if (!isBookTitleValid || !isAuthorValid || !isImageValid || !isDiscountValid) {
             e.preventDefault();
+            // Scroll to first error
+            if (!isBookTitleValid) {
+                bookTitleInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isAuthorValid) {
+                bookAuthorInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isImageValid) {
+                imageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isDiscountValid) {
+                discountInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return false;
         }
-    });
 
-    // Initial validation on page load (in case there are existing invalid values)
-    if (isOfferCheckbox.checked && discountInput.value !== '') {
-        validateDiscount();
-    }
+        // If cropper exists, get cropped image and submit as file (not base64)
+        if (cropper) {
+            e.preventDefault();
+            cropper.getCroppedCanvas().toBlob(function(blob) {
+                // Create FormData with cropped image as file
+                const formData = new FormData();
+                
+                // Add all form fields
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                formData.append('book_id', document.querySelector('[name=book_id]').value);
+                formData.append('book_title', bookTitleInput.value.trim());
+                formData.append('book_author', bookAuthorInput.value.trim());
+                formData.append('book_description', document.getElementById('bookDescription').value.trim());
+                formData.append('genre_id', document.getElementById('bookGenre').value);
+                formData.append('is_offer', isOfferCheckbox.checked ? 'on' : '');
+                formData.append('offer_title', document.getElementById('offerTitle').value.trim());
+                formData.append('discount_percentage', discountInput.value);
+                
+                // Add image: use cropped blob
+                const file = imageInput.files[0];
+                if (blob) {
+                    formData.append('image', blob, file ? file.name : 'book_image.jpg');
+                }
+                
+                // Submit using fetch
+                fetch(form.action || window.location.pathname, {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        return response.text().then(html => {
+                            document.open();
+                            document.write(html);
+                            document.close();
+                        });
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while submitting the form. Please try again.');
+                });
+            }, 'image/jpeg', 0.9);
+        }
+        // If no cropper, form will submit normally with original file or no file
+    });
 });
 </script>
 
@@ -299,6 +477,18 @@ document.addEventListener('DOMContentLoaded', function() {
     .alert {
         background-color: #f1f5f9;
         color: #1e293b;
+    }
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+    .is-invalid:focus {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+    /* Cropper Preview Styles */
+    #preview {
+        max-width: 100%;
+        max-height: 400px;
     }
 </style>
 {% endblock %}

@@ -381,33 +381,90 @@ def add_new_book(request):
         description = request.POST.get('description', "").strip()
         image = request.FILES.get('image')
 
-        if Product.objects.filter(book_title=book_name).exists():
-            messages.error(request, 'Book already exists.')
-            return redirect('add_new_book')  
+        error = {}
+        is_valid = True
 
-        try:
-            genre = Genre.objects.get(id=int(genre_id))
-        except (Genre.DoesNotExist, ValueError):
-            messages.error(request, 'Invalid genre selected.')
-            return redirect('add_new_book')
+        # Validate book title
+        if not book_name:
+            error['book_name'] = "Book title is required."
+            is_valid = False
+        elif len(book_name) < 3:
+            error['book_name'] = "Book title must be at least 3 characters long."
+            is_valid = False
+        elif len(book_name) > 200:
+            error['book_name'] = "Book title must not exceed 200 characters."
+            is_valid = False
+        elif not re.match(r'^[a-zA-Z0-9\s.,!?;:\'"()-]+$', book_name):
+            error['book_name'] = "Book title contains invalid characters. Only letters, numbers, spaces, and basic punctuation are allowed."
+            is_valid = False
+        elif Product.objects.filter(book_title=book_name).exists():
+            error['book_name'] = "Book with this title already exists."
+            is_valid = False
 
+        # Validate author
+        if not author:
+            error['author'] = "Author name is required."
+            is_valid = False
+        elif len(author) < 2:
+            error['author'] = "Author name must be at least 2 characters long."
+            is_valid = False
+        elif len(author) > 100:
+            error['author'] = "Author name must not exceed 100 characters."
+            is_valid = False
+        elif not re.match(r'^[a-zA-Z\s\'-]+$', author):
+            error['author'] = "Author name contains invalid characters. Only letters, spaces, hyphens, and apostrophes are allowed."
+            is_valid = False
+
+        # Validate genre
+        genre = None
+        if not genre_id:
+            error['genre_id'] = "Genre is required."
+            is_valid = False
+        else:
+            try:
+                genre = Genre.objects.get(id=int(genre_id))
+            except (Genre.DoesNotExist, ValueError):
+                error['genre_id'] = "Invalid genre selected."
+                is_valid = False
+                genre = None
+
+        # Validate image
         if not image:
-            messages.error(request, 'Book image is required.')
-            return redirect('add_new_book')
-        
-        valid_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
-        valid_mime_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
-        
-        file_extension = image.name.split(".")[-1].lower() if "." in image.name else ""
-        if not file_extension or file_extension not in valid_extensions:
-            messages.error(request, 'Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only).')
-            return redirect('add_new_book')
-        
-        file_mime_type = image.content_type.lower() if hasattr(image, 'content_type') and image.content_type else ""
-        if not file_mime_type or file_mime_type not in valid_mime_types:
-            messages.error(request, 'Invalid file type detected. Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only).')
-            return redirect('add_new_book')
+            error['image'] = "Book image is required."
+            is_valid = False
+        else:
+            valid_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
+            valid_mime_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+            max_file_size = 5 * 1024 * 1024  # 5MB
+            
+            # Check file size
+            if image.size > max_file_size:
+                error['image'] = f"File size exceeds 5MB limit. Please choose a smaller file."
+                is_valid = False
+            
+            # Check file extension
+            file_extension = image.name.split(".")[-1].lower() if "." in image.name else ""
+            if not file_extension or file_extension not in valid_extensions:
+                error['image'] = "Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only)."
+                is_valid = False
+            
+            # Check MIME type
+            if is_valid:
+                file_mime_type = image.content_type.lower() if hasattr(image, 'content_type') and image.content_type else ""
+                if not file_mime_type or file_mime_type not in valid_mime_types:
+                    error['image'] = "Invalid file type detected. Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only)."
+                    is_valid = False
 
+        # Validate description
+        if not description:
+            error['description'] = "Book description is required."
+            is_valid = False
+
+        if not is_valid:
+            all_genres = Genre.objects.all()
+            return render(request, 'admin/add_new_book.html', {'all_genres': all_genres, 'error': error})
+
+        # All validations passed, create the book
         Product.objects.create(
             book_title=book_name,
             author=author,
@@ -435,66 +492,126 @@ def book_edit(request, book_id):
         book_name = request.POST.get('book_title', "").strip()
         author = request.POST.get('book_author', "").strip()
         description = request.POST.get('book_description', "").strip()
-        genre_id=request.POST.get('genre_id', "").strip()
+        genre_id = request.POST.get('genre_id', "").strip()
         image = request.FILES.get('image')
         # Offer Fields
         is_offer = request.POST.get('is_offer') == 'on'
         offer_title = request.POST.get('offer_title', "").strip()
-        discount_percentage = request.POST.get('discount_percentage', 0)
+        discount_percentage = request.POST.get('discount_percentage', "").strip()
 
         is_valid = True
 
-        # Discount percentage validation
-        if is_offer and discount_percentage:
+        # Validate book title
+        if not book_name:
+            error['book_title'] = "Book title is required."
+            is_valid = False
+        elif len(book_name) < 3:
+            error['book_title'] = "Book title must be at least 3 characters long."
+            is_valid = False
+        elif len(book_name) > 200:
+            error['book_title'] = "Book title must not exceed 200 characters."
+            is_valid = False
+        elif not re.match(r'^[a-zA-Z0-9\s.,!?;:\'"()-]+$', book_name):
+            error['book_title'] = "Book title contains invalid characters. Only letters, numbers, spaces, and basic punctuation are allowed."
+            is_valid = False
+
+        # Validate author
+        if not author:
+            error['book_author'] = "Author name is required."
+            is_valid = False
+        elif len(author) < 2:
+            error['book_author'] = "Author name must be at least 2 characters long."
+            is_valid = False
+        elif len(author) > 100:
+            error['book_author'] = "Author name must not exceed 100 characters."
+            is_valid = False
+        elif not re.match(r'^[a-zA-Z\s\'-]+$', author):
+            error['book_author'] = "Author name contains invalid characters. Only letters, spaces, hyphens, and apostrophes are allowed."
+            is_valid = False
+
+        # Validate genre
+        genre = None
+        if not genre_id:
+            error['genre_id'] = "Genre is required."
+            is_valid = False
+        else:
             try:
-                discount_percentage = int(discount_percentage)
-                if discount_percentage < 0:
-                    error['discount_percentage'] = "Discount percentage cannot be negative."
-                    is_valid = False
-                elif discount_percentage >= 100:
-                    error['discount_percentage'] = "Discount percentage must be less than 100%."
-                    is_valid = False
-            except (ValueError, AttributeError):
-                error['discount_percentage'] = "Discount percentage must be a valid number."
+                genre = Genre.objects.get(id=int(genre_id))
+            except (Genre.DoesNotExist, ValueError):
+                error['genre_id'] = "Invalid genre selected."
                 is_valid = False
-        
+                genre = None
+
+        # Validate image (optional for edit, but if provided, must be valid)
         if image:
             valid_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
             valid_mime_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+            max_file_size = 5 * 1024 * 1024  # 5MB
             
-            file_extension = image.name.split(".")[-1].lower() if "." in image.name else ""
-            if not file_extension or file_extension not in valid_extensions:
-                error['valid_image'] = "Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only)."
+            # Check file size
+            if image.size > max_file_size:
+                error['valid_image'] = f"File size exceeds 5MB limit. Please choose a smaller file."
                 is_valid = False
             
+            # Check file extension
+            if is_valid:
+                file_extension = image.name.split(".")[-1].lower() if "." in image.name else ""
+                if not file_extension or file_extension not in valid_extensions:
+                    error['valid_image'] = "Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only)."
+                    is_valid = False
+            
+            # Check MIME type
             if is_valid:
                 file_mime_type = image.content_type.lower() if hasattr(image, 'content_type') and image.content_type else ""
                 if not file_mime_type or file_mime_type not in valid_mime_types:
                     error['valid_image'] = "Invalid file type detected. Please upload a valid image file (jpg, jpeg, png, gif, or webp formats only)."
                     is_valid = False
 
-        if is_valid:
-            book = Product.objects.get(id=book_id)
-            book.book_title = book_name
-            book.genre =Genre.objects.get(id=genre_id) 
-            print(genre_id)
-            book.author = author
+        # Validate description
+        if not description:
+            error['book_description'] = "Book description is required."
+            is_valid = False
 
-            if image:
-                book.image = image
+        # Discount percentage validation
+        if is_offer:
+            if not discount_percentage:
+                error['discount_percentage'] = "Discount percentage is required when offer is active."
+                is_valid = False
+            else:
+                try:
+                    discount_percentage = float(discount_percentage)
+                    if discount_percentage < 0:
+                        error['discount_percentage'] = "Discount percentage cannot be negative."
+                        is_valid = False
+                    elif discount_percentage >= 100:
+                        error['discount_percentage'] = "Discount percentage must be less than 100%."
+                        is_valid = False
+                except (ValueError, AttributeError):
+                    error['discount_percentage'] = "Discount percentage must be a valid number."
+                    is_valid = False
+        else:
+            discount_percentage = 0
 
-            book.description = description
-            book.is_offer = is_offer
-            book.offer_title = offer_title if is_offer else ''
-            book.discount_percentage = int(discount_percentage) if is_offer else 0
+        if not is_valid:
+            return render(request, 'admin/book_edit.html', {'book': book, 'genres': genres, 'error': error})
 
-            book.save()
-            messages.success(request, f'{book.book_title} Updated successfully!')
+        # All validations passed, update the book
+        book.book_title = book_name
+        book.author = author
+        book.description = description
+        if genre:
+            book.genre = genre
+        if image:
+            book.image = image
+        book.is_offer = is_offer
+        book.offer_title = offer_title if is_offer else ''
+        book.discount_percentage = discount_percentage if is_offer else 0
 
-            return redirect('books')  
+        book.save()
+        messages.success(request, f'{book.book_title} Updated successfully!')
+        return redirect('books')  
 
-
-    return render(request, 'admin/book_edit.html',{'book':book,'genres':genres ,'error':error})
+    return render(request, 'admin/book_edit.html', {'book': book, 'genres': genres, 'error': error})
 
 
 
@@ -546,48 +663,167 @@ def add_variant(request, book_id):
         language = request.POST.get('language', "").strip()
         price = request.POST.get('price', "").strip()
         page = request.POST.get('page', "").strip()
-         # Handling file uploads correctly
+        # Handling file uploads correctly
         image1 = request.FILES.get('image1')
         image2 = request.FILES.get('image2')
         image3 = request.FILES.get('image3')
 
+        error = {}
+        is_valid = True
+
         try:
             product = Product.objects.get(id=book_id)  # Fetch Product instance
         except Product.DoesNotExist:
-            messages.error(request,"Product not found")
+            messages.error(request, "Product not found")
             return redirect('books')
         
-        if not publisher or not published_date or not language or not page:
-            messages.error(request, 'All fields are required.')
-            return redirect(reverse('view_variant', args=[book_id]))
+        # Validate publisher
+        if not publisher:
+            error['publisher'] = "Publisher is required."
+            is_valid = False
+
+        # Validate published date
+        if not published_date:
+            error['published_date'] = "Published date is required."
+            is_valid = False
+        else:
+            try:
+                pub_date = datetime.strptime(published_date, "%Y-%m-%d").date()
+                today = timezone.now().date()
+                if pub_date > today:
+                    error['published_date'] = "Published date cannot be in the future."
+                    is_valid = False
+                # Check if date is too old (e.g., before 1900)
+                min_date = datetime(1900, 1, 1).date()
+                if pub_date < min_date:
+                    error['published_date'] = "Published date must be after 1900."
+                    is_valid = False
+            except ValueError:
+                error['published_date'] = "Invalid published date format."
+                is_valid = False
+
+        # Validate price
+        if not price:
+            error['price'] = "Price is required."
+            is_valid = False
+        else:
+            try:
+                price = float(price)
+                if price <= 0:
+                    error['price'] = "Price must be a positive number greater than 0."
+                    is_valid = False
+                elif price < 1:
+                    error['price'] = "Price must be at least ₹1."
+                    is_valid = False
+                elif price > 100000:
+                    error['price'] = "Price cannot exceed ₹1,00,000."
+                    is_valid = False
+            except ValueError:
+                error['price'] = "Price must be a valid number."
+                is_valid = False
+
+        # Validate page count
+        if not page:
+            error['page'] = "Page count is required."
+            is_valid = False
+        else:
+            try:
+                page = int(page)
+                if page < 1:
+                    error['page'] = "Page count must be a positive integer (minimum 1)."
+                    is_valid = False
+                elif page > 10000:
+                    error['page'] = "Page count cannot exceed 10,000."
+                    is_valid = False
+            except ValueError:
+                error['page'] = "Page count must be a valid integer."
+                is_valid = False
+
+        # Validate stock (available quantity)
+        if not stock:
+            error['stock'] = "Available quantity is required."
+            is_valid = False
+        else:
+            try:
+                stock = int(stock)
+                if stock < 0:
+                    error['stock'] = "Available quantity must be a non-negative integer (minimum 0)."
+                    is_valid = False
+                elif stock > 100000:
+                    error['stock'] = "Available quantity cannot exceed 1,00,000."
+                    is_valid = False
+            except ValueError:
+                error['stock'] = "Available quantity must be a valid integer."
+                is_valid = False
+
+        # Validate language
+        if not language:
+            error['language'] = "Language is required."
+            is_valid = False
+
+        # Validate images
+        valid_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
+        valid_mime_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+        max_file_size = 5 * 1024 * 1024  # 5MB
+
+        if not image1:
+            error['image1'] = "Image 1 is required."
+            is_valid = False
+        else:
+            if image1.size > max_file_size:
+                error['image1'] = f"Image 1 exceeds 5MB limit. Please choose a smaller file."
+                is_valid = False
+            if is_valid:
+                file_extension = image1.name.split(".")[-1].lower() if "." in image1.name else ""
+                if not file_extension or file_extension not in valid_extensions:
+                    error['image1'] = "Image 1: Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats)."
+                    is_valid = False
+            if is_valid:
+                file_mime_type = image1.content_type.lower() if hasattr(image1, 'content_type') and image1.content_type else ""
+                if not file_mime_type or file_mime_type not in valid_mime_types:
+                    error['image1'] = "Image 1: Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats)."
+                    is_valid = False
+
+        if not image2:
+            error['image2'] = "Image 2 is required."
+            is_valid = False
+        else:
+            if image2.size > max_file_size:
+                error['image2'] = f"Image 2 exceeds 5MB limit. Please choose a smaller file."
+                is_valid = False
+            if is_valid:
+                file_extension = image2.name.split(".")[-1].lower() if "." in image2.name else ""
+                if not file_extension or file_extension not in valid_extensions:
+                    error['image2'] = "Image 2: Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats)."
+                    is_valid = False
+            if is_valid:
+                file_mime_type = image2.content_type.lower() if hasattr(image2, 'content_type') and image2.content_type else ""
+                if not file_mime_type or file_mime_type not in valid_mime_types:
+                    error['image2'] = "Image 2: Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats)."
+                    is_valid = False
+
+        if not image3:
+            error['image3'] = "Image 3 is required."
+            is_valid = False
+        else:
+            if image3.size > max_file_size:
+                error['image3'] = f"Image 3 exceeds 5MB limit. Please choose a smaller file."
+                is_valid = False
+            if is_valid:
+                file_extension = image3.name.split(".")[-1].lower() if "." in image3.name else ""
+                if not file_extension or file_extension not in valid_extensions:
+                    error['image3'] = "Image 3: Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats)."
+                    is_valid = False
+            if is_valid:
+                file_mime_type = image3.content_type.lower() if hasattr(image3, 'content_type') and image3.content_type else ""
+                if not file_mime_type or file_mime_type not in valid_mime_types:
+                    error['image3'] = "Image 3: Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats)."
+                    is_valid = False
+
+        if not is_valid:
+            return render(request, 'admin/add_variant.html', {'book_id': book_id, 'error': error})
         
-        try:
-            stock = int(stock) if stock else 0
-            if stock < 0:
-                messages.error(request, 'Stock cannot be negative.')
-                return redirect(reverse('view_variant', args=[book_id]))
-        except ValueError:
-            messages.error(request, 'Invalid stock value.')
-            return redirect(reverse('view_variant', args=[book_id]))
-        
-        try:
-            price = int(price) if price else 0
-            if price <= 0:
-                messages.error(request, 'Price must be positive.')
-                return redirect(reverse('view_variant', args=[book_id]))
-        except ValueError:
-            messages.error(request, 'Invalid price value.')
-            return redirect(reverse('view_variant', args=[book_id]))
-        
-        try:
-            page = int(page) if page else 0
-            if page <= 0:
-                messages.error(request, 'Page count must be positive.')
-                return redirect(reverse('view_variant', args=[book_id]))
-        except ValueError:
-            messages.error(request, 'Invalid page count.')
-            return redirect(reverse('view_variant', args=[book_id]))
-        
+        # All validations passed, create the variant
         new_variant = Variant.objects.create(
             product=product,
             publisher=publisher,
@@ -596,25 +832,23 @@ def add_variant(request, book_id):
             language=language,
             page=page,
             price=price,
-            )
+        )
         
-         # Save images only if they exist
-        if image1 or image2 or image3:
-            ProductImage.objects.create(
-                variant=new_variant,
-                image1=image1,
-                image2=image2,
-                image3=image3
-            )
+        # Save images
+        ProductImage.objects.create(
+            variant=new_variant,
+            image1=image1,
+            image2=image2,
+            image3=image3
+        )
 
         messages.success(request, 'Variant Added successfully!')
-
         return render(request, 'admin/add_variant.html', {
-    'redirect': True,
-    'redirect_url': reverse('view_variant', args=[book_id])
-})
+            'redirect': True,
+            'redirect_url': reverse('view_variant', args=[book_id])
+        })
 
-    return render(request, 'admin/add_variant.html', { 'book_id': book_id } )
+    return render(request, 'admin/add_variant.html', {'book_id': book_id})
 
 
 

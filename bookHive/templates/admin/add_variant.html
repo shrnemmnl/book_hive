@@ -2,6 +2,8 @@
 
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Cropper.js CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" />
 {% endblock head %}
 
 {% block content %}
@@ -10,39 +12,89 @@
         {% csrf_token %}
         <div class="mb-3">
             <label for="publisher" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Publisher</label>
-            <input type="text" class="form-control" id="publisher" placeholder="Enter publisher" name="publisher" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <input type="text" class="form-control {% if error.publisher %}is-invalid{% endif %}" id="publisher" placeholder="Enter publisher" name="publisher" required style="font-size: 0.9rem; padding: 0.65rem;">
+            {% if error.publisher %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.publisher }}</div>
+            {% endif %}
         </div>
         <div class="mb-3">
-            <label for="published_date" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Published Date</label>
-            <input type="date" class="form-control" id="published_date" name="published_date" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <label for="published_date" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Published Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control {% if error.published_date %}is-invalid{% endif %}" id="published_date" name="published_date" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="published_date-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.published_date %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.published_date }}</div>
+            {% endif %}
+            <small class="text-muted">Select a valid date. Date cannot be in the future.</small>
         </div>
         <div class="mb-3">
-            <label for="price" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Price</label>
-            <input type="number" class="form-control" id="price" placeholder="Enter price" name="price" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <label for="price" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Price <span class="text-danger">*</span></label>
+            <input type="number" class="form-control {% if error.price %}is-invalid{% endif %}" id="price" placeholder="Enter price" name="price" step="0.01" min="0" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="price-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.price %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.price }}</div>
+            {% endif %}
+            <small class="text-muted">Enter a positive price value (minimum ₹1, maximum ₹1,00,000).</small>
         </div>
         <div class="mb-3">
             <label for="page" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Page Count</label>
-            <input type="number" class="form-control" id="page" placeholder="Enter page count" name="page" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <input type="number" class="form-control {% if error.page %}is-invalid{% endif %}" id="page" placeholder="Enter page count" name="page" min="1" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="page-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.page %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.page }}</div>
+            {% endif %}
+            <small class="text-muted">Enter a positive number (minimum 1, maximum 10,000 pages).</small>
         </div>
         <div class="mb-3">
-            <label for="stock" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Available Quantity</label>
-            <input type="number" class="form-control" id="stock" placeholder="Enter available quantity" name="stock" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <label for="stock" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Available Quantity <span class="text-danger">*</span></label>
+            <input type="number" class="form-control {% if error.stock %}is-invalid{% endif %}" id="stock" placeholder="Enter available quantity" name="stock" min="0" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="stock-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.stock %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.stock }}</div>
+            {% endif %}
+            <small class="text-muted">Enter a non-negative integer (minimum 0, maximum 1,00,000).</small>
         </div>
         <div class="mb-3">
             <label for="language" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Language</label>
-            <input type="text" class="form-control" id="language" placeholder="Enter language" name="language" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <input type="text" class="form-control {% if error.language %}is-invalid{% endif %}" id="language" placeholder="Enter language" name="language" required style="font-size: 0.9rem; padding: 0.65rem;">
+            {% if error.language %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.language }}</div>
+            {% endif %}
         </div>
         <div class="mb-3">
-            <label for="image1" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 1</label>
-            <input type="file" class="form-control" id="image1" name="image1" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <label for="image1" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 1 <span class="text-danger">*</span></label>
+            <!-- New Cropper Preview -->
+            <img id="preview1" style="max-width: 300px; display: none; border-radius: 6px; margin-bottom: 10px;">
+            <!-- File Input -->
+            <input type="file" class="form-control {% if error.image1 %}is-invalid{% endif %}" id="image1" name="image1" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="image1-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.image1 %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.image1 }}</div>
+            {% endif %}
+            <small class="text-muted">Upload an image (jpg, jpeg, png, gif, webp). Max 5MB. You can crop the image after selection.</small>
         </div>
         <div class="mb-3">
-            <label for="image2" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 2</label>
-            <input type="file" class="form-control" id="image2" name="image2" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <label for="image2" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 2 <span class="text-danger">*</span></label>
+            <!-- New Cropper Preview -->
+            <img id="preview2" style="max-width: 300px; display: none; border-radius: 6px; margin-bottom: 10px;">
+            <!-- File Input -->
+            <input type="file" class="form-control {% if error.image2 %}is-invalid{% endif %}" id="image2" name="image2" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="image2-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.image2 %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.image2 }}</div>
+            {% endif %}
+            <small class="text-muted">Upload an image (jpg, jpeg, png, gif, webp). Max 5MB. You can crop the image after selection.</small>
         </div>
         <div class="mb-3">
-            <label for="image3" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 3</label>
-            <input type="file" class="form-control" id="image3" name="image3" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <label for="image3" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Image 3 <span class="text-danger">*</span></label>
+            <!-- New Cropper Preview -->
+            <img id="preview3" style="max-width: 300px; display: none; border-radius: 6px; margin-bottom: 10px;">
+            <!-- File Input -->
+            <input type="file" class="form-control {% if error.image3 %}is-invalid{% endif %}" id="image3" name="image3" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" required style="font-size: 0.9rem; padding: 0.65rem;">
+            <div id="image3-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+            {% if error.image3 %}
+            <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.image3 }}</div>
+            {% endif %}
+            <small class="text-muted">Upload an image (jpg, jpeg, png, gif, webp). Max 5MB. You can crop the image after selection.</small>
         </div>
         <button type="submit" class="btn btn-primary w-100" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Add Variant</button>
 
@@ -100,5 +152,458 @@
         background-color: #f1f5f9;
         color: #1e293b;
     }
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+    .is-invalid:focus {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    }
+    /* Cropper Preview Styles */
+    #preview1, #preview2, #preview3 {
+        max-width: 100%;
+        max-height: 400px;
+    }
 </style>
+
+<!-- Cropper.js JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('addVariantForm');
+    const publishedDateInput = document.getElementById('published_date');
+    const priceInput = document.getElementById('price');
+    const pageInput = document.getElementById('page');
+    const stockInput = document.getElementById('stock');
+    const image1Input = document.getElementById('image1');
+    const image2Input = document.getElementById('image2');
+    const image3Input = document.getElementById('image3');
+
+    const publishedDateError = document.getElementById('published_date-error');
+    const priceError = document.getElementById('price-error');
+    const pageError = document.getElementById('page-error');
+    const stockError = document.getElementById('stock-error');
+    const image1Error = document.getElementById('image1-error');
+    const image2Error = document.getElementById('image2-error');
+    const image3Error = document.getElementById('image3-error');
+
+    // Valid image extensions
+    const validImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const validImageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+
+    // Validation functions
+    function validatePublishedDate() {
+        const value = publishedDateInput.value;
+        
+        if (!value) {
+            publishedDateInput.classList.add('is-invalid');
+            publishedDateError.style.display = 'block';
+            publishedDateError.textContent = 'Published date is required.';
+            return false;
+        }
+        
+        const selectedDate = new Date(value);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        if (selectedDate > today) {
+            publishedDateInput.classList.add('is-invalid');
+            publishedDateError.style.display = 'block';
+            publishedDateError.textContent = 'Published date cannot be in the future.';
+            return false;
+        }
+        
+        // Check if date is too old (e.g., before 1900)
+        const minDate = new Date('1900-01-01');
+        if (selectedDate < minDate) {
+            publishedDateInput.classList.add('is-invalid');
+            publishedDateError.style.display = 'block';
+            publishedDateError.textContent = 'Published date must be after 1900.';
+            return false;
+        }
+        
+        publishedDateInput.classList.remove('is-invalid');
+        publishedDateError.style.display = 'none';
+        return true;
+    }
+
+    function validatePrice() {
+        const value = parseFloat(priceInput.value);
+        
+        if (!priceInput.value || priceInput.value.trim() === '') {
+            priceInput.classList.add('is-invalid');
+            priceError.style.display = 'block';
+            priceError.textContent = 'Price is required.';
+            return false;
+        }
+        
+        if (isNaN(value) || value <= 0) {
+            priceInput.classList.add('is-invalid');
+            priceError.style.display = 'block';
+            priceError.textContent = 'Price must be a positive number greater than 0.';
+            return false;
+        }
+        
+        if (value < 1) {
+            priceInput.classList.add('is-invalid');
+            priceError.style.display = 'block';
+            priceError.textContent = 'Price must be at least ₹1.';
+            return false;
+        }
+        
+        if (value > 100000) {
+            priceInput.classList.add('is-invalid');
+            priceError.style.display = 'block';
+            priceError.textContent = 'Price cannot exceed ₹1,00,000.';
+            return false;
+        }
+        
+        priceInput.classList.remove('is-invalid');
+        priceError.style.display = 'none';
+        return true;
+    }
+
+    function validatePage() {
+        const value = parseInt(pageInput.value);
+        
+        if (!pageInput.value || pageInput.value.trim() === '') {
+            pageInput.classList.add('is-invalid');
+            pageError.style.display = 'block';
+            pageError.textContent = 'Page count is required.';
+            return false;
+        }
+        
+        if (isNaN(value) || value < 1) {
+            pageInput.classList.add('is-invalid');
+            pageError.style.display = 'block';
+            pageError.textContent = 'Page count must be a positive integer (minimum 1).';
+            return false;
+        }
+        
+        if (value > 10000) {
+            pageInput.classList.add('is-invalid');
+            pageError.style.display = 'block';
+            pageError.textContent = 'Page count cannot exceed 10,000.';
+            return false;
+        }
+        
+        pageInput.classList.remove('is-invalid');
+        pageError.style.display = 'none';
+        return true;
+    }
+
+    function validateStock() {
+        const value = parseInt(stockInput.value);
+        
+        if (!stockInput.value || stockInput.value.trim() === '') {
+            stockInput.classList.add('is-invalid');
+            stockError.style.display = 'block';
+            stockError.textContent = 'Available quantity is required.';
+            return false;
+        }
+        
+        if (isNaN(value) || value < 0) {
+            stockInput.classList.add('is-invalid');
+            stockError.style.display = 'block';
+            stockError.textContent = 'Available quantity must be a non-negative integer (minimum 0).';
+            return false;
+        }
+        
+        if (value > 100000) {
+            stockInput.classList.add('is-invalid');
+            stockError.style.display = 'block';
+            stockError.textContent = 'Available quantity cannot exceed 1,00,000.';
+            return false;
+        }
+        
+        stockInput.classList.remove('is-invalid');
+        stockError.style.display = 'none';
+        return true;
+    }
+
+    function validateImage(fileInput, errorDiv) {
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            fileInput.classList.add('is-invalid');
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = 'Image is required.';
+            return false;
+        }
+
+        const fileName = file.name.toLowerCase();
+        const fileExtension = fileName.split('.').pop();
+        const fileType = file.type;
+
+        // Check file size
+        if (file.size > maxFileSize) {
+            fileInput.classList.add('is-invalid');
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = `File "${file.name}" exceeds 5MB limit. Please choose a smaller file.`;
+            return false;
+        }
+
+        // Check file extension
+        if (!validImageExtensions.includes(fileExtension)) {
+            fileInput.classList.add('is-invalid');
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+            return false;
+        }
+
+        // Check MIME type
+        if (fileType && !validImageMimeTypes.includes(fileType)) {
+            fileInput.classList.add('is-invalid');
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = `Invalid file type. Please upload images only (jpg, jpeg, png, gif, or webp formats).`;
+            return false;
+        }
+
+        // File is valid
+        fileInput.classList.remove('is-invalid');
+        errorDiv.style.display = 'none';
+        return true;
+    }
+
+    // Event listeners for validation
+    publishedDateInput.addEventListener('blur', validatePublishedDate);
+    publishedDateInput.addEventListener('change', function() {
+        if (publishedDateInput.classList.contains('is-invalid')) {
+            validatePublishedDate();
+        }
+    });
+
+    priceInput.addEventListener('blur', validatePrice);
+    priceInput.addEventListener('input', function() {
+        if (priceInput.classList.contains('is-invalid')) {
+            validatePrice();
+        }
+    });
+
+    pageInput.addEventListener('blur', validatePage);
+    pageInput.addEventListener('input', function() {
+        if (pageInput.classList.contains('is-invalid')) {
+            validatePage();
+        }
+    });
+
+    stockInput.addEventListener('blur', validateStock);
+    stockInput.addEventListener('input', function() {
+        if (stockInput.classList.contains('is-invalid')) {
+            validateStock();
+        }
+    });
+
+    // Image cropping setup (clean implementation like add_new_book.html)
+    let cropper1 = null;
+    let cropper2 = null;
+    let cropper3 = null;
+
+    // Image 1 preview and cropping
+    image1Input.addEventListener('change', function(e) {
+        if (!validateImage(image1Input, image1Error)) {
+            return;
+        }
+
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const preview = document.getElementById('preview1');
+            preview.src = event.target.result;
+            preview.style.display = 'block';
+
+            // Destroy previous cropper if exists
+            if (cropper1) {
+                cropper1.destroy();
+            }
+
+            // Initialize cropper inline (like variant_edit.html)
+            cropper1 = new Cropper(preview, {
+                aspectRatio: 1,
+                viewMode: 1
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Image 2 preview and cropping
+    image2Input.addEventListener('change', function(e) {
+        if (!validateImage(image2Input, image2Error)) {
+            return;
+        }
+
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const preview = document.getElementById('preview2');
+            preview.src = event.target.result;
+            preview.style.display = 'block';
+
+            // Destroy previous cropper if exists
+            if (cropper2) {
+                cropper2.destroy();
+            }
+
+            // Initialize cropper inline
+            cropper2 = new Cropper(preview, {
+                aspectRatio: 1,
+                viewMode: 1
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Image 3 preview and cropping
+    image3Input.addEventListener('change', function(e) {
+        if (!validateImage(image3Input, image3Error)) {
+            return;
+        }
+
+        const file = e.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const preview = document.getElementById('preview3');
+            preview.src = event.target.result;
+            preview.style.display = 'block';
+
+            // Destroy previous cropper if exists
+            if (cropper3) {
+                cropper3.destroy();
+            }
+
+            // Initialize cropper inline
+            cropper3 = new Cropper(preview, {
+                aspectRatio: 1,
+                viewMode: 1
+            });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Form submission validation and handling
+    form.addEventListener('submit', function(e) {
+        // Validate all fields first
+        const isPublishedDateValid = validatePublishedDate();
+        const isPriceValid = validatePrice();
+        const isPageValid = validatePage();
+        const isStockValid = validateStock();
+        const isImage1Valid = validateImage(image1Input, image1Error);
+        const isImage2Valid = validateImage(image2Input, image2Error);
+        const isImage3Valid = validateImage(image3Input, image3Error);
+        
+        if (!isPublishedDateValid || !isPriceValid || !isPageValid || !isStockValid || 
+            !isImage1Valid || !isImage2Valid || !isImage3Valid) {
+            e.preventDefault();
+            // Scroll to first error
+            if (!isPublishedDateValid) {
+                publishedDateInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isPriceValid) {
+                priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isPageValid) {
+                pageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isStockValid) {
+                stockInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isImage1Valid) {
+                image1Input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isImage2Valid) {
+                image2Input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!isImage3Valid) {
+                image3Input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+
+        // If any cropper exists, get cropped images and submit as files (not base64)
+        if (cropper1 || cropper2 || cropper3) {
+            e.preventDefault();
+            
+            // Function to get cropped blob from a cropper
+            function getCroppedBlob(cropper, callback) {
+                if (cropper) {
+                    cropper.getCroppedCanvas().toBlob(function(blob) {
+                        callback(blob);
+                    }, 'image/jpeg', 0.9);
+                } else {
+                    callback(null);
+                }
+            }
+
+            // Get all cropped blobs
+            getCroppedBlob(cropper1, function(blob1) {
+                getCroppedBlob(cropper2, function(blob2) {
+                    getCroppedBlob(cropper3, function(blob3) {
+                        // Create FormData with cropped images as files
+                        const formData = new FormData();
+                        
+                        // Add all form fields
+                        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                        formData.append('publisher', document.getElementById('publisher').value);
+                        formData.append('published_date', publishedDateInput.value);
+                        formData.append('price', priceInput.value);
+                        formData.append('page', pageInput.value);
+                        formData.append('stock', stockInput.value);
+                        formData.append('language', document.getElementById('language').value);
+                        
+                        // Add images: use cropped blob if available, otherwise original file
+                        if (blob1) {
+                            const file1 = image1Input.files[0];
+                            formData.append('image1', blob1, file1 ? file1.name : 'image1.jpg');
+                        } else if (image1Input.files[0]) {
+                            formData.append('image1', image1Input.files[0]);
+                        }
+                        
+                        if (blob2) {
+                            const file2 = image2Input.files[0];
+                            formData.append('image2', blob2, file2 ? file2.name : 'image2.jpg');
+                        } else if (image2Input.files[0]) {
+                            formData.append('image2', image2Input.files[0]);
+                        }
+                        
+                        if (blob3) {
+                            const file3 = image3Input.files[0];
+                            formData.append('image3', blob3, file3 ? file3.name : 'image3.jpg');
+                        } else if (image3Input.files[0]) {
+                            formData.append('image3', image3Input.files[0]);
+                        }
+                        
+                        // Submit using fetch
+                        fetch(form.action || window.location.pathname, {
+                            method: 'POST',
+                            body: formData
+                        }).then(response => {
+                            if (response.redirected) {
+                                window.location.href = response.url;
+                            } else {
+                                return response.text().then(html => {
+                                    document.open();
+                                    document.write(html);
+                                    document.close();
+                                });
+                            }
+                        }).catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while submitting the form. Please try again.');
+                        });
+                    });
+                });
+            });
+        }
+        // If no cropper, form will submit normally with original files
+    });
+});
+</script>
 {% endblock %}
