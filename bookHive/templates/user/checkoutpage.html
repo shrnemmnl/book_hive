@@ -1021,7 +1021,7 @@
     const walletBalance = parseFloat({{ wallet_balance|default:0 }});
     const orderTotalDisplay = document.getElementById('orderTotalDisplay');
     
-    // Check wallet balance on page load and disable wallet option if insufficient
+    // Function to check wallet balance (only called when wallet is clicked)
     function checkWalletBalance() {
       // Use the actual total amount (after coupon discount) for comparison
       const netTotal = parseFloat(totalAmount);
@@ -1064,9 +1064,6 @@
       }
     }
     
-    // Check wallet balance on page load
-    checkWalletBalance();
-    
     paymentMethods.forEach(radio => {
       radio.addEventListener('change', function() {
         // Handle COD validation
@@ -1094,8 +1091,9 @@
           }
         }
         
-        // Handle Wallet validation
+        // Handle Wallet validation - only when wallet is clicked
         if (this.value === 'wallet') {
+          // Check wallet balance when user clicks wallet payment
           const netTotal = parseFloat(totalAmount);
           if (walletBalance <= 0 || walletBalance < netTotal) {
             // Show warning and prevent wallet payment
@@ -1108,17 +1106,30 @@
             walletInsufficientWarning.classList.remove('d-none');
             this.checked = false;
             this.disabled = true;
+            if (walletHelperText) {
+              walletHelperText.innerHTML = `Balance: ₹${walletBalance.toFixed(2)} <span class="text-danger">(Insufficient)</span>`;
+              walletHelperText.className = 'text-muted mt-1 d-block';
+            }
             showToast('Insufficient wallet balance. Your wallet balance (₹' + walletBalance.toFixed(2) + ') is less than the order total (₹' + netTotal.toFixed(2) + '). Please use Razorpay or COD.', 'error');
           } else {
             // Hide warning if balance is sufficient
             walletInsufficientWarning.classList.add('d-none');
+            if (walletHelperText) {
+              walletHelperText.innerHTML = `Balance: ₹${walletBalance.toFixed(2)}`;
+              walletHelperText.className = 'text-muted mt-1 d-block';
+            }
           }
         } else {
           // Hide wallet warning when other payment methods are selected
           walletInsufficientWarning.classList.add('d-none');
-          // Re-enable wallet if it was disabled (balance might have changed)
-          if (paymentWallet && !checkWalletBalance()) {
-            paymentWallet.disabled = true;
+          // Reset wallet helper text when other payment is selected
+          if (paymentWallet && walletHelperText) {
+            walletHelperText.innerHTML = `Balance: ₹${walletBalance.toFixed(2)}`;
+            walletHelperText.className = 'text-muted mt-1 d-block';
+          }
+          // Re-enable wallet if it was disabled
+          if (paymentWallet) {
+            paymentWallet.disabled = false;
           }
         }
       });

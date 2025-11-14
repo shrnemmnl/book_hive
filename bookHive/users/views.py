@@ -1196,6 +1196,43 @@ def checkoutpage(request):
             if 'coupon_discount' in request.session:
                 del request.session['coupon_discount']
     
+    # Validate discount: Ensure gross price is higher than total discount for each cart item
+    if coupon_discount > 0 and subtotal > 0 and len(cart_items) > 0:
+        discount_violation = False
+        cart_items_count = len(cart_items)
+        
+        # Check each cart item for violations
+        for item in cart_items:
+            # Gross price = original price * quantity
+            gross_price = item.original_total_price
+            
+            # Product/genre discount for this item
+            item_offer_discount = item.original_total_price - item.total_price
+            
+            # Coupon discount distributed equally to each cart item
+            # coupon_discount / total cart items count
+            item_coupon_discount = coupon_discount / cart_items_count if cart_items_count > 0 else 0
+            
+            # Total discount for this item
+            total_item_discount = item_offer_discount + item_coupon_discount
+            
+            # Check if total discount exceeds or equals gross price
+            if total_item_discount >= gross_price:
+                discount_violation = True
+                break
+        
+        # If violation found, remove coupon - don't apply it
+        if discount_violation:
+            # Remove coupon, keep product/genre offers
+            if 'applied_coupon_code' in request.session:
+                del request.session['applied_coupon_code']
+            if 'applied_coupon_id' in request.session:
+                del request.session['applied_coupon_id']
+            if 'coupon_discount' in request.session:
+                del request.session['coupon_discount']
+            applied_coupon = None
+            coupon_discount = 0
+    
     total = subtotal - coupon_discount
     addresses = Address.objects.filter(user=request.user, is_active=True)
     
@@ -2391,6 +2428,8 @@ def apply_coupon(request):
             return JsonResponse({"success": False, "error": "Cart is empty"}, status=400)
         
         subtotal = sum(item.get_total_price() for item in cart_items)
+        original_subtotal = sum(item.product_variant.price * item.quantity for item in cart_items)
+        total_discount_from_offers = original_subtotal - subtotal
         
         # Validate coupon
         try:
@@ -2415,6 +2454,38 @@ def apply_coupon(request):
         
         # Ensure discount doesn't exceed subtotal
         discount = min(discount, subtotal)
+        
+        # Validate discount: Ensure gross price is higher than total discount for each cart item
+        if discount > 0 and subtotal > 0 and len(cart_items) > 0:
+            discount_violation = False
+            cart_items_count = len(cart_items)
+            
+            # Check each cart item for violations
+            for item in cart_items:
+                # Gross price = original price * quantity
+                gross_price = item.product_variant.price * item.quantity
+                
+                # Product/genre discount for this item
+                item_offer_discount = gross_price - item.get_total_price()
+                
+                # Coupon discount distributed equally to each cart item
+                # discount / total cart items count
+                item_coupon_discount = discount / cart_items_count if cart_items_count > 0 else 0
+                
+                # Total discount for this item
+                total_item_discount = item_offer_discount + item_coupon_discount
+                
+                # Check if total discount exceeds or equals gross price
+                if total_item_discount >= gross_price:
+                    discount_violation = True
+                    break
+            
+            # If violation found, don't allow coupon - reject it
+            if discount_violation:
+                return JsonResponse({
+                    "success": False, 
+                    "error": "Cannot apply coupon. Total discount (product/genre offer + coupon) would exceed the gross price for one or more items. Only one offer can be applied per item."
+                }, status=400)
         
         # Store in session
         request.session['applied_coupon_code'] = coupon.code
