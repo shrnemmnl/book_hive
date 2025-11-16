@@ -827,7 +827,11 @@
           href.startsWith('mailto:') ||
           href.startsWith('tel:') ||
           link.target === '_blank' ||
-          link.hasAttribute('download')) {
+          link.hasAttribute('download') ||
+          link.hasAttribute('data-no-transition') ||
+          href.includes('download_invoice') ||
+          href.includes('download-pdf') ||
+          href.includes('download-excel')) {
         return;
       }
 
