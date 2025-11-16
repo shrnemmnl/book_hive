@@ -692,7 +692,7 @@ def user_address(request):
 
         if not has_error:
 
-            Address.objects.create(
+            new_address = Address.objects.create(
                 user=request.user,
                 address_type=address_type,
                 street=street,
@@ -706,9 +706,11 @@ def user_address(request):
             messages.success(
                 request, "Your new delivery address has been added successfully.")
 
-            address_update = request.session['address_update']
+            address_update = request.session.get('address_update', False)
             print(address_update)
             if address_update:
+                # Store the new address ID in session to auto-select it on checkout page
+                request.session['new_address_id'] = new_address.id
                 return redirect('checkoutpage')
             else:
                 # Or wherever you want to redirect
@@ -1234,7 +1236,7 @@ def checkoutpage(request):
             coupon_discount = 0
     
     total = subtotal - coupon_discount
-    addresses = Address.objects.filter(user=request.user, is_active=True)
+    addresses = Address.objects.filter(user=request.user, is_active=True).order_by('-is_default', '-id')
     
     # Get wallet balance for the user
     wallet_balance = 0
@@ -1244,6 +1246,21 @@ def checkoutpage(request):
             wallet_balance = float(wallet.wallet_amount)
         except Wallet.DoesNotExist:
             wallet_balance = 0
+
+    # Check if a new address was just added (from session)
+    new_address_id = request.session.get('new_address_id', None)
+    new_address = None
+    show_address_selection = False
+    if new_address_id:
+        # Verify the address exists and belongs to the user
+        try:
+            new_address = Address.objects.get(id=new_address_id, user=request.user, is_active=True)
+            show_address_selection = True
+            # Remove from session after using it
+            del request.session['new_address_id']
+        except Address.DoesNotExist:
+            new_address_id = None
+            new_address = None
 
     # print(request.method)
 
@@ -1349,7 +1366,10 @@ def checkoutpage(request):
         "razorpay_key_id": settings.RAZORPAY_KEY_ID,
         "applied_coupon": applied_coupon,
         "coupon_discount": coupon_discount,
-        "wallet_balance": wallet_balance
+        "wallet_balance": wallet_balance,
+        "new_address_id": new_address_id,
+        "new_address": new_address,
+        "show_address_selection": show_address_selection
     })
 
 
