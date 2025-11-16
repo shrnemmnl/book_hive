@@ -289,6 +289,74 @@ class Transaction(models.Model):
         return f"{self.transaction_id} - {self.get_transaction_type_display()} - ₹{self.amount}"
 
 
+class Invoice(models.Model):
+    """
+    Invoice model to store locked invoice data.
+    Invoice is created only when order status becomes 'shipped' and is locked thereafter.
+    """
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='invoice')
+    invoice_number = models.CharField(max_length=50, unique=True, editable=False)
+    invoice_date = models.DateField(auto_now_add=True)
+    
+    # Seller details (fixed)
+    seller_name = models.CharField(max_length=200, default='Book Hive Pvt Ltd')
+    seller_address = models.CharField(max_length=500, default='24/B MG Road, Bangalore')
+    seller_phone = models.CharField(max_length=20, default='7907302778')
+    seller_email = models.EmailField(default='info@bookhive.com')
+    seller_gstin = models.CharField(max_length=20, default='29ABCDE1234F1Z5')
+    
+    # Customer details (snapshot at invoice creation)
+    customer_name = models.CharField(max_length=200)
+    customer_address = models.TextField()
+    customer_phone = models.CharField(max_length=20)
+    customer_email = models.EmailField()
+    
+    # Order details (snapshot)
+    snapshot_order_id = models.CharField(max_length=50)  # Renamed to avoid clash with order.id
+    order_date = models.DateField()
+    payment_method = models.CharField(max_length=100)
+    transaction_id = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Invoice summary (locked values)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    total_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Invoice items (stored as JSON for simplicity, or we can use a separate model)
+    # For now, we'll regenerate from order_items but use locked values
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-invoice_date', '-created_at']
+    
+    def generate_invoice_number(self):
+        """Generate a unique invoice number in the format INV + timestamp."""
+        prefix = "INV"
+        timestamp = timezone.now()
+        base_id = f"{prefix}{timestamp.strftime('%Y%m%d%H%M%S')}"
+        
+        invoice_number = base_id
+        counter = 0
+        while Invoice.objects.filter(invoice_number=invoice_number).exists():
+            counter += 1
+            suffix = str(random.randint(0, 9))
+            invoice_number = f"{base_id}{suffix}"
+            if counter > 10:
+                raise ValueError("Unable to generate a unique invoice_number after multiple attempts.")
+        return invoice_number
+    
+    def save(self, *args, **kwargs):
+        """Override save to set invoice_number on creation."""
+        if not self.invoice_number:
+            self.invoice_number = self.generate_invoice_number()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Invoice {self.invoice_number} - Order {self.snapshot_order_id}"
+
+
 class CustomerSupport(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),

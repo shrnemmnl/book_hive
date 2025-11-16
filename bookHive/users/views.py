@@ -7,7 +7,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.conf import settings
 from django.urls import reverse
 # Import your user model
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction, CustomerSupport
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction, CustomerSupport, Invoice
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache, cache_control
 from django.db.models import Min
@@ -2132,42 +2132,171 @@ def change_variant(request, book_id):
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
 
+def generate_invoice_for_order(order):
+    """
+    Generate and lock invoice for an order when order item status becomes 'shipped'.
+    This function creates a locked invoice that won't change even if order is updated later.
+    """
+    # Check if invoice already exists
+    try:
+        existing_invoice = Invoice.objects.get(order=order)
+        return existing_invoice
+    except Invoice.DoesNotExist:
+        pass  # Invoice doesn't exist, continue to create it
+    
+    # Only generate invoice if at least one order item is shipped
+    shipped_items = order.order_items.filter(status='shipped')
+    if not shipped_items.exists():
+        return None
+    
+    # Get transaction ID from Transaction model
+    transaction = Transaction.objects.filter(order=order).first()
+    transaction_id = transaction.transaction_id if transaction else None
+    
+    # Calculate original subtotal (sum of unit_price * quantity before discount)
+    original_subtotal = sum(item.unit_price * item.quantity for item in order.order_items.all())
+    
+    # Calculate total discount (original_subtotal - subtotal + coupon_discount)
+    total_discount = (original_subtotal - order.subtotal) + order.coupon_discount
+    
+    # Get customer address
+    customer_address = ""
+    if order.address:
+        address_parts = [
+            order.address.street,
+            order.address.landmark if order.address.landmark else "",
+            order.address.city,
+            order.address.state,
+            order.address.postal_code
+        ]
+        customer_address = ", ".join(filter(None, address_parts))
+    
+    # Format payment method
+    payment_method_display = order.payment_method
+    if order.payment_method == 'razorpay':
+        payment_method_display = 'Razorpay'
+    elif order.payment_method == 'wallet':
+        payment_method_display = 'Wallet'
+    elif order.payment_method == 'cod':
+        payment_method_display = 'Cash on Delivery'
+    
+    # Create invoice
+    invoice = Invoice.objects.create(
+        order=order,
+        customer_name=f"{order.user.first_name} {order.user.last_name}".strip(),
+        customer_address=customer_address,
+        customer_phone=order.address.phone if order.address else (order.user.phone_no or ''),
+        customer_email=order.user.email,
+        snapshot_order_id=order.order_id,
+        order_date=order.order_date,
+        payment_method=payment_method_display,
+        transaction_id=transaction_id,
+        subtotal=original_subtotal,
+        total_discount=total_discount,
+        shipping=0.00,
+        total_amount=order.net_amount,
+    )
+    
+    logger.info(f"Invoice {invoice.invoice_number} created for order {order.order_id}")
+    return invoice
+
+
 @login_required(login_url='login')
 def download_invoice(request, id):
+    """
+    Download invoice PDF. Uses locked invoice data if available, otherwise generates on-the-fly.
+    """
     try:
         # Get order and validate ownership
         order = get_object_or_404(Order, id=id, user=request.user)
+        
+        # Check if invoice exists (locked), if not, generate it
+        invoice = None
+        
+        # First, check if Invoice model/table is available
+        try:
+            # Try a simple query to check if table exists
+            Invoice.objects.exists()
+        except Exception as table_error:
+            error_msg = str(table_error)
+            if 'does not exist' in error_msg.lower() or 'relation' in error_msg.lower() or 'no such table' in error_msg.lower():
+                logger.error(f"Invoice table does not exist. Error: {error_msg}")
+                messages.error(request, "Invoice system is not set up. Please run: python manage.py makemigrations users && python manage.py migrate")
+                return redirect('user_order')
+            else:
+                raise  # Re-raise if it's a different error
+        
+        try:
+            # Try to get existing invoice
+            invoice = Invoice.objects.get(order=order)
+            logger.info(f"Invoice {invoice.invoice_number} found for order {order.order_id}")
+        except Invoice.DoesNotExist:
+            # Invoice doesn't exist, try to generate it
+            logger.info(f"No invoice found for order {order.order_id}, attempting to generate...")
+            try:
+                invoice = generate_invoice_for_order(order)
+                if not invoice:
+                    # Check if order has shipped items
+                    shipped_count = order.order_items.filter(status='shipped').count()
+                    if shipped_count == 0:
+                        messages.error(request, "Invoice is not available yet. Invoice is generated when order is shipped.")
+                    else:
+                        messages.error(request, "Unable to generate invoice. Please contact support.")
+                    return redirect('user_order')
+                logger.info(f"Invoice {invoice.invoice_number} generated for order {order.order_id}")
+            except Exception as gen_error:
+                logger.error(f"Error generating invoice for order {order.order_id}: {str(gen_error)}", exc_info=True)
+                messages.error(request, f"Error generating invoice: {str(gen_error)}. Please contact support if this persists.")
+                return redirect('user_order')
+        except Exception as e:
+            # This catches any other database/import errors
+            logger.error(f"Error checking invoice existence for order {order.order_id}: {str(e)}", exc_info=True)
+            error_msg = str(e)
+            # Check if it's a table doesn't exist error
+            if 'does not exist' in error_msg.lower() or 'relation' in error_msg.lower():
+                messages.error(request, "Invoice system is not set up yet. Please run migrations: python manage.py migrate")
+            else:
+                messages.error(request, f"Error accessing invoice: {error_msg}")
+            return redirect('user_order')
+        
+        if not invoice:
+            messages.error(request, "Invoice is not available yet. Invoice is generated when order is shipped.")
+            return redirect('user_order')
+        
         order_items = order.order_items.all()
         
-        # Calculate original subtotal for invoice display
-        original_subtotal = 0
+        # Prepare invoice items data
+        invoice_items = []
         for item in order_items:
-            item.original_total_price = item.unit_price * item.quantity
-            original_subtotal += item.original_total_price
-        total_discount_from_offers = max(0, original_subtotal - order.subtotal)
+            invoice_items.append({
+                'name': item.product_variant.product.book_title,
+                'quantity': item.quantity,
+                'price': float(item.unit_price),  # Price before discount
+                'line_total': float(item.unit_price * item.quantity),  # Line total before discount
+            })
         
         template_path = 'invoices/invoice_template.html'
         context = {
+            'invoice': invoice,
             'order': order,
-            'order_items': order_items,
-            'original_subtotal': original_subtotal,
-            'total_discount_from_offers': total_discount_from_offers,
+            'order_items': invoice_items,
         }
 
         template = get_template(template_path)
         html = template.render(context)
 
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="invoice_{order.order_id}.pdf"'
+        response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.invoice_number}.pdf"'
 
         pisa_status = pisa.CreatePDF(html, dest=response)
 
         if pisa_status.err:
-            return HttpResponse('We had some errors with PDF generation <pre>' + html + '</pre>')
+            logger.error(f"PDF generation error: {pisa_status.err}")
+            return HttpResponse(f'We had some errors with PDF generation. Error: {pisa_status.err}<pre>{html[:500]}</pre>')
         return response
     except Exception as e:
-        logger.error(f"Error generating invoice: {str(e)}")
-        messages.error(request, "Error generating invoice. Please try again.")
+        logger.error(f"Error generating invoice: {str(e)}", exc_info=True)
+        messages.error(request, f"Error generating invoice: {str(e)}")
         return redirect('user_order')
 
 

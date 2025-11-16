@@ -232,6 +232,19 @@ def update_order_item_status(request,order_item_id):
     order_item=OrderItem.objects.get(id=order_item_id)
     order_item.status=status
     order_item.save()
+    
+    # Generate invoice if status is 'shipped' and invoice doesn't exist
+    if status == 'shipped':
+        from users.views import generate_invoice_for_order
+        try:
+            # Check if Invoice table exists by trying to access it
+            from users.models import Invoice
+            generate_invoice_for_order(order_item.order)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            # Log error but don't fail the status update
+            logger.warning(f"Could not generate invoice for order {order_item.order.order_id}: {str(e)}. Make sure migrations are run.")
 
     return redirect('order')
 
@@ -1227,6 +1240,17 @@ def admin_order_details(request, order_id):
         # Update the item status
         order_item.status = new_status
         order_item.save()
+        
+        # Generate invoice if status is 'shipped' and invoice doesn't exist
+        if new_status == 'shipped':
+            from users.views import generate_invoice_for_order
+            try:
+                # Check if Invoice table exists by trying to access it
+                from users.models import Invoice
+                generate_invoice_for_order(order)
+            except Exception as e:
+                # Log error but don't fail the status update
+                logger.warning(f"Could not generate invoice for order {order.order_id}: {str(e)}. Make sure migrations are run.")
         
         # Only show generic status update message if we haven't shown a refund message
         if not refund_message_shown:

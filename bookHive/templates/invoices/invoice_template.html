@@ -3,131 +3,268 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Invoice</title>
+    <title>Tax Invoice</title>
     <style>
         body {
-            font-family: Arial;
-            font-size: 12pt;
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
             margin: 20px;
             color: black;
+            line-height: 1.4;
         }
         
-        h1 {
-            text-align: center;
-            font-size: 18pt;
-            margin-bottom: 20px;
-        }
-        
-        .header {
+        .invoice-header {
             text-align: center;
             margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
         }
         
-        .details {
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-        
-        table {
-            width: 100%;
-            border: 1px solid black;
-            margin-bottom: 20px;
-            border-collapse: collapse;
-        }
-        
-        
-        
-        .col1 { width: 8%; text-align: center; }
-        .col2 { width: 35%; }
-        .col3 { width: 20%; }
-        .col4 { width: 10%; text-align: center; }
-        .col5 { width: 13%; text-align: right; }
-        .col6 { width: 14%; text-align: right; }
-        
-        .total {
-            text-align: center;
-            font-size: 14pt;
+        .invoice-header h1 {
+            font-size: 20pt;
             font-weight: bold;
-            margin-top: 20px;
-            padding: 15pt;
-            border: 2px solid black;
-            background-color: #f0f0f0;
+            margin: 0;
+            margin-bottom: 10px;
         }
         
-        .footer {
-            text-align: center;
-            margin-top: 30px;
+        .invoice-header p {
+            margin: 5px 0;
             font-size: 10pt;
         }
-
         
-
-th, td {
-    border: 1px solid black;
-    padding: 2px 10px;  /* smaller padding works better than large 'pt' values */
-    font-size: 8pt;
-    text-align: left;
-}
-
+        .seller-customer-section {
+            margin-bottom: 25px;
+        }
+        
+        .seller-section, .customer-section {
+            margin-bottom: 20px;
+        }
+        
+        .seller-section h3, .customer-section h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-decoration: underline;
+        }
+        
+        .seller-section p, .customer-section p {
+            margin: 3px 0;
+            font-size: 10pt;
+        }
+        
+        .order-details-section {
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+        
+        .order-details-section h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-decoration: underline;
+        }
+        
+        .order-details-section p {
+            margin: 2px 0;
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+        
+        .items-section {
+            margin-bottom: 20px;
+        }
+        
+        .items-section h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-decoration: underline;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .items-table th {
+            background-color: #f0f0f0;
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+        
+        .items-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 10pt;
+        }
+        
+        .items-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .invoice-summary {
+            margin-top: 25px;
+            padding-top: 15px;
+        }
+        
+        .invoice-summary h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-decoration: underline;
+        }
+        
+        .summary-row {
+            margin-bottom: 8px;
+            font-size: 10pt;
+            line-height: 1.8;
+        }
+        
+        .summary-label {
+            font-weight: normal;
+            display: inline-block;
+            min-width: 150px;
+        }
+        
+        .summary-value {
+            font-weight: normal;
+            display: inline-block;
+        }
+        
+        .total-row {
+            margin-top: 10px;
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        .total-row .summary-label {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        .total-row .summary-value {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        .notes-section {
+            margin-top: 30px;
+            border-top: 1px solid #000;
+            padding-top: 15px;
+        }
+        
+        .notes-section h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-decoration: underline;
+        }
+        
+        .notes-section p {
+            margin: 5px 0;
+            font-size: 10pt;
+        }
+        
+        .divider {
+            border-top: 1px solid #000;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h1>INVOICE</h1>
-    <p><strong>Book Hive</strong></p>
+<div class="invoice-header">
+    <h1>TAX INVOICE</h1>
+    <p><strong>Invoice No:</strong> {{ invoice.invoice_number }}</p>
+    <p><strong>Invoice Date:</strong> {{ invoice.invoice_date|date:"d M Y" }}</p>
 </div>
 
-<div class="details">
-    <p><strong>Customer:</strong> {{ order.user.first_name }} {{ order.user.last_name }}</p>
-    <p><strong>Order ID:</strong> {{ order.order_id }}</p>
-    <p><strong>Order Date:</strong> {{ order.order_date }}</p>
+<div class="seller-customer-section">
+    <div class="seller-section">
+        <h3>Seller:</h3>
+        <p><strong>{{ invoice.seller_name }}</strong></p>
+        <p>{{ invoice.seller_address }}</p>
+        <p>Phone: {{ invoice.seller_phone }}</p>
+        <p>Email: {{ invoice.seller_email }}</p>
+        <p>GSTIN: {{ invoice.seller_gstin }}</p>
+    </div>
+    
+    <div class="customer-section">
+        <h3>Customer:</h3>
+        <p><strong>{{ invoice.customer_name }}</strong></p>
+        <p>{{ invoice.customer_address }}</p>
+        <p>Phone: {{ invoice.customer_phone }}</p>
+        <p>Email: {{ invoice.customer_email }}</p>
+    </div>
 </div>
 
-<table cellspacing="0" cellpadding="5">
-    <thead>
-        <tr>
-            <th class="col1">#</th>
-            <th class="col2">Book Title</th>
-            <th class="col3">Author</th>
-            <th class="col4">Quantity</th>
-            <th class="col5">Unit Price</th>
-            <th class="col6">Subtotal</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for item in order_items %}
-        <tr>
-            <td class="col1">{{ forloop.counter }}</td>
-            <td class="col2">{{ item.product_variant.product.book_title }}</td>
-            <td class="col3">{{ item.product_variant.product.author }}</td>
-            <td class="col4">{{ item.quantity }}</td>
-            <td class="col5">{{ item.discount_price|floatformat:2 }}</td>
-            <td class="col6">{{ item.total_amount|floatformat:2 }}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
-
-<div style="margin-bottom: 15px; font-size: 10pt; line-height: 1.8;">
-    {% if original_subtotal > order.subtotal %}
-    <div style="text-align: right;"><strong>Total MRP:</strong> <span style="text-decoration: line-through;">Rs. {{ original_subtotal|floatformat:2 }}</span></div>
-    <div style="text-align: right; color: #059669;"><strong>Discount:</strong> -Rs. {{ total_discount_from_offers|floatformat:2 }}</div>
+<div class="order-details-section">
+    <h3>Order Details:</h3>
+    <p><strong>Order ID:</strong> {{ invoice.snapshot_order_id }}</p>
+    <p><strong>Order Date:</strong> {{ invoice.order_date|date:"d M Y" }}</p>
+    <p><strong>Payment Method:</strong> {{ invoice.payment_method }}</p>
+    {% if invoice.transaction_id %}
+    <p><strong>Transaction ID:</strong> {{ invoice.transaction_id }}</p>
     {% endif %}
-    <div style="text-align: right;"><strong>Subtotal:</strong> Rs. {{ order.subtotal|floatformat:2 }}</div>
-    {% if order.coupon_discount and order.coupon_discount > 0 %}
-    <div style="text-align: right; color: #059669;"><strong>Coupon Discount ({{ order.coupon_code }}):</strong> -Rs. {{ order.coupon_discount|floatformat:2 }}</div>
-    {% endif %}
-    <div style="text-align: right;"><strong>Shipping:</strong> Free</div>
 </div>
 
-<div class="total">
-    Total Amount: Rs. {{ order.net_amount|floatformat:2 }}
+<div class="divider"></div>
+
+<div class="items-section">
+    <h3>Items:</h3>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Item Name</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Line Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order_items %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>Rs. {{ item.price|floatformat:2 }}</td>
+                <td>Rs. {{ item.line_total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 
-<div class="footer">
-    <p>Thank you for shopping with Book Hive!</p>
+<div class="invoice-summary">
+    <h3>Invoice Summary:</h3>
+    <div class="summary-row">
+        <span class="summary-label">Subtotal:</span> <span class="summary-value">Rs. {{ invoice.subtotal|floatformat:2 }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Discount:</span> <span class="summary-value">Rs. {{ invoice.total_discount|floatformat:2 }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Shipping:</span> <span class="summary-value">Rs. {{ invoice.shipping|floatformat:2 }}</span>
+    </div>
+    <div class="summary-row total-row">
+        <span class="summary-label">Total Amount Payable:</span> <span class="summary-value">Rs. {{ invoice.total_amount|floatformat:2 }}</span>
+    </div>
 </div>
+
+<div class="divider"></div>
+
+<div class="notes-section">
+    <h3>Notes:</h3>
+    <p>Thank you for shopping with Book Hive.</p>
+    <p>For refunds or returns, refer to our policy.</p>
+</div>
+
+<div class="divider"></div>
 
 </body>
 </html>
