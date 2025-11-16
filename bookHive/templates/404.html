@@ -1,0 +1,202 @@
+{% load static %}
+{% include 'includes/header.html' %}
+
+<style>
+  .error-page {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+  }
+
+  .error-content {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  .error-code {
+    font-size: 8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 1rem;
+    text-shadow: 0 4px 8px rgba(230, 126, 34, 0.2);
+  }
+
+  .error-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary-navy);
+    margin-bottom: 1rem;
+  }
+
+  .error-message {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+
+  .error-illustration {
+    font-size: 6rem;
+    margin-bottom: 2rem;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+  }
+
+  .btn-home {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+  }
+
+  .btn-home:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(230, 126, 34, 0.4);
+    color: white;
+  }
+
+  .btn-secondary-action {
+    background: white;
+    color: var(--primary-navy);
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 2px solid var(--primary-navy);
+  }
+
+  .btn-secondary-action:hover {
+    background: var(--primary-navy);
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .helpful-links {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(44, 62, 80, 0.1);
+  }
+
+  .helpful-links h5 {
+    font-size: 1rem;
+    color: var(--primary-navy);
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .helpful-links ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .helpful-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+  }
+
+  .helpful-links a:hover {
+    color: var(--primary-orange);
+    transform: translateX(3px);
+  }
+
+  @media (max-width: 768px) {
+    .error-code {
+      font-size: 5rem;
+    }
+
+    .error-title {
+      font-size: 1.5rem;
+    }
+
+    .error-message {
+      font-size: 1rem;
+    }
+
+    .error-illustration {
+      font-size: 4rem;
+    }
+
+    .error-actions {
+      flex-direction: column;
+    }
+
+    .btn-home,
+    .btn-secondary-action {
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="error-page">
+  <div class="error-content">
+    <div class="error-illustration">📚</div>
+    <div class="error-code">404</div>
+    <h1 class="error-title">Page Not Found</h1>
+    <p class="error-message">
+      Oops! The page you're looking for seems to have wandered off into the library. 
+      It might have been moved, deleted, or perhaps it never existed in the first place.
+    </p>
+    
+    <div class="error-actions">
+      <a href="{% url 'loading_page' %}" class="btn-home">
+        <i class="bi bi-house-door me-2"></i>Go to Homepage
+      </a>
+      <a href="javascript:history.back()" class="btn-secondary-action">
+        <i class="bi bi-arrow-left me-2"></i>Go Back
+      </a>
+    </div>
+
+    <div class="helpful-links">
+      <h5>You might be looking for:</h5>
+      <ul>
+        <li><a href="{% url 'loading_page' %}"><i class="bi bi-house me-1"></i>Home</a></li>
+        {% if user.is_authenticated %}
+        <li><a href="{% url 'user_order' %}"><i class="bi bi-bag-check me-1"></i>My Orders</a></li>
+        <li><a href="{% url 'user_cart' %}"><i class="bi bi-cart me-1"></i>Shopping Cart</a></li>
+        <li><a href="{% url 'user_profile' %}"><i class="bi bi-person me-1"></i>My Profile</a></li>
+        {% else %}
+        <li><a href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-1"></i>Login</a></li>
+        <li><a href="{% url 'signup' %}"><i class="bi bi-person-plus me-1"></i>Sign Up</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% include 'includes/footer.html' %}
+
