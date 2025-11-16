@@ -311,15 +311,6 @@
       const input = $('input.quantity[data-id="' + itemId + '"]');
       let currentQty = parseInt(input.val());
 
-      if (action === "increase" && currentQty >= 5) {
-        if (typeof toastr !== 'undefined') {
-          toastr.warning("Maximum quantity is 5");
-        } else {
-          alert("Maximum quantity is 5");
-        }
-        return;
-      }
-
       $.ajax({
         url: "update-quantity",
         type: "POST",
@@ -349,10 +340,12 @@
               $('#savings-message').hide();
             }
           } else {
+            // Show error message (check both error and message for backward compatibility)
+            const errorMsg = response.error || response.message || "Error updating quantity";
             if (typeof toastr !== 'undefined') {
-              toastr.error(response.error || "Error updating quantity");
+              toastr.error(errorMsg);
             } else {
-              alert("Error: " + response.error);
+              alert("Error: " + errorMsg);
             }
           }
         },
@@ -429,4 +422,3 @@
 
 {% include 'includes/footer.html' %}
 
-{% include 'includes/footer.html' %}

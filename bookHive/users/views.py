@@ -1650,30 +1650,37 @@ def update_cart_quantity(request):
             cart_item.delete()
             return JsonResponse({
                 'success': False,
-                'message': 'This item is no longer available and has been removed from your cart'
+                'error': 'This item is no longer available and has been removed from your cart'
             })
         
         if not cart_item.product_variant.product.is_active:
             cart_item.delete()
             return JsonResponse({
                 'success': False,
-                'message': 'This book is no longer available and has been removed from your cart'
+                'error': 'This book is no longer available and has been removed from your cart'
             })
         
         if not cart_item.product_variant.product.genre.is_active:
             cart_item.delete()
             return JsonResponse({
                 'success': False,
-                'message': 'This book category is no longer available and has been removed from your cart'
+                'error': 'This book category is no longer available and has been removed from your cart'
             })
 
         # Update quantity
         if action == 'increase':
             # Check stock availability before increasing
-            if cart_item.product_variant.available_quantity <= cart_item.quantity:
+            available_qty = cart_item.product_variant.available_quantity
+            if available_qty <= cart_item.quantity:
                 return JsonResponse({
                     'success': False,
-                    'message': f'Only {cart_item.product_variant.available_quantity} items available'
+                    'error': f'Only {available_qty} item{"s" if available_qty != 1 else ""} available'
+                })
+            # Also check maximum quantity limit (5)
+            if cart_item.quantity >= 5:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Maximum quantity is 5'
                 })
             cart_item.quantity += 1
         elif action == 'decrease' and cart_item.quantity > 1:
