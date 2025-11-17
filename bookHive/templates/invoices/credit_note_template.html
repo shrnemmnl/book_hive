@@ -1,0 +1,255 @@
+{% load price_filters %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Credit Note</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            margin: 20px;
+            color: black;
+            line-height: 1.4;
+        }
+        
+        .credit-note-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+        }
+        
+        .credit-note-header h1 {
+            font-size: 20pt;
+            font-weight: bold;
+            margin: 0;
+            margin-bottom: 10px;
+        }
+        
+        .credit-note-header p {
+            margin: 5px 0;
+            font-size: 10pt;
+        }
+        
+        .referencing-section {
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+        
+        .referencing-section h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-decoration: underline;
+        }
+        
+        .referencing-section p {
+            margin: 2px 0;
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+        
+        .customer-seller-section {
+            margin-bottom: 25px;
+        }
+        
+        .customer-section, .seller-section {
+            margin-bottom: 20px;
+        }
+        
+        .customer-section h3, .seller-section h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-decoration: underline;
+        }
+        
+        .customer-section p, .seller-section p {
+            margin: 3px 0;
+            font-size: 10pt;
+        }
+        
+        .items-section {
+            margin-bottom: 20px;
+        }
+        
+        .items-section h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-decoration: underline;
+        }
+        
+        .item-row {
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+        }
+        
+        .item-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .item-details {
+            margin-left: 20px;
+            font-size: 10pt;
+        }
+        
+        .summary-section {
+            margin-top: 25px;
+            padding-top: 15px;
+        }
+        
+        .summary-section h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-decoration: underline;
+        }
+        
+        .summary-row {
+            margin-bottom: 8px;
+            font-size: 10pt;
+            line-height: 1.8;
+        }
+        
+        .summary-label {
+            font-weight: normal;
+            display: inline-block;
+            min-width: 150px;
+        }
+        
+        .summary-value {
+            font-weight: normal;
+            display: inline-block;
+        }
+        
+        .total-refund-row {
+            margin-top: 10px;
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        .total-refund-row .summary-label {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        .total-refund-row .summary-value {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        .payment-method-section {
+            margin-top: 20px;
+            padding-top: 15px;
+        }
+        
+        .payment-method-section p {
+            margin: 3px 0;
+            font-size: 10pt;
+        }
+        
+        .notes-section {
+            margin-top: 30px;
+            padding-top: 15px;
+        }
+        
+        .notes-section h3 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-decoration: underline;
+        }
+        
+        .notes-section p {
+            margin: 5px 0;
+            font-size: 10pt;
+        }
+        
+        .divider {
+            border-top: 1px solid #000;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="credit-note-header">
+    <h1>CREDIT NOTE</h1>
+    <p><strong>Credit Note No:</strong> {{ credit_note.credit_note_number }}</p>
+    <p><strong>Date:</strong> {{ credit_note.credit_note_date|date:"d M Y" }}</p>
+</div>
+
+<div class="referencing-section">
+    <h3>Referencing:</h3>
+    <p><strong>Original Invoice No:</strong> {{ credit_note.original_invoice_number }}</p>
+    <p><strong>Invoice Date:</strong> {{ credit_note.original_invoice_date|date:"d M Y" }}</p>
+</div>
+
+<div class="customer-seller-section">
+    <div class="customer-section">
+        <h3>Customer:</h3>
+        <p><strong>{{ credit_note.customer_name }}</strong></p>
+        <p>Phone: {{ credit_note.customer_phone }}</p>
+        <p>Email: {{ credit_note.customer_email }}</p>
+    </div>
+    
+    <div class="seller-section">
+        <h3>Seller:</h3>
+        <p><strong>{{ credit_note.seller_name }}</strong></p>
+        <p>{{ credit_note.seller_address }}</p>
+        <p>Phone: {{ credit_note.seller_phone }}</p>
+        <p>Email: {{ credit_note.seller_email }}</p>
+        <p>GSTIN: {{ credit_note.seller_gstin }}</p>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="items-section">
+    <h3>Items Refunded:</h3>
+    <div class="item-row">
+        <div class="item-name">1. {{ credit_note.item_name }}</div>
+        <div class="item-details">
+            Qty Returned: {{ credit_note.quantity_returned }}<br>
+            Price per item: Rs. {{ credit_note.price_per_item|floatformat:2 }}<br>
+            Refund Amount: -Rs. {{ credit_note.refund_amount|floatformat:2 }}
+        </div>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<div class="summary-section">
+    <h3>Summary:</h3>
+    <div class="summary-row">
+        <span class="summary-label">Subtotal:</span> <span class="summary-value">-Rs. {{ credit_note.subtotal|floatformat:2 }}</span>
+    </div>
+    <div class="summary-row">
+        <span class="summary-label">Discount Reversal:</span> <span class="summary-value">-Rs. {{ credit_note.discount_reversal|floatformat:2 }}</span>
+    </div>
+    <div class="summary-row total-refund-row">
+        <span class="summary-label">Total Refund:</span> <span class="summary-value">-Rs. {{ credit_note.total_refund|floatformat:2 }}</span>
+    </div>
+</div>
+
+<div class="payment-method-section">
+    <p><strong>Payment Method:</strong></p>
+    <p>Original: {{ credit_note.original_payment_method }}</p>
+    <p>Refund Mode: {{ credit_note.refund_method }}</p>
+</div>
+
+<div class="divider"></div>
+
+<div class="notes-section">
+    <h3>Notes:</h3>
+    <p>Refund issued due to cancellation/return.</p>
+</div>
+
+<div class="divider"></div>
+
+</body>
+</html>
+

@@ -7,7 +7,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.conf import settings
 from django.urls import reverse
 # Import your user model
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction, CustomerSupport, Invoice
+from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction, CustomerSupport, Invoice, CreditNote
 from django.contrib.auth.hashers import make_password  # Hash password before saving
 from django.views.decorators.cache import never_cache, cache_control
 from django.db.models import Min
@@ -784,9 +784,12 @@ def user_cart(request):
 
 @login_required(login_url='login')
 def user_order(request):
-
+    from django.db.models import Exists, OuterRef
+    
+    # Annotate order items with credit note existence
     order_details = Order.objects.prefetch_related(
-        'order_items').filter(user=request.user).order_by('-created_at')
+        'order_items__credit_note'
+    ).filter(user=request.user).order_by('-created_at')
 
     # Pagination
     page = request.GET.get('page', 1)
@@ -798,6 +801,13 @@ def user_order(request):
         for item in order.order_items.all():
             item.original_total_price = item.unit_price * item.quantity
             original_subtotal += item.original_total_price
+            # Ensure has_credit_note is accessible
+            # The prefetch should make this work, but let's ensure it's set
+            try:
+                # Try to access credit_note to trigger prefetch
+                _ = item.credit_note
+            except:
+                pass
         order.original_subtotal = original_subtotal
         order.total_discount_from_offers = max(0, original_subtotal - order.subtotal)
 
@@ -812,7 +822,7 @@ def order_search(request):
     status_filter = request.GET.get('status', '')
 
     # Start with all orders for the current user
-    orders = Order.objects.prefetch_related('order_items').filter(user=request.user).order_by('-created_at')
+    orders = Order.objects.prefetch_related('order_items__credit_note').filter(user=request.user).order_by('-created_at')
 
     # Apply time period filter
     if period_filter != 'all':
@@ -985,15 +995,19 @@ def wallet_payment(request):
         total_amount = data.get('total_amount')
         print("wallet-",address_id,total_amount)
 
+        # Convert total_amount to Decimal for proper monetary calculations
+        from decimal import Decimal
+        total_amount_decimal = Decimal(str(total_amount))
+
         user_wallet, created = Wallet.objects.get_or_create(user=request.user)
         if created:
             logger.info(f"Wallet created for user {request.user.email} during payment")
         print(user_wallet.wallet_amount)
 
-        if user_wallet.wallet_amount>=int(total_amount):
-            prev_amount=user_wallet.wallet_amount
+        if user_wallet.wallet_amount >= total_amount_decimal:
+            prev_amount = user_wallet.wallet_amount
             with db_transaction.atomic():
-                user_wallet.wallet_amount-=int(total_amount)
+                user_wallet.wallet_amount -= total_amount_decimal
                 user_wallet.save()
                 
  
@@ -1104,7 +1118,7 @@ def wallet_payment(request):
                     status='completed'
                 )
                 
-                logger.debug(f"The order amount: {total_amount} is deducted from the wallet {prev_amount}rs. Balance wallet amount {user_wallet.wallet_amount}.")
+                logger.debug(f"The order amount: {total_amount_decimal} is deducted from the wallet {prev_amount}rs. Balance wallet amount {user_wallet.wallet_amount}.")
                 return JsonResponse({
                     "status": "success",
                     "order_id": order.id,
@@ -2134,8 +2148,9 @@ def change_variant(request, book_id):
 
 def generate_invoice_for_order(order):
     """
-    Generate and lock invoice for an order when order item status becomes 'shipped'.
+    Generate and lock invoice for an order when order item status changes from 'pending'.
     This function creates a locked invoice that won't change even if order is updated later.
+    Invoice can be generated for any status except 'pending'.
     """
     # Check if invoice already exists
     try:
@@ -2144,9 +2159,11 @@ def generate_invoice_for_order(order):
     except Invoice.DoesNotExist:
         pass  # Invoice doesn't exist, continue to create it
     
-    # Only generate invoice if at least one order item is shipped
-    shipped_items = order.order_items.filter(status='shipped')
-    if not shipped_items.exists():
+    # Only generate invoice if at least one order item is NOT pending
+    # Invoice can be generated for any status except 'pending'
+    non_pending_items = order.order_items.exclude(status='pending')
+    if not non_pending_items.exists():
+        logger.warning(f"Cannot generate invoice for order {order.order_id}: All items are still pending.")
         return None
     
     # Get transaction ID from Transaction model
@@ -2158,6 +2175,17 @@ def generate_invoice_for_order(order):
     
     # Calculate total discount (original_subtotal - subtotal + coupon_discount)
     total_discount = (original_subtotal - order.subtotal) + order.coupon_discount
+    
+    # Store locked invoice items (snapshot at invoice creation)
+    # This ensures invoice never changes even if order items are modified or deleted
+    invoice_items_data = []
+    for item in order.order_items.all():
+        invoice_items_data.append({
+            'name': item.product_variant.product.book_title,
+            'quantity': item.quantity,
+            'price': str(item.unit_price),  # Store as string to preserve decimal precision
+            'line_total': str(item.unit_price * item.quantity),  # Line total before discount
+        })
     
     # Get customer address
     customer_address = ""
@@ -2180,7 +2208,7 @@ def generate_invoice_for_order(order):
     elif order.payment_method == 'cod':
         payment_method_display = 'Cash on Delivery'
     
-    # Create invoice
+    # Create invoice with locked invoice items
     invoice = Invoice.objects.create(
         order=order,
         customer_name=f"{order.user.first_name} {order.user.last_name}".strip(),
@@ -2195,10 +2223,94 @@ def generate_invoice_for_order(order):
         total_discount=total_discount,
         shipping=0.00,
         total_amount=order.net_amount,
+        invoice_items=invoice_items_data,  # Store locked invoice items
     )
     
     logger.info(f"Invoice {invoice.invoice_number} created for order {order.order_id}")
     return invoice
+
+
+def generate_credit_note_for_order_item(order_item, reason=''):
+    """
+    Generate and lock credit note for an order item when it is cancelled/returned AFTER invoice creation.
+    Credit note is generated per item and cannot be edited once created.
+    """
+    # Check if credit note already exists for this order item
+    try:
+        existing_credit_note = CreditNote.objects.get(order_item=order_item)
+        return existing_credit_note
+    except CreditNote.DoesNotExist:
+        pass  # Credit note doesn't exist, continue to create it
+    
+    # Check if invoice exists for the order
+    order = order_item.order
+    try:
+        invoice = Invoice.objects.get(order=order)
+    except Invoice.DoesNotExist:
+        # No invoice exists, cannot generate credit note
+        logger.warning(f"Cannot generate credit note for item {order_item.id}: Invoice does not exist for order {order.order_id}")
+        return None
+    
+    # Calculate refund amounts
+    from decimal import Decimal
+    
+    # Item gross (unit_price * quantity)
+    item_gross = Decimal(str(order_item.unit_price)) * order_item.quantity
+    
+    # Item product/genre discount
+    item_product_discount = (Decimal(str(order_item.unit_price)) - Decimal(str(order_item.discount_price))) * order_item.quantity
+    
+    # Proportional coupon discount
+    coupon_discount_per_item = Decimal('0.00')
+    if order.coupon_discount and order.coupon_discount > 0:
+        total_items = order.order_items.count()
+        if total_items > 0:
+            coupon_discount_per_item = Decimal(str(order.coupon_discount)) / total_items
+    
+    # Total discount reversal
+    discount_reversal = item_product_discount + coupon_discount_per_item
+    
+    # Subtotal (item total before discount)
+    subtotal = item_gross
+    
+    # Total refund amount
+    total_refund = item_gross - discount_reversal
+    
+    # Format payment method
+    original_payment_method = order.payment_method
+    if order.payment_method == 'razorpay':
+        original_payment_method = 'Razorpay'
+    elif order.payment_method == 'wallet':
+        original_payment_method = 'Wallet'
+    elif order.payment_method == 'cod':
+        original_payment_method = 'Cash on Delivery'
+    
+    # Refund method (always wallet for now)
+    refund_method = 'Wallet'
+    
+    # Create credit note
+    credit_note = CreditNote.objects.create(
+        order_item=order_item,
+        invoice=invoice,
+        original_invoice_number=invoice.invoice_number,
+        original_invoice_date=invoice.invoice_date,
+        customer_name=f"{order.user.first_name} {order.user.last_name}".strip(),
+        customer_phone=order.address.phone if order.address else (order.user.phone_no or ''),
+        customer_email=order.user.email,
+        item_name=order_item.product_variant.product.book_title,
+        quantity_returned=order_item.quantity,
+        price_per_item=order_item.unit_price,
+        refund_amount=total_refund,
+        subtotal=subtotal,
+        discount_reversal=discount_reversal,
+        total_refund=total_refund,
+        original_payment_method=original_payment_method,
+        refund_method=refund_method,
+        reason=reason,
+    )
+    
+    logger.info(f"Credit Note {credit_note.credit_note_number} created for order item {order_item.id}")
+    return credit_note
 
 
 @login_required(login_url='login')
@@ -2236,10 +2348,11 @@ def download_invoice(request, id):
             try:
                 invoice = generate_invoice_for_order(order)
                 if not invoice:
-                    # Check if order has shipped items
-                    shipped_count = order.order_items.filter(status='shipped').count()
-                    if shipped_count == 0:
-                        messages.error(request, "Invoice is not available yet. Invoice is generated when order is shipped.")
+                    # Check if order has any non-pending items
+                    pending_count = order.order_items.filter(status='pending').count()
+                    total_count = order.order_items.count()
+                    if pending_count == total_count:
+                        messages.error(request, "Invoice is not available yet. Invoice is generated when order status changes from pending.")
                     else:
                         messages.error(request, "Unable to generate invoice. Please contact support.")
                     return redirect('user_order')
@@ -2260,26 +2373,45 @@ def download_invoice(request, id):
             return redirect('user_order')
         
         if not invoice:
-            messages.error(request, "Invoice is not available yet. Invoice is generated when order is shipped.")
+            # Check if all items are still pending
+            pending_count = order.order_items.filter(status='pending').count()
+            total_count = order.order_items.count()
+            if pending_count == total_count:
+                messages.error(request, "Invoice is not available yet. Invoice is generated when order status changes from pending.")
+            else:
+                messages.error(request, "Unable to generate invoice. Please contact support.")
             return redirect('user_order')
         
-        order_items = order.order_items.all()
-        
-        # Prepare invoice items data
-        invoice_items = []
-        for item in order_items:
-            invoice_items.append({
-                'name': item.product_variant.product.book_title,
-                'quantity': item.quantity,
-                'price': float(item.unit_price),  # Price before discount
-                'line_total': float(item.unit_price * item.quantity),  # Line total before discount
-            })
+        # Use locked invoice items from the Invoice model, NOT live order data
+        # This ensures invoice never changes even if order items are modified or deleted
+        if invoice.invoice_items:
+            # Use locked invoice items data (convert string prices back to float for template)
+            invoice_items = []
+            for item in invoice.invoice_items:
+                invoice_items.append({
+                    'name': item['name'],
+                    'quantity': item['quantity'],
+                    'price': float(item['price']),  # Convert back to float for display
+                    'line_total': float(item['line_total']),  # Convert back to float for display
+                })
+        else:
+            # Fallback for old invoices that don't have locked items (backward compatibility)
+            # But we should never use live order data for new invoices
+            logger.warning(f"Invoice {invoice.invoice_number} does not have locked items, using fallback")
+            invoice_items = []
+            for item in order.order_items.all():
+                invoice_items.append({
+                    'name': item.product_variant.product.book_title,
+                    'quantity': item.quantity,
+                    'price': float(item.unit_price),
+                    'line_total': float(item.unit_price * item.quantity),
+                })
         
         template_path = 'invoices/invoice_template.html'
         context = {
             'invoice': invoice,
             'order': order,
-            'order_items': invoice_items,
+            'order_items': invoice_items,  # Use locked invoice items
         }
 
         template = get_template(template_path)
@@ -2297,6 +2429,46 @@ def download_invoice(request, id):
     except Exception as e:
         logger.error(f"Error generating invoice: {str(e)}", exc_info=True)
         messages.error(request, f"Error generating invoice: {str(e)}")
+        return redirect('user_order')
+
+
+@login_required(login_url='login')
+def download_credit_note(request, order_item_id):
+    """
+    Download credit note PDF for a refunded/cancelled order item.
+    """
+    try:
+        # Get order item and validate ownership
+        order_item = get_object_or_404(OrderItem, id=order_item_id, order__user=request.user)
+        
+        # Check if credit note exists
+        try:
+            credit_note = CreditNote.objects.get(order_item=order_item)
+        except CreditNote.DoesNotExist:
+            messages.error(request, "Credit note is not available for this item.")
+            return redirect('user_order')
+        
+        template_path = 'invoices/credit_note_template.html'
+        context = {
+            'credit_note': credit_note,
+            'order_item': order_item,
+        }
+
+        template = get_template(template_path)
+        html = template.render(context)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="credit_note_{credit_note.credit_note_number}.pdf"'
+
+        pisa_status = pisa.CreatePDF(html, dest=response)
+
+        if pisa_status.err:
+            logger.error(f"PDF generation error: {pisa_status.err}")
+            return HttpResponse(f'We had some errors with PDF generation. Error: {pisa_status.err}<pre>{html[:500]}</pre>')
+        return response
+    except Exception as e:
+        logger.error(f"Error generating credit note: {str(e)}", exc_info=True)
+        messages.error(request, f"Error generating credit note: {str(e)}")
         return redirect('user_order')
 
 

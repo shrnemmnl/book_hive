@@ -230,11 +230,13 @@ def admin_order(request):
 def update_order_item_status(request,order_item_id):
     status=request.POST.get('status')
     order_item=OrderItem.objects.get(id=order_item_id)
+    old_status = order_item.status
     order_item.status=status
     order_item.save()
     
-    # Generate invoice if status is 'shipped' and invoice doesn't exist
-    if status == 'shipped':
+    # Generate invoice if status changes from 'pending' to any other status and invoice doesn't exist
+    # Invoice can be generated for any status except 'pending'
+    if old_status == 'pending' and status != 'pending':
         from users.views import generate_invoice_for_order
         try:
             # Check if Invoice table exists by trying to access it
@@ -1071,7 +1073,7 @@ def admin_order_details(request, order_id):
         old_status = order_item.status
         refund_message_shown = False
         
-        # If item is being delivered, create COD transaction for this specific order item
+        # If item is being delivered, create COD transaction and mark order as paid
         if new_status == 'delivered' and order.payment_method == 'cod':
             # Check if COD transaction already exists for this order item
             existing_transaction = Transaction.objects.filter(
@@ -1104,11 +1106,14 @@ def admin_order_details(request, order_id):
                     status='completed'
                 )
             
-            # Mark order as paid if all items are delivered
-            all_delivered = order.order_items.exclude(status='delivered').count() == 0
-            if all_delivered:
+            # Mark order as paid when any item is delivered (payment received upon delivery for COD)
+            if not order.is_paid:
                 order.is_paid = True
-                order.save()
+                order.save(update_fields=['is_paid'])
+                # Refresh order from database to ensure updated status is reflected
+                order.refresh_from_db()
+                messages.success(request, f"Order payment status updated to Paid (COD payment received upon delivery).")
+                logger.info(f"Order {order.order_id} marked as paid after item {order_item.id} delivery (COD payment method)")
         
         # Handle cancel/return request approvals with refunds
         if old_status == 'request to return' and new_status == 'return approved':
@@ -1148,6 +1153,17 @@ def admin_order_details(request, order_id):
                     logger.error(f"Failed to log wallet refund: {e}")
                 messages.success(request, f"Refunded ₹{item_refund_amount:.2f} to user {user.email}'s wallet for item {order_item.product_variant.product.book_title}.")
                 refund_message_shown = True
+                
+                # Generate credit note if invoice exists
+                try:
+                    from users.models import Invoice
+                    from users.views import generate_credit_note_for_order_item
+                    if Invoice.objects.filter(order=order).exists():
+                        credit_note = generate_credit_note_for_order_item(order_item, reason=order_item.cancel_reason or 'Return approved')
+                        if credit_note:
+                            logger.info(f"Credit note {credit_note.credit_note_number} generated for returned item {order_item.id}")
+                except Exception as e:
+                    logger.warning(f"Could not generate credit note for item {order_item.id}: {str(e)}")
         
         # If item is being cancelled/returned and order is paid, handle refund (for direct cancellations, not from request)
         elif new_status in ['return approved', 'cancelled'] and order.is_paid and old_status not in ['return approved', 'cancelled', 'request to return', 'request to cancel']:
@@ -1190,6 +1206,17 @@ def admin_order_details(request, order_id):
             
             messages.success(request, f"Refunded ₹{item_refund_amount:.2f} to user {user.email}'s wallet for item {order_item.product_variant.product.book_title}.")
             refund_message_shown = True
+            
+            # Generate credit note if invoice exists
+            try:
+                from users.models import Invoice
+                from users.views import generate_credit_note_for_order_item
+                if Invoice.objects.filter(order=order).exists():
+                    credit_note = generate_credit_note_for_order_item(order_item, reason=order_item.cancel_reason or 'Cancelled/Returned')
+                    if credit_note:
+                        logger.info(f"Credit note {credit_note.credit_note_number} generated for cancelled/returned item {order_item.id}")
+            except Exception as e:
+                logger.warning(f"Could not generate credit note for item {order_item.id}: {str(e)}")
         
         # Handle cancel request approval
         if old_status == 'request to cancel' and new_status == 'cancelled':
@@ -1230,6 +1257,17 @@ def admin_order_details(request, order_id):
                     logger.error(f"Failed to log wallet refund: {e}")
                 messages.success(request, f"Refunded ₹{item_refund_amount:.2f} to user {user.email}'s wallet for item {order_item.product_variant.product.book_title}.")
                 refund_message_shown = True
+                
+                # Generate credit note if invoice exists
+                try:
+                    from users.models import Invoice
+                    from users.views import generate_credit_note_for_order_item
+                    if Invoice.objects.filter(order=order).exists():
+                        credit_note = generate_credit_note_for_order_item(order_item, reason=order_item.cancel_reason or 'Cancellation approved')
+                        if credit_note:
+                            logger.info(f"Credit note {credit_note.credit_note_number} generated for cancelled item {order_item.id}")
+                except Exception as e:
+                    logger.warning(f"Could not generate credit note for item {order_item.id}: {str(e)}")
         
         # If item is being cancelled directly (not from request) and order is not paid (COD), just update stock
         elif new_status == 'cancelled' and not order.is_paid and old_status != 'cancelled' and old_status != 'request to cancel':
@@ -1241,8 +1279,9 @@ def admin_order_details(request, order_id):
         order_item.status = new_status
         order_item.save()
         
-        # Generate invoice if status is 'shipped' and invoice doesn't exist
-        if new_status == 'shipped':
+        # Generate invoice if status changes from 'pending' to any other status and invoice doesn't exist
+        # Invoice can be generated for any status except 'pending'
+        if old_status == 'pending' and new_status != 'pending':
             from users.views import generate_invoice_for_order
             try:
                 # Check if Invoice table exists by trying to access it
@@ -1256,6 +1295,8 @@ def admin_order_details(request, order_id):
         if not refund_message_shown:
             messages.success(request, f"Order item status updated to {new_status}.")
         
+        # Refresh order from database to get latest payment status
+        order.refresh_from_db()
         return redirect('admin_order_details', order_id=order.id)
 
     # Calculate order summary breakdown

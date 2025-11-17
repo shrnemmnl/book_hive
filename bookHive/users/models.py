@@ -207,7 +207,22 @@ class OrderItem(models.Model):
             ).exists()
         except:
             return False
-        
+    
+    def has_credit_note(self):
+        """Check if this order item has a credit note"""
+        # Use a direct database query - most reliable method
+        # This works regardless of prefetch_related or relationship access issues
+        try:
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT 1 FROM users_creditnote WHERE order_item_id = %s LIMIT 1",
+                    [self.id]
+                )
+                return cursor.fetchone() is not None
+        except Exception:
+            # If table doesn't exist or any error, return False
+            return False
     
 
 class Review(models.Model):
@@ -323,8 +338,10 @@ class Invoice(models.Model):
     shipping = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     
-    # Invoice items (stored as JSON for simplicity, or we can use a separate model)
-    # For now, we'll regenerate from order_items but use locked values
+    # Invoice items (locked snapshot at invoice creation - stored as JSON)
+    # This ensures invoice never changes even if order items are modified or deleted
+    invoice_items = models.JSONField(default=list, editable=False)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -355,6 +372,83 @@ class Invoice(models.Model):
     
     def __str__(self):
         return f"Invoice {self.invoice_number} - Order {self.snapshot_order_id}"
+
+
+class CreditNote(models.Model):
+    """
+    Credit Note model to store credit note data for refunded/cancelled items.
+    Credit note is generated per item when item is cancelled/returned AFTER invoice creation.
+    Once generated, credit note cannot be edited.
+    """
+    order_item = models.OneToOneField(OrderItem, on_delete=models.CASCADE, related_name='credit_note')
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='credit_notes')
+    credit_note_number = models.CharField(max_length=50, unique=True, editable=False)
+    credit_note_date = models.DateField(auto_now_add=True)
+    
+    # Reference to original invoice
+    original_invoice_number = models.CharField(max_length=50)
+    original_invoice_date = models.DateField()
+    
+    # Customer details (snapshot)
+    customer_name = models.CharField(max_length=200)
+    customer_phone = models.CharField(max_length=20)
+    customer_email = models.EmailField()
+    
+    # Seller details (fixed)
+    seller_name = models.CharField(max_length=200, default='Book Hive Pvt Ltd')
+    seller_address = models.CharField(max_length=500, default='24/B MG Road, Bangalore')
+    seller_phone = models.CharField(max_length=20, default='7907302778')
+    seller_email = models.EmailField(default='info@bookhive.com')
+    seller_gstin = models.CharField(max_length=20, default='29ABCDE1234F1Z5')
+    
+    # Refund details
+    item_name = models.CharField(max_length=500)
+    quantity_returned = models.PositiveIntegerField()
+    price_per_item = models.DecimalField(max_digits=10, decimal_places=2)
+    refund_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Summary (locked values)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)  # Item total before discount
+    discount_reversal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Discount to reverse
+    total_refund = models.DecimalField(max_digits=10, decimal_places=2)  # Final refund amount
+    
+    # Payment details
+    original_payment_method = models.CharField(max_length=100)
+    refund_method = models.CharField(max_length=100, default='Wallet')
+    
+    # Reason
+    reason = models.CharField(max_length=500, blank=True, null=True)  # cancellation/return reason
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-credit_note_date', '-created_at']
+    
+    def generate_credit_note_number(self):
+        """Generate a unique credit note number in the format CN + timestamp."""
+        prefix = "CN"
+        timestamp = timezone.now()
+        base_id = f"{prefix}{timestamp.strftime('%Y%m%d%H%M%S')}"
+        
+        credit_note_number = base_id
+        counter = 0
+        while CreditNote.objects.filter(credit_note_number=credit_note_number).exists():
+            counter += 1
+            suffix = str(random.randint(0, 9))
+            credit_note_number = f"{base_id}{suffix}"
+            if counter > 10:
+                raise ValueError("Unable to generate a unique credit_note_number after multiple attempts.")
+        return credit_note_number
+    
+    def save(self, *args, **kwargs):
+        """Override save to set credit_note_number on creation."""
+        if not self.credit_note_number:
+            self.credit_note_number = self.generate_credit_note_number()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Credit Note {self.credit_note_number} - Item {self.order_item.id}"
 
 
 class CustomerSupport(models.Model):
