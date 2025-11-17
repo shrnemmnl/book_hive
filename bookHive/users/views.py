@@ -154,6 +154,23 @@ def loading_page(request):
         genre__is_active=True
     ).order_by('-created_at')[:4]
     
+    # Get 3-4 best sellers (products ordered by total sales)
+    best_sellers = Product.objects.annotate(
+        min_price=Min('variant__price'),
+        total_sold=Sum(
+            'variant__order_items__quantity',
+            filter=Q(
+                variant__order_items__order__is_paid=True
+            ) & ~Q(
+                variant__order_items__status__in=['cancelled', 'return approved']
+            ),
+            default=0
+        )
+    ).filter(
+        is_active=True, 
+        genre__is_active=True
+    ).order_by('-total_sold', '-created_at')[:4]
+    
     # Get wishlist variants for authenticated users
     user_wishlist_variants = []
     if request.user.is_authenticated:
@@ -162,6 +179,7 @@ def loading_page(request):
     context = {
         'sample_books': sample_books,
         'new_releases': new_releases,
+        'best_sellers': best_sellers,
         'user_wishlist_variants': user_wishlist_variants
     }
     

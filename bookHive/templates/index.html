@@ -44,77 +44,81 @@
               <!-- Book Image -->
               <div class="product-img position-relative">
                 <a href="{% url 'product_details' book.id %}">
-                  <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid w-100" style="height: 200px; object-fit: cover;">
+                  <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid w-100" style="height: 180px; object-fit: cover;">
                 </a>
                 
                 <!-- Wishlist Heart Button (Top Right) -->
                 {% with default_variant=book.variant_set.first %}
                 {% if user.is_authenticated %}
-                <button class="wishlist-toggle-btn position-absolute btn btn-light rounded-circle p-2 border-0 shadow-sm" 
+                <button class="wishlist-toggle-btn position-absolute btn btn-light rounded-circle border-0 shadow-sm" 
                         data-variant-id="{{ default_variant.id }}" 
-                        style="top: 8px; right: 8px; width: 35px; height: 35px; z-index: 10;">
+                        style="top: 6px; right: 6px; width: 32px; height: 32px; z-index: 10; padding: 0.375rem;">
                   {% if default_variant.id in user_wishlist_variants %}
-                  <i class="bi bi-heart-fill text-danger"></i>
+                  <i class="bi bi-heart-fill text-danger" style="font-size: 0.9rem;"></i>
                   {% else %}
-                  <i class="bi bi-heart text-danger"></i>
+                  <i class="bi bi-heart text-danger" style="font-size: 0.9rem;"></i>
                   {% endif %}
                 </button>
                 {% else %}
                 <a href="{% url 'login' %}?next={{ request.path }}" 
-                   class="position-absolute btn btn-light rounded-circle p-2 border-0 shadow-sm" 
-                   style="top: 8px; right: 8px; width: 35px; height: 35px; z-index: 10;"
+                   class="position-absolute btn btn-light rounded-circle border-0 shadow-sm" 
+                   style="top: 6px; right: 6px; width: 32px; height: 32px; z-index: 10; padding: 0.375rem;"
                    title="Login to add to wishlist">
-                  <i class="bi bi-heart text-danger"></i>
+                  <i class="bi bi-heart text-danger" style="font-size: 0.9rem;"></i>
                 </a>
                 {% endif %}
                 {% endwith %}
               </div>
 
               <!-- Book Info -->
-              <div class="product-info p-3">
-                <div class="product-category mb-2">
-                  <span class="badge bg-light text-primary border" style="font-size: 0.75rem;">
+              <div class="product-info" style="padding: 0.75rem;">
+                <div class="product-category" style="margin-bottom: 0.5rem;">
+                  <span class="badge bg-light text-primary border" style="font-size: 0.7rem; padding: 0.25rem 0.5rem;">
                     <i class="bi bi-bookmark me-1"></i>{{ book.genre.genre_name|default:"Fiction" }}
                   </span>
                 </div>
-                <h3 class="product-title fw-bold mb-2" style="font-size: 1rem; line-height: 1.3;">
+                <h3 class="product-title fw-bold" style="font-size: 0.95rem; line-height: 1.25; margin-bottom: 0.5rem; min-height: 2.4rem;">
                   <a href="{% url 'product_details' book.id %}" class="text-dark text-decoration-none hover-primary">{{ book.book_title }}</a>
                 </h3>
-                <div class="product-author mb-3">
-                  <small style="font-size: 0.8rem;" class="text-muted">
+                <div class="product-author" style="margin-bottom: 0.75rem; line-height: 1.2;">
+                  <small style="font-size: 0.75rem;" class="text-muted">
                     <i class="bi bi-pen me-1"></i>by <span class="fw-semibold">{{ book.author }}</span>
                   </small>
                 </div>
                 
                 <!-- Price and Rating Section -->
-                <div class="d-flex justify-content-between align-items-end border-top pt-2">
+                <div class="d-flex justify-content-between align-items-end border-top" style="padding-top: 0.75rem; padding-bottom: 0.5rem;">
                   <div class="price-section">
                     {% if book.has_active_offer %}
-                      <div class="d-flex align-items-baseline gap-2 mb-1">
-                        <div class="product-price fw-bold text-success" style="font-size: 1.35rem;">
+                      <div class="d-flex align-items-baseline" style="gap: 0.5rem; margin-bottom: 0.25rem;">
+                        <div class="product-price fw-bold text-success" style="font-size: 1.2rem;">
                           ₹{{ book.min_price|calculate_discount:book }}
                         </div>
-                        <div class="text-muted text-decoration-line-through" style="font-size: 0.9rem;">
+                        <div class="text-muted text-decoration-line-through" style="font-size: 0.85rem;">
                           ₹{{ book.min_price|floatformat:0 }}
                         </div>
                       </div>
-                      <div class="savings text-success fw-semibold" style="font-size: 0.75rem;">
-                        <i class="bi bi-piggy-bank me-1"></i>Save ₹{{ book.min_price|discount_amount:book }}
+                      <div class="savings text-success fw-semibold d-flex align-items-center flex-wrap" style="font-size: 0.7rem; line-height: 1.2; gap: 0.25rem;">
+                        <i class="bi bi-piggy-bank"></i>
+                        <span>Save ₹{{ book.min_price|discount_amount:book }}</span>
+                        <span class="badge bg-danger text-white" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;">
+                          {{ book.get_best_discount_percentage }}% OFF
+                        </span>
                       </div>
                     {% else %}
-                      <div class="product-price fw-bold text-dark" style="font-size: 1.35rem;">
+                      <div class="product-price fw-bold text-dark" style="font-size: 1.2rem;">
                         ₹{{ book.min_price|floatformat:0 }}
                       </div>
                     {% endif %}
                   </div>
-                  <div class="product-rating bg-warning bg-opacity-10 px-2 py-1 rounded" style="font-size: 0.8rem;">
+                  <div class="product-rating bg-warning bg-opacity-10 rounded" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
                     <i class="bi bi-star-fill text-warning me-1"></i>
                     <span class="fw-semibold">{{ book.rating|default:"4.5" }}</span>
                   </div>
                 </div>
                 
                 <!-- View Details Button -->
-                <a href="{% url 'product_details' book.id %}" class="btn btn-outline-primary btn-sm w-100 mt-3 fw-semibold">
+                <a href="{% url 'product_details' book.id %}" class="btn btn-outline-primary btn-sm w-100 fw-semibold" style="font-size: 0.85rem; padding: 0.4rem 0.5rem; margin-top: 0.75rem;">
                   <i class="bi bi-eye me-1"></i>View Details
                 </a>
               </div>
@@ -190,77 +194,81 @@
               <!-- Book Image -->
               <div class="product-img position-relative">
                 <a href="{% url 'product_details' book.id %}">
-                  <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid w-100" style="height: 200px; object-fit: cover;">
+                  <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid w-100" style="height: 180px; object-fit: cover;">
                 </a>
                 
                 <!-- Wishlist Heart Button (Top Right) -->
                 {% with default_variant=book.variant_set.first %}
                 {% if user.is_authenticated %}
-                <button class="wishlist-toggle-btn position-absolute btn btn-light rounded-circle p-2 border-0 shadow-sm" 
+                <button class="wishlist-toggle-btn position-absolute btn btn-light rounded-circle border-0 shadow-sm" 
                         data-variant-id="{{ default_variant.id }}" 
-                        style="top: 8px; right: 8px; width: 35px; height: 35px; z-index: 10;">
+                        style="top: 6px; right: 6px; width: 32px; height: 32px; z-index: 10; padding: 0.375rem;">
                   {% if default_variant.id in user_wishlist_variants %}
-                  <i class="bi bi-heart-fill text-danger"></i>
+                  <i class="bi bi-heart-fill text-danger" style="font-size: 0.9rem;"></i>
                   {% else %}
-                  <i class="bi bi-heart text-danger"></i>
+                  <i class="bi bi-heart text-danger" style="font-size: 0.9rem;"></i>
                   {% endif %}
                 </button>
                 {% else %}
                 <a href="{% url 'login' %}?next={{ request.path }}" 
-                   class="position-absolute btn btn-light rounded-circle p-2 border-0 shadow-sm" 
-                   style="top: 8px; right: 8px; width: 35px; height: 35px; z-index: 10;"
+                   class="position-absolute btn btn-light rounded-circle border-0 shadow-sm" 
+                   style="top: 6px; right: 6px; width: 32px; height: 32px; z-index: 10; padding: 0.375rem;"
                    title="Login to add to wishlist">
-                  <i class="bi bi-heart text-danger"></i>
+                  <i class="bi bi-heart text-danger" style="font-size: 0.9rem;"></i>
                 </a>
                 {% endif %}
                 {% endwith %}
               </div>
 
               <!-- Book Info -->
-              <div class="product-info p-3">
-                <div class="product-category mb-2">
-                  <span class="badge bg-light text-primary border" style="font-size: 0.75rem;">
+              <div class="product-info" style="padding: 0.75rem;">
+                <div class="product-category" style="margin-bottom: 0.5rem;">
+                  <span class="badge bg-light text-primary border" style="font-size: 0.7rem; padding: 0.25rem 0.5rem;">
                     <i class="bi bi-bookmark me-1"></i>{{ book.genre.genre_name|default:"Fiction" }}
                   </span>
                 </div>
-                <h3 class="product-title fw-bold mb-2" style="font-size: 1rem; line-height: 1.3;">
+                <h3 class="product-title fw-bold" style="font-size: 0.95rem; line-height: 1.25; margin-bottom: 0.5rem; min-height: 2.4rem;">
                   <a href="{% url 'product_details' book.id %}" class="text-dark text-decoration-none hover-primary">{{ book.book_title }}</a>
                 </h3>
-                <div class="product-author mb-3">
-                  <small style="font-size: 0.8rem;" class="text-muted">
+                <div class="product-author" style="margin-bottom: 0.75rem; line-height: 1.2;">
+                  <small style="font-size: 0.75rem;" class="text-muted">
                     <i class="bi bi-pen me-1"></i>by <span class="fw-semibold">{{ book.author }}</span>
                   </small>
                 </div>
                 
                 <!-- Price and Rating Section -->
-                <div class="d-flex justify-content-between align-items-end border-top pt-2">
+                <div class="d-flex justify-content-between align-items-end border-top" style="padding-top: 0.75rem; padding-bottom: 0.5rem;">
                   <div class="price-section">
                     {% if book.has_active_offer %}
-                      <div class="d-flex align-items-baseline gap-2 mb-1">
-                        <div class="product-price fw-bold text-success" style="font-size: 1.35rem;">
+                      <div class="d-flex align-items-baseline" style="gap: 0.5rem; margin-bottom: 0.25rem;">
+                        <div class="product-price fw-bold text-success" style="font-size: 1.2rem;">
                           ₹{{ book.min_price|calculate_discount:book }}
                         </div>
-                        <div class="text-muted text-decoration-line-through" style="font-size: 0.9rem;">
+                        <div class="text-muted text-decoration-line-through" style="font-size: 0.85rem;">
                           ₹{{ book.min_price|floatformat:0 }}
                         </div>
                       </div>
-                      <div class="savings text-success fw-semibold" style="font-size: 0.75rem;">
-                        <i class="bi bi-piggy-bank me-1"></i>Save ₹{{ book.min_price|discount_amount:book }}
+                      <div class="savings text-success fw-semibold d-flex align-items-center flex-wrap" style="font-size: 0.7rem; line-height: 1.2; gap: 0.25rem;">
+                        <i class="bi bi-piggy-bank"></i>
+                        <span>Save ₹{{ book.min_price|discount_amount:book }}</span>
+                        <span class="badge bg-danger text-white" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;">
+                          {{ book.get_best_discount_percentage }}% OFF
+                        </span>
                       </div>
                     {% else %}
-                      <div class="product-price fw-bold text-dark" style="font-size: 1.35rem;">
+                      <div class="product-price fw-bold text-dark" style="font-size: 1.2rem;">
                         ₹{{ book.min_price|floatformat:0 }}
                       </div>
                     {% endif %}
                   </div>
-                  <div class="product-rating bg-warning bg-opacity-10 px-2 py-1 rounded" style="font-size: 0.8rem;">
+                  <div class="product-rating bg-warning bg-opacity-10 rounded" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
                     <i class="bi bi-star-fill text-warning me-1"></i>
                     <span class="fw-semibold">{{ book.rating|default:"4.5" }}</span>
                   </div>
                 </div>
                 
                 <!-- View Details Button -->
-                <a href="{% url 'product_details' book.id %}" class="btn btn-outline-primary btn-sm w-100 mt-3 fw-semibold">
+                <a href="{% url 'product_details' book.id %}" class="btn btn-outline-primary btn-sm w-100 fw-semibold" style="font-size: 0.85rem; padding: 0.4rem 0.5rem; margin-top: 0.75rem;">
                   <i class="bi bi-eye me-1"></i>View Details
                 </a>
               </div>
@@ -298,9 +306,160 @@
   </div>
 </section>
 
+<!-- BEST SELLERS SECTION -->
+<section class="best-sellers-section py-5" style="background-color: #f8f9fa;">
+  <div class="container-fluid px-3">
+    <div class="section-header text-center mb-4">
+      <h6 class="text-primary text-uppercase fw-bold mb-2" style="font-size: 0.9rem;">Bestsellers</h6>
+      <h2 class="fw-bold" style="font-size: 1.75rem;">Best Sellers</h2>
+      <div class="divider mx-auto my-2"></div>
+      <p class="text-muted" style="font-size: 0.9rem;">Discover our most popular and loved books</p>
+    </div>
+
+    <!-- Horizontal Carousel Container -->
+    <div class="books-carousel-wrapper position-relative">
+      <!-- Left Arrow -->
+      <button class="carousel-nav-btn carousel-prev-btn-bestsellers" aria-label="Previous">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+
+      <!-- Carousel Container -->
+      <div class="books-carousel-container">
+        <div class="books-carousel-track-bestsellers">
+          <!-- Best Seller Book Cards -->
+          {% for book in best_sellers %}
+          <div class="carousel-card-item">
+            <div class="product-card h-100 bg-white rounded-3 overflow-hidden shadow-lg position-relative border">
+              {% if book.is_featured %}
+              <div class="product-badge bg-gradient bg-primary text-white position-absolute py-2 px-3 rounded-end shadow-sm" style="top: 12px; left: 0; font-size: 0.8rem; font-weight: 600;">
+                <i class="bi bi-star-fill me-1"></i>Featured
+              </div>
+              {% endif %}
+              {% if book.has_active_offer %}
+              <div class="product-badge bg-gradient bg-warning text-dark position-absolute py-2 px-3 rounded-end shadow-sm fw-bold" style="top: {% if book.is_featured %}48px{% else %}12px{% endif %}; left: 0; font-size: 0.85rem;">
+                <i class="bi bi-tag-fill me-1"></i>{{ book.get_best_discount_percentage }}% OFF
+              </div>
+              {% endif %}
+
+              <!-- Book Image -->
+              <div class="product-img position-relative">
+                <a href="{% url 'product_details' book.id %}">
+                  <img src="{{ book.image.url }}" alt="{{ book.book_title }}" class="img-fluid w-100" style="height: 180px; object-fit: cover;">
+                </a>
+                
+                <!-- Wishlist Heart Button (Top Right) -->
+                {% with default_variant=book.variant_set.first %}
+                {% if user.is_authenticated %}
+                <button class="wishlist-toggle-btn position-absolute btn btn-light rounded-circle border-0 shadow-sm" 
+                        data-variant-id="{{ default_variant.id }}" 
+                        style="top: 6px; right: 6px; width: 32px; height: 32px; z-index: 10; padding: 0.375rem;">
+                  {% if default_variant.id in user_wishlist_variants %}
+                  <i class="bi bi-heart-fill text-danger" style="font-size: 0.9rem;"></i>
+                  {% else %}
+                  <i class="bi bi-heart text-danger" style="font-size: 0.9rem;"></i>
+                  {% endif %}
+                </button>
+                {% else %}
+                <a href="{% url 'login' %}?next={{ request.path }}" 
+                   class="position-absolute btn btn-light rounded-circle border-0 shadow-sm" 
+                   style="top: 6px; right: 6px; width: 32px; height: 32px; z-index: 10; padding: 0.375rem;"
+                   title="Login to add to wishlist">
+                  <i class="bi bi-heart text-danger" style="font-size: 0.9rem;"></i>
+                </a>
+                {% endif %}
+                {% endwith %}
+              </div>
+
+              <!-- Book Info -->
+              <div class="product-info" style="padding: 0.75rem;">
+                <div class="product-category" style="margin-bottom: 0.5rem;">
+                  <span class="badge bg-light text-primary border" style="font-size: 0.7rem; padding: 0.25rem 0.5rem;">
+                    <i class="bi bi-bookmark me-1"></i>{{ book.genre.genre_name|default:"Fiction" }}
+                  </span>
+                </div>
+                <h3 class="product-title fw-bold" style="font-size: 0.95rem; line-height: 1.25; margin-bottom: 0.5rem; min-height: 2.4rem;">
+                  <a href="{% url 'product_details' book.id %}" class="text-dark text-decoration-none hover-primary">{{ book.book_title }}</a>
+                </h3>
+                <div class="product-author" style="margin-bottom: 0.75rem; line-height: 1.2;">
+                  <small style="font-size: 0.75rem;" class="text-muted">
+                    <i class="bi bi-pen me-1"></i>by <span class="fw-semibold">{{ book.author }}</span>
+                  </small>
+                </div>
+                
+                <!-- Price and Rating Section -->
+                <div class="d-flex justify-content-between align-items-end border-top" style="padding-top: 0.75rem; padding-bottom: 0.5rem;">
+                  <div class="price-section">
+                    {% if book.has_active_offer %}
+                      <div class="d-flex align-items-baseline" style="gap: 0.5rem; margin-bottom: 0.25rem;">
+                        <div class="product-price fw-bold text-success" style="font-size: 1.2rem;">
+                          ₹{{ book.min_price|calculate_discount:book }}
+                        </div>
+                        <div class="text-muted text-decoration-line-through" style="font-size: 0.85rem;">
+                          ₹{{ book.min_price|floatformat:0 }}
+                        </div>
+                      </div>
+                      <div class="savings text-success fw-semibold d-flex align-items-center flex-wrap" style="font-size: 0.7rem; line-height: 1.2; gap: 0.25rem;">
+                        <i class="bi bi-piggy-bank"></i>
+                        <span>Save ₹{{ book.min_price|discount_amount:book }}</span>
+                        <span class="badge bg-danger text-white" style="font-size: 0.65rem; padding: 0.1rem 0.35rem;">
+                          {{ book.get_best_discount_percentage }}% OFF
+                        </span>
+                      </div>
+                    {% else %}
+                      <div class="product-price fw-bold text-dark" style="font-size: 1.2rem;">
+                        ₹{{ book.min_price|floatformat:0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+                  <div class="product-rating bg-warning bg-opacity-10 rounded" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                    <i class="bi bi-star-fill text-warning me-1"></i>
+                    <span class="fw-semibold">{{ book.rating|default:"4.5" }}</span>
+                  </div>
+                </div>
+                
+                <!-- View Details Button -->
+                <a href="{% url 'product_details' book.id %}" class="btn btn-outline-primary btn-sm w-100 fw-semibold" style="font-size: 0.85rem; padding: 0.4rem 0.5rem; margin-top: 0.75rem;">
+                  <i class="bi bi-eye me-1"></i>View Details
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+          <!-- Special "View All Best Sellers" Card -->
+          <div class="carousel-card-item">
+            <a href="{% url 'library' %}?filter_type=best_sellers" class="view-all-card-link text-decoration-none">
+              <div class="product-card h-100 bg-gradient view-all-card bg-white rounded-3 overflow-hidden shadow-lg position-relative border d-flex flex-column align-items-center justify-content-center text-center p-4">
+                <div class="view-all-icon mb-3">
+                  <i class="bi bi-trophy" style="font-size: 4rem; color: var(--primary-orange);"></i>
+                </div>
+                <h3 class="fw-bold mb-3" style="font-size: 1.5rem; color: var(--primary-orange);">
+                  View All Best Sellers
+                </h3>
+                <p class="text-muted mb-4" style="font-size: 1rem;">
+                  Click here to see all the best selling books
+                </p>
+                <div class="btn btn-primary btn-lg px-4 py-2 fw-bold">
+                  <i class="bi bi-arrow-right me-2"></i>Explore Best Sellers
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Arrow -->
+      <button class="carousel-nav-btn carousel-next-btn-bestsellers" aria-label="Next">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</section>
+
 <style>
   .sample-books-section .divider,
-  .new-releases-section .divider {
+  .new-releases-section .divider,
+  .best-sellers-section .divider {
     width: 60px;
     height: 3px;
     background: linear-gradient(90deg, var(--primary-orange), var(--primary-orange-hover));
@@ -320,20 +479,23 @@
     width: 100%;
   }
 
-  /* Ensure new releases carousel displays horizontally */
-  .new-releases-section .books-carousel-wrapper {
+  /* Ensure new releases and best sellers carousels display horizontally */
+  .new-releases-section .books-carousel-wrapper,
+  .best-sellers-section .books-carousel-wrapper {
     position: relative;
     padding: 0 50px;
     margin: 0 auto;
   }
 
-  .new-releases-section .books-carousel-container {
+  .new-releases-section .books-carousel-container,
+  .best-sellers-section .books-carousel-container {
     overflow: hidden;
     position: relative;
     width: 100%;
   }
 
-  .new-releases-section .books-carousel-track-new {
+  .new-releases-section .books-carousel-track-new,
+  .best-sellers-section .books-carousel-track-bestsellers {
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: nowrap !important;
@@ -343,7 +505,8 @@
   }
 
   .books-carousel-track,
-  .books-carousel-track-new {
+  .books-carousel-track-new,
+  .books-carousel-track-bestsellers {
     display: flex;
     gap: 1.5rem;
     transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -390,12 +553,14 @@
   }
 
   .carousel-prev-btn,
-  .carousel-prev-btn-new {
+  .carousel-prev-btn-new,
+  .carousel-prev-btn-bestsellers {
     left: 0;
   }
 
   .carousel-next-btn,
-  .carousel-next-btn-new {
+  .carousel-next-btn-new,
+  .carousel-next-btn-bestsellers {
     right: 0;
   }
 
@@ -407,17 +572,20 @@
     background-color: rgba(255, 255, 255, 0.98) !important;
     backdrop-filter: blur(5px);
     width: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   .product-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 24px rgba(230, 126, 34, 0.2) !important;
+    transform: translateY(-6px);
+    box-shadow: 0 10px 20px rgba(230, 126, 34, 0.2) !important;
     border-color: var(--primary-orange) !important;
   }
 
   .product-card .product-img {
     overflow: hidden;
     position: relative;
+    flex-shrink: 0;
   }
 
   .product-card:hover .product-img img {
@@ -428,17 +596,28 @@
     transition: transform 0.4s ease;
   }
 
+  .product-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem !important;
+  }
+
   .product-title {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-height: 2.6rem;
+    line-height: 1.25;
   }
 
   .product-title a:hover {
     color: var(--primary-orange) !important;
+  }
+
+  .price-section {
+    flex-shrink: 0;
   }
 
   .product-badge {
@@ -885,6 +1064,113 @@ document.addEventListener('DOMContentLoaded', function() {
         // Swipe right - previous
         currentIndexNew--;
         updateCarouselNew();
+      }
+    }
+  }
+});
+
+// Best Sellers Carousel Navigation
+document.addEventListener('DOMContentLoaded', function() {
+  const trackBestsellers = document.querySelector('.books-carousel-track-bestsellers');
+  const prevBtnBestsellers = document.querySelector('.carousel-prev-btn-bestsellers');
+  const nextBtnBestsellers = document.querySelector('.carousel-next-btn-bestsellers');
+  
+  if (!trackBestsellers || !prevBtnBestsellers || !nextBtnBestsellers) return;
+
+  // Only select cards within this specific carousel track
+  const cardsBestsellers = trackBestsellers.querySelectorAll('.carousel-card-item');
+  
+  if (cardsBestsellers.length === 0) return;
+
+  let currentIndexBestsellers = 0;
+  const cardsPerViewBestsellers = window.innerWidth >= 1200 ? 3 : window.innerWidth >= 768 ? 2 : 1;
+  const totalCardsBestsellers = cardsBestsellers.length;
+  const maxIndexBestsellers = Math.max(0, totalCardsBestsellers - cardsPerViewBestsellers);
+
+  function updateCarouselBestsellers() {
+    if (cardsBestsellers.length === 0) return;
+    
+    const cardWidth = cardsBestsellers[0]?.offsetWidth || 300;
+    const gap = 24; // 1.5rem = 24px
+    const translateX = -(currentIndexBestsellers * (cardWidth + gap));
+    trackBestsellers.style.transform = `translateX(${translateX}px)`;
+    trackBestsellers.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    
+    // Update button states
+    prevBtnBestsellers.style.opacity = currentIndexBestsellers === 0 ? '0.5' : '1';
+    prevBtnBestsellers.style.pointerEvents = currentIndexBestsellers === 0 ? 'none' : 'auto';
+    prevBtnBestsellers.style.cursor = currentIndexBestsellers === 0 ? 'not-allowed' : 'pointer';
+    
+    nextBtnBestsellers.style.opacity = currentIndexBestsellers >= maxIndexBestsellers ? '0.5' : '1';
+    nextBtnBestsellers.style.pointerEvents = currentIndexBestsellers >= maxIndexBestsellers ? 'none' : 'auto';
+    nextBtnBestsellers.style.cursor = currentIndexBestsellers >= maxIndexBestsellers ? 'not-allowed' : 'pointer';
+  }
+
+  prevBtnBestsellers.addEventListener('click', function() {
+    if (currentIndexBestsellers > 0) {
+      currentIndexBestsellers--;
+      updateCarouselBestsellers();
+    }
+  });
+
+  nextBtnBestsellers.addEventListener('click', function() {
+    if (currentIndexBestsellers < maxIndexBestsellers) {
+      currentIndexBestsellers++;
+      updateCarouselBestsellers();
+    }
+  });
+
+  // Handle window resize
+  let resizeTimerBestsellers;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimerBestsellers);
+    resizeTimerBestsellers = setTimeout(function() {
+      const newCardsPerView = window.innerWidth >= 1200 ? 3 : window.innerWidth >= 768 ? 2 : 1;
+      const newMaxIndex = Math.max(0, totalCardsBestsellers - newCardsPerView);
+      if (currentIndexBestsellers > newMaxIndex) {
+        currentIndexBestsellers = newMaxIndex;
+      }
+      updateCarouselBestsellers();
+    }, 250);
+  });
+
+  // Initialize
+  updateCarouselBestsellers();
+
+  // Touch/swipe support for mobile
+  let touchStartXBestsellers = 0;
+  let touchEndXBestsellers = 0;
+  let isDraggingBestsellers = false;
+
+  trackBestsellers.addEventListener('touchstart', function(e) {
+    touchStartXBestsellers = e.touches[0].clientX;
+    isDraggingBestsellers = true;
+  }, { passive: true });
+
+  trackBestsellers.addEventListener('touchmove', function(e) {
+    if (!isDraggingBestsellers) return;
+    touchEndXBestsellers = e.touches[0].clientX;
+  }, { passive: true });
+
+  trackBestsellers.addEventListener('touchend', function(e) {
+    if (!isDraggingBestsellers) return;
+    isDraggingBestsellers = false;
+    handleSwipeBestsellers();
+  }, { passive: true });
+
+  function handleSwipeBestsellers() {
+    const swipeThreshold = 50;
+    const diff = touchStartXBestsellers - touchEndXBestsellers;
+    
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0 && currentIndexBestsellers < maxIndexBestsellers) {
+        // Swipe left - next
+        currentIndexBestsellers++;
+        updateCarouselBestsellers();
+      } else if (diff < 0 && currentIndexBestsellers > 0) {
+        // Swipe right - previous
+        currentIndexBestsellers--;
+        updateCarouselBestsellers();
       }
     }
   }
