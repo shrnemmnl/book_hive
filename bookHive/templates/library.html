@@ -24,6 +24,11 @@
          style="font-size: 0.95rem; border-radius: 25px;">
         <i class="bi bi-trophy-fill me-2"></i>Best Sellers
       </a>
+      <a href="{% url 'library' %}?filter_type=offers{% if request.GET.genres %}&genres={{ request.GET.genres }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}" 
+         class="btn {% if active_filter == 'offers' %}btn-primary{% else %}btn-outline-primary{% endif %} px-4 py-2 fw-bold quick-filter-btn" 
+         style="font-size: 0.95rem; border-radius: 25px;">
+        <i class="bi bi-tag-fill me-2"></i>Offers
+      </a>
       {% if active_filter %}
       <a href="{% url 'library' %}{% if request.GET.genres %}?genres={{ request.GET.genres }}{% if request.GET.min_price or request.GET.max_price %}&{% endif %}{% endif %}{% if request.GET.min_price %}{% if not request.GET.genres %}?{% endif %}min_price={{ request.GET.min_price }}{% if request.GET.max_price %}&{% endif %}{% endif %}{% if request.GET.max_price %}{% if not request.GET.genres and not request.GET.min_price %}?{% endif %}max_price={{ request.GET.max_price }}{% endif %}" 
          class="btn btn-outline-danger px-4 py-2 fw-bold quick-filter-btn" 

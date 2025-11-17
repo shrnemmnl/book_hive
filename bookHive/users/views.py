@@ -19,7 +19,7 @@ import json
 import re
 from .utils import send_verification_email, generate_otp
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Avg, Sum, F, ExpressionWrapper, DecimalField, Q
+from django.db.models import Avg, Sum, F, ExpressionWrapper, DecimalField, Q, Case, When, IntegerField
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -148,6 +148,12 @@ def loading_page(request):
         genre__is_active=True
     )[:3]
     
+    # Get 3-4 new releases (latest products by created_at)
+    new_releases = Product.objects.annotate(min_price=Min('variant__price')).filter(
+        is_active=True, 
+        genre__is_active=True
+    ).order_by('-created_at')[:4]
+    
     # Get wishlist variants for authenticated users
     user_wishlist_variants = []
     if request.user.is_authenticated:
@@ -155,6 +161,7 @@ def loading_page(request):
     
     context = {
         'sample_books': sample_books,
+        'new_releases': new_releases,
         'user_wishlist_variants': user_wishlist_variants
     }
     
@@ -189,6 +196,29 @@ def library(request):
                 default=0
             )
         ).order_by('-total_sold', '-created_at')
+    elif filter_type == 'offers':
+        # Annotate with best discount percentage (product or genre, whichever is higher)
+        # Use Case/When to calculate the maximum discount
+        books = books.annotate(
+            product_discount=Case(
+                When(is_offer=True, then=F('discount_percentage')),
+                default=0,
+                output_field=IntegerField()
+            ),
+            genre_discount=Case(
+                When(genre__is_offer=True, then=F('genre__discount_percentage')),
+                default=0,
+                output_field=IntegerField()
+            )
+        ).annotate(
+            best_discount=Case(
+                When(product_discount__gte=F('genre_discount'), then=F('product_discount')),
+                default=F('genre_discount'),
+                output_field=IntegerField()
+            )
+        ).filter(
+            Q(is_offer=True) | Q(genre__is_offer=True)
+        ).order_by('-best_discount', '-created_at')
     else:
         # Default sorting if no filter_type
         sort = request.GET.get('sort', 'featured')
