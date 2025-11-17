@@ -290,32 +290,59 @@ def product_details(request, id):
     can_review = False
     if request.user.is_authenticated:
         # Check if user has purchased and received any variant of this product
-        purchased_orders = OrderItem.objects.filter(
+        # User can review if they have an order item for this product that is delivered
+        # and the order is paid (purchase completed)
+        purchased_items = OrderItem.objects.filter(
             order__user=request.user,
-            order__status='delivered',
             order__is_paid=True,
-            product_variant__product=book
+            product_variant__product=book,
+            status='delivered'  # Can review only if item has been delivered
         ).exists()
-        can_review = purchased_orders
+        can_review = purchased_items
 
     if request.method == "POST" and request.user.is_authenticated:
-        # Verify user has purchased before allowing review
-        if not can_review:
-            messages.error(request, "You haven't purchased this product yet. Only customers who have purchased can write reviews.")
+        # Re-check purchase status on POST to prevent bypassing
+        purchased_items = OrderItem.objects.filter(
+            order__user=request.user,
+            order__is_paid=True,
+            product_variant__product=book,
+            status='delivered'
+        ).exists()
+        
+        if not purchased_items:
+            messages.error(request, "You haven't purchased and received this product yet. Only customers who have purchased and received the product can write reviews.")
         else:
             rating = request.POST.get('overallRating', '').strip()
             comments = request.POST.get('comment', '').strip()
+            
+            if not rating:
+                messages.error(request, "Please select a rating.")
+            elif not comments or len(comments.strip()) < 10:
+                messages.error(request, "Please write a review with at least 10 characters.")
+            else:
+                # Check if user has already reviewed this product
+                existing_review = Review.objects.filter(
+                    user=request.user,
+                    product=book
+                ).first()
+                
+                if existing_review:
+                    # Update existing review
+                    existing_review.rating = int(rating)
+                    existing_review.comments = comments
+                    existing_review.save()
+                    messages.success(request, "Your review has been updated successfully.")
+                else:
+                    # Create new review
+                    Review.objects.create(
+                        user=request.user,
+                        product=book,
+                        rating=int(rating),
+                        comments=comments,
+                    )
+                    messages.success(request, "Your review has been submitted successfully.")
 
-            review = Review.objects.create(
-                user=request.user,
-                product=book,
-                rating=int(rating),
-                comments=comments,
-            )
-
-            messages.success(request, "Your Review is successfully submitted.")
-
-    variants = Variant.objects.filter(product=book, is_active=True).prefetch_related('productimage_set')
+    variants = Variant.objects.filter(product=book, is_active=True).prefetch_related('productimage_set').order_by('price')
     default_variant = variants.first()
     is_sold_out = default_variant.available_quantity
     print("is variant sold out: ",is_sold_out)

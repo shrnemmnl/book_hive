@@ -357,11 +357,23 @@ document.addEventListener('DOMContentLoaded', function () {
 function setupReviewModalCheck() {
   {% if user.is_authenticated and not can_review %}
   const writeReviewBtn = document.querySelector('[data-bs-target="#writeReviewModal"]');
-  if (writeReviewBtn && writeReviewBtn.disabled) {
+  if (writeReviewBtn) {
     writeReviewBtn.addEventListener('click', function(e) {
       e.preventDefault();
-      showErrorMessage('⚠️ You need to purchase this product to write a review.');
+      e.stopPropagation();
+      showErrorMessage('⚠️ You need to purchase and receive this product to write a review.');
       return false;
+    });
+  }
+  
+  // Also prevent modal from opening via Bootstrap
+  const reviewModal = document.getElementById('writeReviewModal');
+  if (reviewModal) {
+    reviewModal.addEventListener('show.bs.modal', function(e) {
+      {% if not can_review %}
+      e.preventDefault();
+      showErrorMessage('⚠️ You need to purchase and receive this product to write a review.');
+      {% endif %}
     });
   }
   {% endif %}
