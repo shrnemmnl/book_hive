@@ -139,9 +139,31 @@ def signup(request):
 
 @never_cache
 def loading_page(request):
-
+    """Home page view - displays banner and sample books"""
     request.session['address_update'] = False
+    
+    # Get 3 sample books for the home page preview
+    sample_books = Product.objects.annotate(min_price=Min('variant__price')).filter(
+        is_active=True, 
+        genre__is_active=True
+    )[:3]
+    
+    # Get wishlist variants for authenticated users
+    user_wishlist_variants = []
+    if request.user.is_authenticated:
+        user_wishlist_variants = Wishlist.objects.filter(user=request.user).values_list('variant_id', flat=True)
+    
+    context = {
+        'sample_books': sample_books,
+        'user_wishlist_variants': user_wishlist_variants
+    }
+    
+    return render(request, 'index.html', context)
 
+
+@never_cache
+def library(request):
+    """Library page view - displays all books with filters and pagination"""
     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True, genre__is_active=True)
 
     sort = request.GET.get('sort', 'featured')
@@ -202,9 +224,7 @@ def loading_page(request):
         'user_wishlist_variants': user_wishlist_variants
     }
 
-    return render(request, 'index.html', context)
-
-
+    return render(request, 'library.html', context)
 
 
 @never_cache
