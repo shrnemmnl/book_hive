@@ -12,6 +12,27 @@
       <p class="text-muted" style="font-size: 0.9rem;">Discover books that will take you on incredible journeys</p>
     </div>
 
+    <!-- Quick Filter Buttons (Outside Sidebar) -->
+    <div class="quick-filters mb-4 d-flex justify-content-center gap-3 flex-wrap">
+      <a href="{% url 'library' %}?filter_type=new_releases{% if request.GET.genres %}&genres={{ request.GET.genres }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}" 
+         class="btn {% if active_filter == 'new_releases' %}btn-primary{% else %}btn-outline-primary{% endif %} px-4 py-2 fw-bold quick-filter-btn" 
+         style="font-size: 0.95rem; border-radius: 25px;">
+        <i class="bi bi-star-fill me-2"></i>New Releases
+      </a>
+      <a href="{% url 'library' %}?filter_type=best_sellers{% if request.GET.genres %}&genres={{ request.GET.genres }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}" 
+         class="btn {% if active_filter == 'best_sellers' %}btn-primary{% else %}btn-outline-primary{% endif %} px-4 py-2 fw-bold quick-filter-btn" 
+         style="font-size: 0.95rem; border-radius: 25px;">
+        <i class="bi bi-trophy-fill me-2"></i>Best Sellers
+      </a>
+      {% if active_filter %}
+      <a href="{% url 'library' %}{% if request.GET.genres %}?genres={{ request.GET.genres }}{% if request.GET.min_price or request.GET.max_price %}&{% endif %}{% endif %}{% if request.GET.min_price %}{% if not request.GET.genres %}?{% endif %}min_price={{ request.GET.min_price }}{% if request.GET.max_price %}&{% endif %}{% endif %}{% if request.GET.max_price %}{% if not request.GET.genres and not request.GET.min_price %}?{% endif %}max_price={{ request.GET.max_price }}{% endif %}" 
+         class="btn btn-outline-danger px-4 py-2 fw-bold quick-filter-btn" 
+         style="font-size: 0.95rem; border-radius: 25px;">
+        <i class="bi bi-x-circle me-2"></i>Clear Filter
+      </a>
+      {% endif %}
+    </div>
+
     <div class="row g-3">
       <!-- Side Panel for Filters and Sorting -->
       <div class="col-lg-3 col-md-4 mb-3">
@@ -220,19 +241,19 @@
             <ul class="pagination justify-content-center">
               {% if books.has_previous %}
               <li class="page-item">
-                <a class="page-link" href="?page={{ books.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.genres %}&genres={{ request.GET.genres }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}" style="font-size: 0.85rem;">
+                <a class="page-link" href="?page={{ books.previous_page_number }}{% if request.GET.filter_type %}&filter_type={{ request.GET.filter_type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.genres %}&genres={{ request.GET.genres }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}" style="font-size: 0.85rem;">
                   <i class="bi bi-chevron-left"></i>
                 </a>
               </li>
               {% endif %}
               {% for i in books.paginator.page_range %}
               <li class="page-item{% if books.number == i %} active{% endif %}">
-                <a class="page-link" href="?page={{ i }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.genres %}&genres={{ request.GET.genres }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}" style="font-size: 0.85rem;">{{ i }}</a>
+                <a class="page-link" href="?page={{ i }}{% if request.GET.filter_type %}&filter_type={{ request.GET.filter_type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.genres %}&genres={{ request.GET.genres }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}" style="font-size: 0.85rem;">{{ i }}</a>
               </li>
               {% endfor %}
               {% if books.has_next %}
               <li class="page-item">
-                <a class="page-link" href="?page={{ books.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.genres %}&genres={{ request.GET.genres }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}" style="font-size: 0.85rem;">
+                <a class="page-link" href="?page={{ books.next_page_number }}{% if request.GET.filter_type %}&filter_type={{ request.GET.filter_type }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.genres %}&genres={{ request.GET.genres }}{% endif %}{% if request.GET.min_price %}&min_price={{ request.GET.min_price }}{% endif %}{% if request.GET.max_price %}&max_price={{ request.GET.max_price }}{% endif %}" style="font-size: 0.85rem;">
                   <i class="bi bi-chevron-right"></i>
                 </a>
               </li>
@@ -425,6 +446,53 @@
     }
   }
 
+  /* Quick Filter Buttons */
+  .quick-filters {
+    margin-bottom: 2rem;
+  }
+
+  .quick-filter-btn {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .quick-filter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+  }
+
+  .quick-filter-btn.btn-primary {
+    background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-hover) 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(230, 126, 34, 0.4);
+  }
+
+  .quick-filter-btn.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-orange-hover) 0%, var(--primary-orange) 100%);
+    box-shadow: 0 6px 16px rgba(230, 126, 34, 0.5);
+  }
+
+  .quick-filter-btn.btn-outline-primary {
+    border: 2px solid var(--primary-orange);
+    color: var(--primary-orange);
+  }
+
+  .quick-filter-btn.btn-outline-primary:hover {
+    background-color: var(--primary-orange);
+    color: white;
+  }
+
+  .quick-filter-btn.btn-outline-danger {
+    border: 2px solid #dc3545;
+    color: #dc3545;
+  }
+
+  .quick-filter-btn.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+  }
+
   /* Mobile Responsiveness */
   @media (max-width: 991px) {
     .filter-sidebar {
@@ -435,11 +503,30 @@
     .product-card:hover {
       transform: translateY(-4px);
     }
+
+    .quick-filters {
+      gap: 0.75rem !important;
+    }
+
+    .quick-filter-btn {
+      font-size: 0.85rem !important;
+      padding: 0.5rem 1rem !important;
+    }
   }
 
   @media (max-width: 576px) {
     .product-price {
       font-size: 1.1rem !important;
+    }
+
+    .quick-filters {
+      flex-direction: column;
+      align-items: stretch !important;
+    }
+
+    .quick-filter-btn {
+      width: 100%;
+      font-size: 0.8rem !important;
     }
   }
 </style>
@@ -515,10 +602,19 @@ document.getElementById('applyFilters').addEventListener('click', function(e) {
   e.preventDefault();
   let params = new URLSearchParams();
   
-  // Get sort option
-  const sortOption = document.querySelector('input[name="sort"]:checked').value;
-  if (sortOption !== 'featured') {
-    params.set('sort', sortOption);
+  // Preserve filter_type if active
+  const urlParams = new URLSearchParams(window.location.search);
+  const filterType = urlParams.get('filter_type');
+  if (filterType) {
+    params.set('filter_type', filterType);
+  }
+  
+  // Get sort option (only if filter_type is not set)
+  if (!filterType) {
+    const sortOption = document.querySelector('input[name="sort"]:checked').value;
+    if (sortOption !== 'featured') {
+      params.set('sort', sortOption);
+    }
   }
   
   // Get selected genres
@@ -571,7 +667,7 @@ document.getElementById('clearFilters').addEventListener('click', function() {
   // Hide clear button
   this.style.display = 'none';
   
-  // Redirect to base URL
+  // Redirect to base URL (removes all filters including filter_type)
   window.location.href = '{% url 'library' %}';
 });
 
@@ -579,14 +675,16 @@ document.getElementById('clearFilters').addEventListener('click', function() {
 window.addEventListener('DOMContentLoaded', function() {
   const urlParams = new URLSearchParams(window.location.search);
   const sortParam = urlParams.get('sort');
-  const hasFilters = urlParams.has('sort') || urlParams.has('genres') || urlParams.has('min_price') || urlParams.has('max_price');
+  const filterType = urlParams.get('filter_type');
+  const hasFilters = urlParams.has('sort') || urlParams.has('filter_type') || urlParams.has('genres') || urlParams.has('min_price') || urlParams.has('max_price');
   
   // Show clear button if filters are applied
   if (hasFilters) {
     document.getElementById('clearFilters').style.display = 'block';
   }
   
-  if (sortParam) {
+  // Only set sort radio if filter_type is not active
+  if (sortParam && !filterType) {
     const sortRadio = document.getElementById(`sort${sortParam === 'lh' ? 'LowHigh' : 
                                               sortParam === 'hl' ? 'HighLow' : 
                                               sortParam === 'az' ? 'AZ' : 

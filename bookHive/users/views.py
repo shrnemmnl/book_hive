@@ -164,9 +164,45 @@ def loading_page(request):
 @never_cache
 def library(request):
     """Library page view - displays all books with filters and pagination"""
+    from users.models import OrderItem
+    
+    # Get filter type (new_releases, best_sellers, or None)
+    filter_type = request.GET.get('filter_type', '')
+    
     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True, genre__is_active=True)
 
-    sort = request.GET.get('sort', 'featured')
+    # Apply filter type (independent of other filters)
+    if filter_type == 'new_releases':
+        books = books.order_by('-created_at')
+    elif filter_type == 'best_sellers':
+        # Annotate with total quantity sold from OrderItems
+        # Only count items from paid orders that are not cancelled/returned
+        from users.models import OrderItem
+        books = books.annotate(
+            total_sold=Sum(
+                'variant__order_items__quantity',
+                filter=Q(
+                    variant__order_items__order__is_paid=True
+                ) & ~Q(
+                    variant__order_items__status__in=['cancelled', 'return approved']
+                ),
+                default=0
+            )
+        ).order_by('-total_sold', '-created_at')
+    else:
+        # Default sorting if no filter_type
+        sort = request.GET.get('sort', 'featured')
+        if sort == 'lh':
+            books = books.order_by('min_price')
+        elif sort == 'hl':
+            books = books.order_by('-min_price')
+        elif sort == 'az':
+            books = books.order_by('book_title')
+        elif sort == 'za':
+            books = books.order_by('-book_title')
+        # If sort is 'featured', keep default ordering
+
+    # Apply other filters (genres, price) - these work with filter_type
     genres = request.GET.get('genres', 'allgenres')
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
@@ -189,15 +225,6 @@ def library(request):
         except (ValueError, TypeError):
             pass
 
-    if sort == 'lh':
-        books = books.order_by('min_price')
-    elif sort == 'hl':
-        books = books.order_by('-min_price')
-    elif sort == 'az':
-        books = books.order_by('book_title')
-    elif sort == 'za':
-        books = books.order_by('-book_title')
-
     page = request.GET.get('page', 1)
     paginator = Paginator(books, 6)
     books = paginator.get_page(page)
@@ -213,6 +240,9 @@ def library(request):
         'max': Product.objects.filter(is_active=True, genre__is_active=True).aggregate(max_price=Max('variant__price'))['max_price'] or 2000
     }
 
+    # Get sort for context (only if filter_type is not set)
+    sort = request.GET.get('sort', 'featured') if not filter_type else 'featured'
+
     context = {
         'books': books,
         'categories': categories,
@@ -221,7 +251,8 @@ def library(request):
         'selected_genres': genres.split(',') if genres and genres != 'allgenres' else [],
         'selected_min_price': min_price if min_price else price_range['min'],
         'selected_max_price': max_price if max_price else price_range['max'],
-        'user_wishlist_variants': user_wishlist_variants
+        'user_wishlist_variants': user_wishlist_variants,
+        'active_filter': filter_type,  # Pass active filter to template
     }
 
     return render(request, 'library.html', context)
