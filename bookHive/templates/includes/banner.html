@@ -2,69 +2,56 @@
 <!-- HERO BANNER COMPONENT -->
 <section id="home" class="hero-section position-relative" >
   <!-- Main Banner -->
-  <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+  <div id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="6000" data-bs-pause="hover">
     <div class="carousel-indicators">
       <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
       <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
       <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="3" aria-label="Slide 4"></button>
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="4" aria-label="Slide 5"></button>
+      <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="5" aria-label="Slide 6"></button>
     </div>
     
     <div class="carousel-inner">
-      <!-- Slide 1 -->
+      <!-- Slide 1: Kalachi by K.R. Meera -->
       <div class="carousel-item active">
-        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{% static 'images/main-banner1.jpg' %}') center/cover no-repeat; height: 600px;">
-          <div class="container h-100">
-            <div class="row h-100 align-items-center">
-              <div class="col-lg-6">
-                <div class="hero-content text-white">
-                  <h1 class="display-3 fw-bold mb-3" data-aos="fade-down">Discover Your Next Favorite Book</h1>
-                  <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">Explore our curated collection of bestsellers, classics, and new releases at unbeatable prices.</p>
-                  <div class="d-flex gap-2" data-aos="fade-up" data-aos-delay="200">
-                    <a href="#library" class="btn btn-primary btn-lg">Explore Now</a>
-                    <a href="#special-offer" class="btn btn-outline-light btn-lg">Special Offers</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="hero-slide banner-slide-1">
+          <img src="{% static 'images/banner-kalachi.jpg' %}" alt="Kalachi Banner" class="banner-image">
         </div>
       </div>
       
-      <!-- Slide 2 -->
+      <!-- Slide 2: Vayalar Award Winner - E. Santhosh Kumar -->
       <div class="carousel-item">
-        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{% static 'images/main-banner2.jpg' %}') center/cover no-repeat; height: 600px;">
-          <div class="container h-100">
-            <div class="row h-100 align-items-center">
-              <div class="col-lg-6 offset-lg-6">
-                <div class="hero-content text-white text-lg-end">
-                  <h1 class="display-3 fw-bold mb-3" data-aos="fade-down">Summer Reading Collection</h1>
-                  <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">Dive into our selection of beach reads and summer adventures.</p>
-                  <div data-aos="fade-up" data-aos-delay="200">
-                    <a href="#" class="btn btn-primary btn-lg">Shop Collection</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="hero-slide banner-slide-2">
+          <img src="{% static 'images/banner-vayalar-award.jpg' %}" alt="Vayalar Award Banner" class="banner-image">
         </div>
       </div>
       
-      <!-- Slide 3 -->
+      <!-- Slide 3: Rush Hour Sale -->
       <div class="carousel-item">
-        <div class="hero-slide" style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('{% static 'images/main-banner3.jpg' %}') center/cover no-repeat; height: 600px;">
-          <div class="container h-100">
-            <div class="row h-100 align-items-center">
-              <div class="col-lg-6">
-                <div class="hero-content text-white">
-                  <h1 class="display-3 fw-bold mb-3" data-aos="fade-down">Books For Every Age</h1>
-                  <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">From children's picture books to adult fiction, find the perfect read for everyone.</p>
-                  <div data-aos="fade-up" data-aos-delay="200">
-                    <a href="#" class="btn btn-primary btn-lg">Browse Categories</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="hero-slide banner-slide-3">
+          <img src="{% static 'images/banner-rush-hour.jpg' %}" alt="Rush Hour Banner" class="banner-image">
+        </div>
+      </div>
+      
+      <!-- Slide 4: T.J.S. George Collection -->
+      <div class="carousel-item">
+        <div class="hero-slide banner-slide-4">
+          <img src="{% static 'images/banner-tjs-george.jpg' %}" alt="TJS George Banner" class="banner-image">
+        </div>
+      </div>
+      
+      <!-- Slide 5: Chetan Bhagat - 12 Years -->
+      <div class="carousel-item">
+        <div class="hero-slide banner-slide-5">
+          <img src="{% static 'images/banner-chetan-bhagat.jpg' %}" alt="Chetan Bhagat Banner" class="banner-image">
+        </div>
+      </div>
+      
+      <!-- Slide 6: The Chola Tigers - Amish Tripathi -->
+      <div class="carousel-item">
+        <div class="hero-slide banner-slide-6">
+          <img src="{% static 'images/banner-chola-tigers.jpg' %}" alt="Chola Tigers Banner" class="banner-image">
         </div>
       </div>
     </div>
@@ -106,27 +93,209 @@
 /* Hero Section Styles */
 .hero-section {
   margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+/* Smooth Carousel Fade Transition */
+.carousel-fade .carousel-item {
+  opacity: 0;
+  transition-property: opacity;
+  transition-duration: 1.2s;
+  transition-timing-function: ease-in-out;
+}
+
+.carousel-fade .carousel-item.active,
+.carousel-fade .carousel-item-next.carousel-item-start,
+.carousel-fade .carousel-item-prev.carousel-item-end {
+  opacity: 1;
+}
+
+.carousel-fade .active.carousel-item-start,
+.carousel-fade .active.carousel-item-end {
+  opacity: 0;
 }
 
 .hero-slide {
   position: relative;
-  transition: opacity 0.5s ease-in-out;
+  width: 100%;
+  height: 600px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-image {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  object-position: center;
+  display: block;
+}
+
+/* Slide-in animations */
+.slide-in-left {
+  animation: slideInLeft 0.8s ease-out;
+}
+
+.slide-in-left-delay-1 {
+  animation: slideInLeft 0.8s ease-out 0.2s both;
+}
+
+.slide-in-left-delay-2 {
+  animation: slideInLeft 0.8s ease-out 0.4s both;
+}
+
+.slide-in-left-delay-3 {
+  animation: slideInLeft 0.8s ease-out 0.6s both;
+}
+
+.slide-in-left-delay-4 {
+  animation: slideInLeft 0.8s ease-out 0.8s both;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.8s ease-out;
+}
+
+.slide-in-right-delay-1 {
+  animation: slideInRight 0.8s ease-out 0.2s both;
+}
+
+.slide-in-right-delay-2 {
+  animation: slideInRight 0.8s ease-out 0.4s both;
+}
+
+.slide-in-right-delay-3 {
+  animation: slideInRight 0.8s ease-out 0.6s both;
+}
+
+.slide-in-right-delay-4 {
+  animation: slideInRight 0.8s ease-out 0.8s both;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Neon text effect for Rush Hour */
+.neon-text {
+  text-shadow: 
+    0 0 10px rgba(255, 193, 7, 0.8),
+    0 0 20px rgba(255, 193, 7, 0.6),
+    0 0 30px rgba(255, 193, 7, 0.4);
+  animation: neonPulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes neonPulse {
+  from {
+    text-shadow: 
+      0 0 10px rgba(255, 193, 7, 0.8),
+      0 0 20px rgba(255, 193, 7, 0.6),
+      0 0 30px rgba(255, 193, 7, 0.4);
+  }
+  to {
+    text-shadow: 
+      0 0 20px rgba(255, 193, 7, 1),
+      0 0 30px rgba(255, 193, 7, 0.8),
+      0 0 40px rgba(255, 193, 7, 0.6);
+  }
 }
 
 .hero-content {
   padding: 2rem;
   border-radius: 12px;
+  position: relative;
+  z-index: 2;
 }
 
 .hero-content h1 {
   font-family: 'Roboto', sans-serif;
   font-weight: 700;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.hero-content h2 {
+  text-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
 .hero-content p {
   font-size: 1.1rem;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.banner-badge {
+  animation: fadeInDown 0.6s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.price-tag {
+  animation: bounceIn 0.8s ease-out;
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.discount-badge {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.freebies-list {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1.5rem;
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
 }
 
 .hero-content .btn-primary {
@@ -134,52 +303,96 @@
   border-color: #e67e22;
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
-  transition: background-color 0.3s, transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .hero-content .btn-primary:hover {
   background-color: #d35400;
   border-color: #d35400;
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 12px rgba(230, 126, 34, 0.4);
 }
 
 .hero-content .btn-outline-light {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
-  transition: background-color 0.3s, color 0.3s, transform 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .hero-content .btn-outline-light:hover {
   background-color: #e67e22;
   border-color: #e67e22;
   color: #fff;
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 12px rgba(230, 126, 34, 0.4);
+}
+
+.hero-content .btn-warning {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.hero-content .btn-warning:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 12px rgba(255, 193, 7, 0.4);
 }
 
 .carousel-control-prev,
 .carousel-control-next {
   width: 5%;
   background: rgba(0,0,0,0.3);
-  transition: background 0.3s;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
 }
 
 .carousel-control-prev:hover,
 .carousel-control-next:hover {
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
+  transform: scale(1.1);
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+}
+
+.carousel-control-prev:hover .carousel-control-prev-icon,
+.carousel-control-next:hover .carousel-control-next-icon {
+  background-color: rgba(230, 126, 34, 0.9);
+  transform: scale(1.2);
+}
+
+.carousel-indicators {
+  margin-bottom: 1.5rem;
 }
 
 .carousel-indicators button {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background-color: #fff;
-  opacity: 0.5;
-  transition: opacity 0.3s;
+  background-color: rgba(255, 255, 255, 0.5);
+  border: 2px solid transparent;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0 6px;
+}
+
+.carousel-indicators button:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+  transform: scale(1.3);
 }
 
 .carousel-indicators .active {
   opacity: 1;
   background-color: #e67e22;
+  border-color: #fff;
+  transform: scale(1.4);
+  box-shadow: 0 0 10px rgba(230, 126, 34, 0.6);
 }
 
 /* Category Pills Styles */
@@ -201,19 +414,46 @@
   color: #fff;
 }
 
+/* Responsive Design */
 @media (max-width: 767px) {
   .hero-slide {
-    height: 400px;
+    height: 400px !important;
   }
   .hero-content h1 {
-    font-size: 2rem;
+    font-size: 2rem !important;
+  }
+  .hero-content h2 {
+    font-size: 1.25rem !important;
   }
   .hero-content p {
-    font-size: 1rem;
+    font-size: 0.95rem !important;
   }
   .hero-content .btn {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
+  }
+  .carousel-control-prev,
+  .carousel-control-next {
+    width: 8%;
+  }
+  .freebies-list {
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-slide {
+    height: 350px !important;
+  }
+  .hero-content {
+    padding: 1rem;
+  }
+  .hero-content h1 {
+    font-size: 1.5rem !important;
+  }
+  .neon-text {
+    font-size: 1.75rem !important;
   }
 }
 </style>
