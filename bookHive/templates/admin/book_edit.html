@@ -10,33 +10,40 @@
 <div class="container-fluid mt-4">
     <div class="card shadow-sm p-4" style="max-width: 600px; margin: 0 auto; border-radius: 10px; border: none;">
         <div class="card-body" style="padding: 0;">
+            <h5 class="fw-medium mb-4" style="font-size: 1.1rem; color: #1e293b;">Edit Book</h5>
             <form method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 <input type="hidden" name="book_id" value="{{ book.id }}">
 
                 <!-- Book Title -->
                 <div class="mb-3">
-                    <label for="bookTitle" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Title</label>
-                    <input type="text" name="book_title" value="{{ book.book_title }}" id="bookTitle" class="form-control {% if error.book_title %}is-invalid{% endif %}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="bookTitle" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Book Title</label>
+                    <input type="text" name="book_title" value="{{ book.book_title }}" id="bookTitle" class="form-control {% if error.book_title %}is-invalid{% endif %}" required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                     {% if error.book_title %}
-                    <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.book_title }}</div>
+                    <div class="text-danger mt-1">{{ error.book_title }}</div>
                     {% endif %}
                 </div>
 
                 <!-- Book Author -->
                 <div class="mb-3">
-                    <label for="bookAuthor" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Author</label>
-                    <input type="text" name="book_author" value="{{ book.author }}" id="bookAuthor" class="form-control {% if error.book_author %}is-invalid{% endif %}" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="bookAuthor" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Book Author</label>
+                    <input type="text" name="book_author" value="{{ book.author }}" id="bookAuthor" class="form-control {% if error.book_author %}is-invalid{% endif %}" required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                     {% if error.book_author %}
-                    <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.book_author }}</div>
+                    <div class="text-danger mt-1">{{ error.book_author }}</div>
                     {% endif %}
                 </div>
 
                 <!-- Book Image -->
                 <div class="mb-3">
-                    <label for="bookImage" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Image</label>
-                    
-                    <!-- Existing Image Preview (if editing) -->
+                    <label for="bookImage" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">
+                        Book Image
+                    </label>
+
+                    <!-- Existing Image Preview -->
                     {% if book.image %}
                     <div class="mb-2">
                         <img src="{{ book.image.url }}" alt="Book Image" class="img-fluid rounded"
@@ -45,21 +52,29 @@
                     {% endif %}
 
                     <!-- New Cropper Preview -->
-                    <img id="preview" style="max-width: 300px; display: none; border-radius: 6px; margin-bottom: 10px;">
+                    <div id="cropper-container" style="display: none; margin-bottom: 10px;">
+                        <img id="preview" style="max-width: 100%; max-height: 500px; display: block;">
+                    </div>
 
                     <!-- File Input -->
-                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="bookImage" name="image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                    <div id="image-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+                    <input type="file" class="form-control {% if error.valid_image %}is-invalid{% endif %}" id="bookImage"
+                        name="image" accept="image/*"
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+
+                    <!-- Hidden input to store cropped image -->
+                    <input type="hidden" name="image_cropped" id="image_cropped">
+
                     {% if error.valid_image %}
                     <div class="text-danger mt-1">{{ error.valid_image }}</div>
                     {% endif %}
-                    <small class="text-muted">Upload an image (jpg, jpeg, png, gif, webp). Max 5MB. You can crop the image after selection.</small>
                 </div>
 
                 <!-- Genre -->
                 <div class="mb-3">
-                    <label for="bookGenre" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Genre</label>
-                    <select class="form-select {% if error.genre_id %}is-invalid{% endif %}" id="bookGenre" name="genre_id" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="bookGenre" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Genre</label>
+                    <select class="form-control {% if error.genre_id %}is-invalid{% endif %}" id="bookGenre" name="genre_id" required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                         <option value="{{ book.genre.id }}" selected>{{ book.genre.genre_name }}</option>
                         {% for genre in genres %}
                         {% if genre.id != book.genre.id %}
@@ -68,41 +83,48 @@
                         {% endfor %}
                     </select>
                     {% if error.genre_id %}
-                    <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.genre_id }}</div>
+                    <div class="text-danger mt-1">{{ error.genre_id }}</div>
                     {% endif %}
                 </div>
 
                 <!-- Offer Fields -->
                 <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="isOffer" name="is_offer" {% if book.is_offer %}checked{% endif %} style="border: 1px solid #e2e8f0;">
+                    <input type="checkbox" class="form-check-input" id="isOffer" name="is_offer" {% if book.is_offer %}checked{% endif %}>
                     <label class="form-check-label" for="isOffer" style="font-size: 0.9rem; color: #1e293b;">Is Offer Active?</label>
                 </div>
 
                 <div class="mb-3">
-                    <label for="offerTitle" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Offer Title</label>
-                    <input type="text" class="form-control" id="offerTitle" name="offer_title" value="{{ book.offer_title }}" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <label for="offerTitle" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Offer Title</label>
+                    <input type="text" class="form-control" id="offerTitle" name="offer_title" value="{{ book.offer_title }}"
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                 </div>
 
                 <div class="mb-3">
-                    <label for="discount" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Discount (%) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control {% if error.discount_percentage %}is-invalid{% endif %}" id="discount" name="discount_percentage" value="{{ book.discount_percentage }}" min="0" max="99" step="0.01" placeholder="Enter discount from 0 to 99 (must be less than 100%)" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
-                    <div id="discount-error" class="text-danger mt-1" style="display: none; font-size: 0.85rem;"></div>
+                    <label for="discount" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Discount (%)</label>
+                    <input type="number" class="form-control {% if error.discount_percentage %}is-invalid{% endif %}" id="discount"
+                        name="discount_percentage" value="{{ book.discount_percentage }}" step="0.01" required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">
                     {% if error.discount_percentage %}
                     <div class="text-danger mt-1">{{ error.discount_percentage }}</div>
                     {% endif %}
-                    <small class="text-muted">Enter a discount percentage between 0 and 99 (must be less than 100%).</small>
                 </div>
 
                 <!-- Book Description -->
                 <div class="mb-3">
-                    <label for="bookDescription" class="form-label fw-medium" style="font-size: 0.9rem; color: #1e293b;">Book Description</label>
-                    <textarea class="form-control {% if error.book_description %}is-invalid{% endif %}" id="bookDescription" name="book_description" rows="4" required style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">{{ book.description }}</textarea>
+                    <label for="bookDescription" class="form-label fw-medium"
+                        style="font-size: 0.9rem; color: #1e293b;">Book Description</label>
+                    <textarea class="form-control {% if error.book_description %}is-invalid{% endif %}" id="bookDescription" name="book_description" rows="4" required
+                        style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0;">{{ book.description }}</textarea>
                     {% if error.book_description %}
-                    <div class="text-danger mt-1" style="font-size: 0.85rem;">{{ error.book_description }}</div>
+                    <div class="text-danger mt-1">{{ error.book_description }}</div>
                     {% endif %}
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100" style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Save Book</button>
+                <button type="submit" class="btn btn-primary w-100"
+                    style="font-size: 0.9rem; padding: 0.65rem; border-radius: 6px; background-color: #2563eb;">Update
+                    Book</button>
 
                 <!-- Display Messages -->
                 {% if messages %}
@@ -129,11 +151,16 @@
     </div>
 </div>
 
-<!-- Cropper.js JS -->
+<!-- Cropper.js JS - Must load before scripts that use it -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Ensure Cropper.js is loaded
+    if (typeof Cropper === 'undefined') {
+        console.error('Cropper.js library not loaded. Please refresh the page.');
+        return;
+    }
     const form = document.querySelector('form');
     const imageInput = document.getElementById('bookImage');
     const discountInput = document.getElementById('discount');
@@ -317,29 +344,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Image preview and cropping (inline like add_new_book.html)
+    // Image preview and cropping (exact simple pattern from variant_edit.html lines 229-248)
     imageInput.addEventListener('change', function(e) {
-        if (!validateImage()) {
+        const file = e.target.files[0];
+        if (!file) {
             return;
         }
 
-        const file = e.target.files[0];
-        if (!file) {
+        // Validate image first
+        if (!validateImage()) {
+            // Clear preview if validation fails
+            const cropperContainer = document.getElementById('cropper-container');
+            if (cropperContainer) {
+                cropperContainer.style.display = 'none';
+            }
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
             return;
         }
 
         const reader = new FileReader();
         reader.onload = function(event) {
             const preview = document.getElementById('preview');
+            const cropperContainer = document.getElementById('cropper-container');
+            
+            if (!preview || !cropperContainer) {
+                console.error('Preview elements not found');
+                return;
+            }
+            
             preview.src = event.target.result;
-            preview.style.display = 'block';
+            cropperContainer.style.display = 'block';
 
-            // Destroy previous cropper if exists
+            // destroy previous cropper if exists (exact pattern from variant_edit.html)
             if (cropper) {
                 cropper.destroy();
             }
 
-            // Initialize cropper inline (like add_new_book.html)
+            // Initialize cropper (exact pattern from variant_edit.html)
             cropper = new Cropper(preview, {
                 aspectRatio: 3 / 4, // Book cover aspect ratio
                 viewMode: 1
@@ -372,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Form submission validation and handling
+    // Form submission validation and handling (same pattern as variant_edit.html)
     form.addEventListener('submit', function(e) {
         // Validate all fields first
         const isBookTitleValid = validateBookTitle();
@@ -395,51 +439,30 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
-        // If cropper exists, get cropped image and submit as file (not base64)
+        // If cropper exists, get cropped image and store in hidden input (exact pattern from variant_edit.html)
         if (cropper) {
             e.preventDefault();
             cropper.getCroppedCanvas().toBlob(function(blob) {
-                // Create FormData with cropped image as file
-                const formData = new FormData();
-                
-                // Add all form fields
-                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-                formData.append('book_id', document.querySelector('[name=book_id]').value);
-                formData.append('book_title', bookTitleInput.value.trim());
-                formData.append('book_author', bookAuthorInput.value.trim());
-                formData.append('book_description', document.getElementById('bookDescription').value.trim());
-                formData.append('genre_id', document.getElementById('bookGenre').value);
-                formData.append('is_offer', isOfferCheckbox.checked ? 'on' : '');
-                formData.append('offer_title', document.getElementById('offerTitle').value.trim());
-                formData.append('discount_percentage', discountInput.value);
-                
-                // Add image: use cropped blob
-                const file = imageInput.files[0];
-                if (blob) {
-                    formData.append('image', blob, file ? file.name : 'book_image.jpg');
+                if (!blob) {
+                    console.error('Failed to get cropped blob');
+                    form.submit();
+                    return;
                 }
-                
-                // Submit using fetch
-                fetch(form.action || window.location.pathname, {
-                    method: 'POST',
-                    body: formData
-                }).then(response => {
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                    } else {
-                        return response.text().then(html => {
-                            document.open();
-                            document.write(html);
-                            document.close();
-                        });
+                const reader = new FileReader();
+                reader.onloadend = function() {
+                    // Set Base64 to hidden input (exact pattern from variant_edit.html)
+                    const hiddenInput = document.getElementById('image_cropped');
+                    if (hiddenInput) {
+                        hiddenInput.value = reader.result;
                     }
-                }).catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while submitting the form. Please try again.');
-                });
+                    // Submit the form after setting the value
+                    form.submit();
+                };
+                reader.readAsDataURL(blob);
             }, 'image/jpeg', 0.9);
+            return;
         }
-        // If no cropper, form will submit normally with original file or no file
+        // If no cropper, form will submit normally with original file (if new image selected) or no file (keep existing image)
     });
 });
 </script>
@@ -453,42 +476,47 @@ document.addEventListener('DOMContentLoaded', function() {
     .card:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
-    .form-control, .form-select {
+    .form-control {
         border-radius: 6px;
         border: 1px solid #e2e8f0;
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    .form-control:focus, .form-select:focus {
+
+    .form-control:focus {
         border-color: #2563eb;
         box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.1);
     }
+
     .form-label {
         color: #1e293b;
     }
-    .form-check-label {
-        color: #1e293b;
-    }
+
     .btn-primary {
         transition: background-color 0.2s ease;
     }
+
     .btn-primary:hover {
         background-color: #1e40af;
     }
-    .alert {
-        background-color: #f1f5f9;
-        color: #1e293b;
+
+    .img-fluid {
+        border-radius: 6px;
     }
-    .is-invalid {
-        border-color: #dc3545 !important;
+    
+    /* Cropper container styles */
+    #cropper-container {
+        width: 100%;
+        max-width: 600px;
     }
-    .is-invalid:focus {
-        border-color: #dc3545 !important;
-        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
-    }
-    /* Cropper Preview Styles */
+    
     #preview {
+        width: 100%;
         max-width: 100%;
-        max-height: 400px;
+    }
+    
+    /* Ensure cropper is visible */
+    .cropper-container {
+        direction: ltr;
     }
 </style>
 {% endblock %}

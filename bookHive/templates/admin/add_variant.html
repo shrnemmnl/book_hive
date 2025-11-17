@@ -401,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let cropper2 = null;
     let cropper3 = null;
 
-    // Image 1 preview and cropping
+    // Image 1 preview and cropping (like add_new_book.html)
     image1Input.addEventListener('change', function(e) {
         if (!validateImage(image1Input, image1Error)) {
             return;
@@ -423,16 +423,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 cropper1.destroy();
             }
 
-            // Initialize cropper inline (like variant_edit.html)
+            // Initialize cropper inline (like add_new_book.html)
             cropper1 = new Cropper(preview, {
-                aspectRatio: 1,
+                aspectRatio: 1, // Square aspect ratio for variant images
                 viewMode: 1
             });
         };
         reader.readAsDataURL(file);
     });
 
-    // Image 2 preview and cropping
+    // Image 2 preview and cropping (like add_new_book.html)
     image2Input.addEventListener('change', function(e) {
         if (!validateImage(image2Input, image2Error)) {
             return;
@@ -454,16 +454,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 cropper2.destroy();
             }
 
-            // Initialize cropper inline
+            // Initialize cropper inline (like add_new_book.html)
             cropper2 = new Cropper(preview, {
-                aspectRatio: 1,
+                aspectRatio: 1, // Square aspect ratio for variant images
                 viewMode: 1
             });
         };
         reader.readAsDataURL(file);
     });
 
-    // Image 3 preview and cropping
+    // Image 3 preview and cropping (like add_new_book.html)
     image3Input.addEventListener('change', function(e) {
         if (!validateImage(image3Input, image3Error)) {
             return;
@@ -485,9 +485,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 cropper3.destroy();
             }
 
-            // Initialize cropper inline
+            // Initialize cropper inline (like add_new_book.html)
             cropper3 = new Cropper(preview, {
-                aspectRatio: 1,
+                aspectRatio: 1, // Square aspect ratio for variant images
                 viewMode: 1
             });
         };
@@ -527,11 +527,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
-        // If any cropper exists, get cropped images and submit as files (not base64)
+        // If any cropper exists, get cropped images and submit as files (not base64) - like add_new_book.html
         if (cropper1 || cropper2 || cropper3) {
             e.preventDefault();
             
-            // Function to get cropped blob from a cropper
+            // Function to get cropped blob from a cropper (like add_new_book.html)
             function getCroppedBlob(cropper, callback) {
                 if (cropper) {
                     cropper.getCroppedCanvas().toBlob(function(blob) {
@@ -542,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // Get all cropped blobs
+            // Get all cropped blobs (like add_new_book.html pattern)
             getCroppedBlob(cropper1, function(blob1) {
                 getCroppedBlob(cropper2, function(blob2) {
                     getCroppedBlob(cropper3, function(blob3) {
@@ -558,7 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         formData.append('stock', stockInput.value);
                         formData.append('language', document.getElementById('language').value);
                         
-                        // Add images: use cropped blob if available, otherwise original file
+                        // Add images: use cropped blob if available, otherwise original file (like add_new_book.html)
                         if (blob1) {
                             const file1 = image1Input.files[0];
                             formData.append('image1', blob1, file1 ? file1.name : 'image1.jpg');
@@ -580,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             formData.append('image3', image3Input.files[0]);
                         }
                         
-                        // Submit using fetch
+                        // Submit using fetch (like add_new_book.html)
                         fetch(form.action || window.location.pathname, {
                             method: 'POST',
                             body: formData
@@ -602,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         }
-        // If no cropper, form will submit normally with original files
+        // If no cropper, form will submit normally with original files (like add_new_book.html)
     });
 });
 </script>

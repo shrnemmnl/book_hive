@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.cache import never_cache, cache_control
 from functools import wraps
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.urls import reverse
 from django.shortcuts import  get_object_or_404
@@ -41,35 +42,29 @@ logger = logging.getLogger(__name__)  # Create logger
 
 
 # Create your views here.
-@never_cache
-@cache_control(no_store=True, no_cache=True, must_revalidate=True)
-def admin_signin(request):
-
-    if request.user.is_authenticated:
-        return redirect('admin_dashboard')
-    
-    if request.method == 'POST':
-        email=request.POST.get('email', "").strip()
-        password=request.POST.get('password', "").strip()
-
-        isuser=authenticate(request, email=email, password=password)
-        
-
-        if isuser is not None and isuser.is_superuser:
-            login(request, isuser)
-            messages.success(request, 'You are successfully logged in!')
-            return redirect('admin_dashboard')
-        else:
-            messages.error(request, 'Invalid credentials or insufficient permissions.')
-
-    return render(request, 'admin/admin_signin.html')
+# Admin authentication decorator
+def admin_required(view_func):
+    """
+    Decorator to check if user is authenticated and is a superuser.
+    Redirects to login page if not authenticated or not superuser.
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, 'Please login to access admin panel.')
+            return redirect('login')
+        if not request.user.is_superuser:
+            messages.error(request, 'You do not have permission to access this page.')
+            return redirect('loading_page')
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 
 
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
-@login_required(login_url='admin_signin')  # Redirect to login page if not authenticated
+@admin_required
 def admin_dashboard(request):
     """Admin Dashboard with charts, best selling products and categories"""
     
@@ -194,7 +189,7 @@ def admin_dashboard(request):
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
-@login_required(login_url='admin_signin')  
+@admin_required
 def books(request):
     
     books = Product.objects.select_related('genre').order_by('-updated_at')
@@ -211,7 +206,7 @@ def books(request):
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
-@login_required(login_url='admin_signin')  
+@admin_required
 def admin_order(request):
 
     order_details=Order.objects.prefetch_related('order_items').order_by('-created_at')
@@ -226,7 +221,7 @@ def admin_order(request):
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
-@login_required(login_url='admin_signin')  
+@admin_required
 def update_order_item_status(request,order_item_id):
     status=request.POST.get('status')
     order_item=OrderItem.objects.get(id=order_item_id)
@@ -252,6 +247,7 @@ def update_order_item_status(request,order_item_id):
 
 
 
+@admin_required
 def genre(request):
 
     genre= Genre.objects.all().order_by('-is_active')
@@ -308,6 +304,7 @@ def genre(request):
 
 
 
+@admin_required
 def change_genre_status(request):
     if request.method == 'POST':
         genre_id=request.POST.get('genre_id', "").strip()
@@ -320,6 +317,7 @@ def change_genre_status(request):
 
 
 
+@admin_required
 def genre_edit(request, genre_id):
 
     genre = Genre.objects.get(id=genre_id)
@@ -372,6 +370,7 @@ def genre_edit(request, genre_id):
 
 
 
+@admin_required
 def genre_search(request):
     
     
@@ -388,6 +387,7 @@ def genre_search(request):
 
 
 
+@admin_required
 def add_new_book(request):
     if request.method == 'POST':
         book_name = request.POST.get('book_name', "").strip()
@@ -497,6 +497,7 @@ def add_new_book(request):
 
 
 
+@admin_required
 def book_edit(request, book_id):
     
     book = Product.objects.get(id=book_id)
@@ -509,6 +510,8 @@ def book_edit(request, book_id):
         description = request.POST.get('book_description', "").strip()
         genre_id = request.POST.get('genre_id', "").strip()
         image = request.FILES.get('image')
+        # Get cropped base64 image (same pattern as variant_edit)
+        image_cropped = request.POST.get('image_cropped')
         # Offer Fields
         is_offer = request.POST.get('is_offer') == 'on'
         offer_title = request.POST.get('offer_title', "").strip()
@@ -558,7 +561,12 @@ def book_edit(request, book_id):
                 genre = None
 
         # Validate image (optional for edit, but if provided, must be valid)
-        if image:
+        # Check if cropped image is provided (same pattern as variant_edit)
+        if image_cropped:
+            if not image_cropped.startswith("data:image"):
+                error['valid_image'] = "Invalid cropped image format."
+                is_valid = False
+        elif image:
             valid_extensions = ["jpg", "jpeg", "png", "gif", "webp"]
             valid_mime_types = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
             max_file_size = 5 * 1024 * 1024  # 5MB
@@ -616,8 +624,17 @@ def book_edit(request, book_id):
         book.description = description
         if genre:
             book.genre = genre
-        if image:
+        
+        # Handle image (same pattern as variant_edit)
+        if image_cropped:
+            # Save cropped base64 image
+            format, imgstr = image_cropped.split(';base64,')
+            ext = format.split('/')[-1]
+            book.image = ContentFile(base64.b64decode(imgstr), name=f'book_image_{book.id}.{ext}')
+        elif image:
+            # Use raw file if no crop
             book.image = image
+        
         book.is_offer = is_offer
         book.offer_title = offer_title if is_offer else ''
         book.discount_percentage = discount_percentage if is_offer else 0
@@ -632,6 +649,7 @@ def book_edit(request, book_id):
 
 
 
+@admin_required
 def book_delete(request):
     if request.method == 'POST':
         book_id = request.POST.get('book_delete', "").strip()
@@ -645,6 +663,7 @@ def book_delete(request):
 
 
 
+@admin_required
 def view_variant(request, book_id):
 
     variants = Variant.objects.filter(product=book_id).prefetch_related('productimage_set')
@@ -657,6 +676,7 @@ def view_variant(request, book_id):
     })
 
 
+@admin_required
 def variant_delete(request):
     if request.method == 'POST':
         variant_id = request.POST.get('variant_id', "").strip()  #comes from html
@@ -670,6 +690,7 @@ def variant_delete(request):
 
 
 
+@admin_required
 def add_variant(request, book_id):
     if request.method == 'POST':
         publisher = request.POST.get('publisher', "").strip()
@@ -875,13 +896,13 @@ def admin_logout(request):
     logout(request)  # Clears the session and logs out the user
     request.session.flush()  # Ensures all session data is removed
 
-    return redirect('admin_signin')
+    return redirect('login')
 
 
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
-@login_required(login_url='admin_signin')  
+@admin_required
 def customer_details(request):
     users = CustomUser.objects.all().exclude(is_superuser = True).annotate(
         query_count=Count('support_queries')
@@ -898,6 +919,7 @@ def customer_details(request):
 
 
 
+@admin_required
 def change_user_status(request):
     
     if request.method == 'POST':
@@ -912,6 +934,7 @@ def change_user_status(request):
 
 
 
+@admin_required
 def user_search(request):
     
     
@@ -932,6 +955,7 @@ def user_search(request):
 
 
 
+@admin_required
 def variant_edit(request, variant_id):
     error = {}    
     variant = get_object_or_404(Variant, id=variant_id)
@@ -1039,7 +1063,7 @@ def variant_edit(request, variant_id):
 
 
 
-@login_required
+@admin_required
 def admin_order_details(request, order_id):
 
     order = get_object_or_404(Order, id=order_id)
@@ -1340,11 +1364,13 @@ def admin_order_details(request, order_id):
 
 
 
+@admin_required
 def admin_review(request):
     reviews = Review.objects.select_related('user', 'product').order_by('-created_at')
     return render(request, "admin/admin_review.html", {'reviews':reviews})
 
 
+@admin_required
 def toggle_review_status(request, review_id):
     review = get_object_or_404(Review, id=review_id)
     review.is_active = not review.is_active  # Flip True to False or vice versa
@@ -1355,7 +1381,7 @@ def toggle_review_status(request, review_id):
 
 
 @never_cache
-@login_required
+@admin_required
 def coupon_list(request):
     query = request.GET.get('q', '').strip()
     status_filter = request.GET.get('status', 'all')
@@ -1410,7 +1436,7 @@ def coupon_list(request):
     
     return render(request, 'coupons/coupon_list.html', context)
 
-@login_required
+@admin_required
 def add_coupon(request):
     if request.method == 'POST':
         code = request.POST.get('code', '').strip().upper()
@@ -1537,7 +1563,7 @@ def add_coupon(request):
 
 
 
-@login_required
+@admin_required
 def edit_coupon(request, coupon_id):
     coupon = get_object_or_404(Coupon, id=coupon_id)
     
@@ -1649,7 +1675,7 @@ def edit_coupon(request, coupon_id):
     
     return render(request, 'coupons/edit_coupon.html', context)
 
-@login_required
+@admin_required
 def toggle_coupon_status(request, coupon_id):
     coupon = get_object_or_404(Coupon, id=coupon_id)
     
@@ -1677,6 +1703,7 @@ def toggle_coupon_status(request, coupon_id):
 
 
 # Sales Report Views
+@admin_required
 def sales_report(request):
     """Generate sales report with filtering options"""
     filter_type = request.GET.get('filter', 'all')
@@ -1867,6 +1894,7 @@ def sales_report(request):
     return render(request, 'admin/sales_report.html', context)
 
 
+@admin_required
 def download_sales_report_pdf(request):
     """Download sales report as PDF with order items"""
     # Get same filters as main report
@@ -2166,6 +2194,7 @@ def download_sales_report_pdf(request):
     return response
 
 
+@admin_required
 def download_sales_report_excel(request):
     """Download sales report as Excel with order items"""
     # Get same filters as main report
@@ -2394,7 +2423,7 @@ def download_sales_report_excel(request):
     
     wb.save(response)
     return response
-@login_required
+@admin_required
 def admin_customer_queries(request, user_id):
     user = get_object_or_404(CustomUser, id=user_id)
     queries = CustomerSupport.objects.filter(user=user).order_by('-created_at')
@@ -2405,7 +2434,7 @@ def admin_customer_queries(request, user_id):
     }
     return render(request, 'admin/customer_queries.html', context)
 
-@login_required
+@admin_required
 def admin_query_reply(request, query_id):
     query = get_object_or_404(CustomerSupport, id=query_id)
     
@@ -2457,6 +2486,7 @@ BookHive Support Team
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
+@admin_required
 def admin_transactions(request):
     """Display list of all transactions including order item level transactions"""
     # Get all transactions with order_item information
@@ -2523,6 +2553,7 @@ def admin_transactions(request):
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
+@admin_required
 def transaction_detail(request, order_id):
     """Display detailed view of a specific transaction"""
     # Find transaction by transaction_id
@@ -2572,7 +2603,7 @@ def transaction_detail(request, order_id):
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
-@login_required(login_url='admin_signin')
+@admin_required
 def wallet_management(request):
     """Display all wallet transactions with user filtering"""
     
@@ -2612,7 +2643,7 @@ def wallet_management(request):
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
-@login_required(login_url='admin_signin')
+@admin_required
 def wallet_user_details(request, user_id):
     """Display detailed wallet information for a specific user"""
     
@@ -2652,7 +2683,7 @@ def wallet_user_details(request, user_id):
     return render(request, 'admin/wallet_user_details.html', context)
 
 
-@login_required
+@admin_required
 def admin_query_details(request, query_id):
     query = get_object_or_404(CustomerSupport, id=query_id)
     

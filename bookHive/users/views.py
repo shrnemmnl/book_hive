@@ -191,10 +191,17 @@ def library(request):
     """Library page view - displays all books with filters and pagination"""
     from users.models import OrderItem
     
+    # Get search query
+    search_string = request.GET.get('search_string', '').strip()
+    
     # Get filter type (new_releases, best_sellers, or None)
     filter_type = request.GET.get('filter_type', '')
     
     books = Product.objects.annotate(min_price=Min('variant__price')).filter(is_active=True, genre__is_active=True)
+    
+    # Apply search filter if search_string is provided
+    if search_string:
+        books = books.filter(book_title__icontains=search_string)
 
     # Apply filter type (independent of other filters)
     if filter_type == 'new_releases':
@@ -344,8 +351,12 @@ def user_login(request):
         if user_check:
             login(request, user_check)
             messages.success(request, "Login successful.")
-            # Redirect normal users to user home
-            return redirect('loading_page')
+            # Check if user is admin (superuser) and redirect accordingly
+            if user_check.is_superuser:
+                return redirect('admin_dashboard')
+            else:
+                # Redirect normal users to user home
+                return redirect('loading_page')
         else:
             messages.error(
                 request, "Authentication Error, Check the Credentials and Try Again.")
