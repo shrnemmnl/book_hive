@@ -1,56 +1,60 @@
-from datetime import timedelta
+# Standard library imports
 import datetime as dt
-import random
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth import login, logout, authenticate
-from django.conf import settings
-from django.urls import reverse
-# Import your user model
-from .models import CustomUser, Address, Cart, CartItem, Order, OrderItem, Review, Wishlist, Wallet, Transaction, CustomerSupport, Invoice, CreditNote
-from django.contrib.auth.hashers import make_password  # Hash password before saving
-from django.views.decorators.cache import never_cache, cache_control
-from django.db.models import Min
-from admin_panel.models import Product, Variant, Coupon, CouponUsage
-from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
-from django.db.models import Min, Max
 import json
-import re
-from .utils import send_verification_email, generate_otp
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.db.models import Avg, Sum, F, ExpressionWrapper, DecimalField, Q, Case, When, IntegerField
-from django.contrib.auth.hashers import check_password
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
 import logging
-from django.db import transaction as db_transaction
-from django.utils import timezone
-import tempfile
-import subprocess
 import os
-from django.template.loader import get_template
-from xhtml2pdf import pisa
-from django.http import HttpResponse
+import random
+import re
+import subprocess
+import tempfile
+from datetime import timedelta
+
+# Third-party imports
 import razorpay
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import check_password, make_password
+from django.contrib.auth import update_session_auth_hash
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db import transaction as db_transaction
+from django.db.models import (
+    Avg, Case, Count, DecimalField, ExpressionWrapper, F, IntegerField,
+    Max, Min, Q, Sum, When
+)
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import get_template
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.cache import cache_control, never_cache
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from xhtml2pdf import pisa
 
+# Local application imports
+from admin_panel.models import Coupon, CouponUsage, Product, Variant
+from .models import (
+    Address, Cart, CartItem, CreditNote, CustomUser, CustomerSupport,
+    Invoice, Order, OrderItem, Review, Transaction, Wallet, Wishlist
+)
+from .utils import generate_otp, send_verification_email
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
-
 
 
 @csrf_exempt
 def signup(request):
-
     if request.user.is_authenticated:
-        return redirect('loading_page')  # already logged in → go to home
-    
-    errors = {}  # Dictionary to store field-specific errors
+        return redirect('loading_page')
+
+    errors = {}
     has_error = False
 
     if request.method == 'POST':
