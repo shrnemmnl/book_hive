@@ -1985,8 +1985,8 @@ def verification(request):
                             code=coupon_code,
                             description=f"Referral reward for referring {user.first_name} {user.last_name}",
                             discount_type='fixed',
-                            discount_value=300,
-                            minimum_amount=300,  # Minimum purchase of ₹300 required
+                            discount_value=100,
+                            minimum_amount=500,  # Minimum purchase of ₹300 required
                             valid_from=timezone.now(),
                             valid_until=timezone.now() + timedelta(days=90),
                             is_active=True,
