@@ -9,11 +9,21 @@ def calculate_discount(price, book):
     Usage: {{ book.min_price|calculate_discount:book }}
     """
     try:
+        # Avoid NoneType conversions
+        if price is None:
+            return 0
+
         if hasattr(book, 'get_discounted_price'):
-            return int(book.get_discounted_price(price))
+            discounted = book.get_discounted_price(price)
+            if discounted is None:
+                return int(price)
+            return int(discounted)
+
         return int(price)
-    except (ValueError, TypeError, AttributeError):
-        return int(price)
+
+    except Exception:
+        return 0
+
 
 @register.filter
 def discount_amount(price, book):
@@ -22,13 +32,20 @@ def discount_amount(price, book):
     Usage: {{ book.min_price|discount_amount:book }}
     """
     try:
+        if price is None:
+            return 0
+
         if hasattr(book, 'get_best_discount_percentage'):
             discount_percentage = book.get_best_discount_percentage()
-            if discount_percentage > 0:
-                return int((price * discount_percentage) / 100)
+
+            if discount_percentage and discount_percentage > 0:
+                return int((float(price) * discount_percentage) / 100)
+
         return 0
-    except (ValueError, TypeError, AttributeError):
+
+    except Exception:
         return 0
+
 
 @register.filter
 def mul(value, arg):
@@ -37,18 +54,22 @@ def mul(value, arg):
     Usage: {{ price|mul:quantity }}
     """
     try:
+        if value is None or arg is None:
+            return 0
         return float(value) * float(arg)
-    except (ValueError, TypeError):
+    except Exception:
         return 0
+
 
 @register.filter
 def sub(value, arg):
     """
-    Subtract the arg from the value.
+    Subtract arg from value.
     Usage: {{ total|sub:discount }}
     """
     try:
+        if value is None or arg is None:
+            return 0
         return float(value) - float(arg)
-    except (ValueError, TypeError):
+    except Exception:
         return 0
-
