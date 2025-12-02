@@ -177,6 +177,9 @@
                       <p class="text-muted mb-1" style="font-size: 0.85rem;">
                         by {{ item.product_variant.product.author }}
                       </p>
+                      <p class="text-muted mb-1" style="font-size: 0.85rem;">
+                        language : {{ item.product_variant.language }}
+                      </p>
                       {% if item.product_variant.available_quantity < item.quantity %}
                         <small class="text-danger d-block" style="font-size: 0.75rem;">
                           <i class="bi bi-exclamation-triangle"></i> Only {{ item.product_variant.available_quantity }} available

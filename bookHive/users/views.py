@@ -83,7 +83,7 @@ def signup(request):
             has_error = True
 
         if not re.match(mobile_pattern, mobile):
-            errors['mobile'] = "Mobile number must be 10 digits."
+            errors['mobile'] = "Mobile number must be 10 digits and starts with 7,8 or 9"
             has_error = True
 
         # At least one uppercase, one lowercase, one digit, one special char, and 8+ length
@@ -1997,7 +1997,7 @@ def verification(request):
 
                 except Exception as e:
                     messages.error(request, f'Error - {e}')
-                    return redirect('signup')
+                    return redirect('verification')
 
                 # Clear session after creating
                 del request.session['userdata']
@@ -2009,7 +2009,7 @@ def verification(request):
                 return redirect('login')  # or home page
             else:
                 messages.error(request, "Invalid OTP. Try again.")
-                return redirect('signup')
+                return redirect('verification')
 
         elif action == 'resend':
             new_otp = generate_otp()

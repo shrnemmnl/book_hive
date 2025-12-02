@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -100,6 +101,9 @@
         border: 1px solid #ddd;
         border-radius: 4px;
       }
+      .message{
+        margin: 20px 0;
+      }
       .timer {
         margin: 20px 0;
         font-size: 18px;
@@ -130,10 +134,62 @@
       .resend-button:hover {
         background-color: #218838;
       }
+
+      .alert {
+  padding: 14px 18px;
+  border-radius: 8px;
+  margin-top: 15px;
+  font-weight: 600;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Error */
+.alert.error {
+  background: rgba(248, 215, 218, 0.85);
+  color: #721c24;
+  border-left: 4px solid #dc3545;
+}
+
+/* Smooth fade animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #e74c3c;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 9999;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+
     </style>
   </head>
   <body>
+    <div id="toast" class="toast"></div>
+
     <div class="container">
+      
       <form method="POST">
         {% csrf_token %}
         <!-- OTP Verification Section -->
@@ -176,11 +232,30 @@
           >
             Resend Code
           </button>
+          
+          <div >
+            
+          {% if messages %}
+            {% for message in messages %}
+              {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                <div class="alert error">
+                  {{ message }}
+                </div>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          </div>
+          
         </div>
       </form>
+      
     </div>
+    
 
     <script>
+
+      
+
       // DOM Elements
       const verifyBtn = document.getElementById("verifyBtn");
       const resendBtn = document.getElementById("resendBtn");
@@ -249,7 +324,7 @@
           // Submit the form for server-side validation
           document.querySelector('form').submit();
         } else {
-          alert("Please enter a valid 6-digit code");
+          showToast("Please enter a valid 6-digit code");
         }
       }
 
@@ -286,6 +361,18 @@
       // Auto-start timer when page loads
       startTimer();
 
+      function showToast(message) {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 3000); // toast hides after 3 sec
+}
+
     </script>
+    
+
   </body>
 </html>
