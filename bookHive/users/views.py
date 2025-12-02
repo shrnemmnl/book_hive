@@ -993,7 +993,9 @@ def order_search(request):
 
     # Apply status filter
     if status_filter:
-        orders = orders.filter(status=status_filter)
+        orders = orders.filter(order_items__status=status_filter)
+
+        
 
     # Count the number of orders
     order_count = orders.count()
