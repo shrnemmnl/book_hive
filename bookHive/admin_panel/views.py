@@ -70,7 +70,11 @@ def admin_required(view_func):
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @admin_required
 def admin_dashboard(request):
-    """Admin Dashboard with charts, best selling products and categories"""
+    """
+    Admin Dashboard view.
+    Displays charts for sales data, best selling products, and categories.
+    Supports time-based filtering (today, week, month, year).
+    """
     # Get filter from request
     filter_type = request.GET.get('filter', 'month')
 
@@ -186,8 +190,14 @@ def admin_dashboard(request):
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
+@never_cache
+@cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @admin_required
 def books(request):
+    """
+    List all books (products) in the admin panel.
+    Includes pagination and edit/delete actions.
+    """
 
     books = Product.objects.select_related('genre').order_by('-updated_at')
 
@@ -201,8 +211,14 @@ def books(request):
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
+@never_cache
+@cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @admin_required
 def admin_order(request):
+    """
+    List all customer orders.
+    Shows order status and allows management.
+    """
 
     order_details = Order.objects.prefetch_related('order_items').order_by('-created_at')
 
@@ -215,8 +231,14 @@ def admin_order(request):
 
 @never_cache
 @cache_control(no_store=True, no_cache=True, must_revalidate=True)
+@never_cache
+@cache_control(no_store=True, no_cache=True, must_revalidate=True)
 @admin_required
 def update_order_item_status(request, order_item_id):
+    """
+    Update status of a specific order item.
+    Generates invoice automatically if status changes from pending.
+    """
     status = request.POST.get('status')
     order_item = OrderItem.objects.get(id=order_item_id)
     old_status = order_item.status
@@ -245,6 +267,10 @@ def update_order_item_status(request, order_item_id):
 
 @admin_required
 def genre(request):
+    """
+    Manage product genres (categories).
+    Handles listing and adding new genres with optional offers.
+    """
 
     genre = Genre.objects.all().order_by('-is_active')
 
@@ -300,6 +326,9 @@ def genre(request):
 
 @admin_required
 def change_genre_status(request):
+    """
+    Toggle active status of a genre.
+    """
     if request.method == 'POST':
         genre_id = request.POST.get('genre_id', "").strip()
         status = Genre.objects.get(id=genre_id)
@@ -311,6 +340,10 @@ def change_genre_status(request):
 
 @admin_required
 def genre_edit(request, genre_id):
+    """
+    Edit an existing genre.
+    Allows updating name and offer details.
+    """
 
     genre = Genre.objects.get(id=genre_id)
 
@@ -363,6 +396,9 @@ def genre_edit(request, genre_id):
 
 @admin_required
 def genre_search(request):
+    """
+    Search for genres by name.
+    """
 
     search_query = request.POST.get('genre_search', "").strip()
     genre = Genre.objects.filter(genre_name__istartswith=search_query)
@@ -376,6 +412,10 @@ def genre_search(request):
 
 @admin_required
 def add_new_book(request):
+    """
+    Add a new book (product) to the inventory.
+    Handles form validation and image upload.
+    """
     if request.method == 'POST':
         book_name = request.POST.get('book_name', "").strip()
         author = request.POST.get('author', "").strip()
@@ -489,6 +529,10 @@ def add_new_book(request):
 
 @admin_required
 def book_edit(request, book_id):
+    """
+    Edit details of an existing book.
+    Supports updating content, image (with cropping), and offers.
+    """
 
     book = Product.objects.get(id=book_id)
     genres = Genre.objects.all()
@@ -642,6 +686,9 @@ def book_edit(request, book_id):
 
 @admin_required
 def book_delete(request):
+    """
+    Soft delete a book (toggle active status).
+    """
     if request.method == 'POST':
         book_id = request.POST.get('book_delete', "").strip()
         status = Product.objects.get(id=book_id)
@@ -654,6 +701,9 @@ def book_delete(request):
 
 @admin_required
 def view_variant(request, book_id):
+    """
+    View all variants of a specific book.
+    """
 
     variants = Variant.objects.filter(product=book_id).prefetch_related('productimage_set')
 
@@ -667,6 +717,9 @@ def view_variant(request, book_id):
 
 @admin_required
 def variant_delete(request):
+    """
+    Soft delete a product variant.
+    """
     if request.method == 'POST':
         variant_id = request.POST.get('variant_id', "").strip()  # comes from html
 
@@ -680,6 +733,10 @@ def variant_delete(request):
 
 @admin_required
 def add_variant(request, book_id):
+    """
+    Add a new variant to a book.
+    Handles validation for price, stock, and multiple images.
+    """
     if request.method == 'POST':
         publisher = request.POST.get('publisher', "").strip()
         published_date = request.POST.get('published_date', "").strip()

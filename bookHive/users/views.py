@@ -51,6 +51,11 @@ logger = logging.getLogger(__name__)
 
 @csrf_exempt
 def signup(request):
+    """
+    Handle user registration process.
+    Validates input data (name, email, password, etc.) and creates a new user.
+    If valid, sends verification email with OTP.
+    """
     if request.user.is_authenticated:
         return redirect('loading_page')
 
@@ -143,7 +148,10 @@ def signup(request):
 
 @never_cache
 def loading_page(request):
-    """Home page view - displays banner and sample books"""
+    """
+    Home page view.
+    Displays banner, sample books, new releases, and best sellers.
+    """
     request.session['address_update'] = False
     
     # Get 3 sample books for the home page preview
@@ -192,7 +200,10 @@ def loading_page(request):
 
 @never_cache
 def library(request):
-    """Library page view - displays all books with filters and pagination"""
+    """
+    Library page view.
+    Displays all books with filtering (search, genre, price) and pagination.
+    """
     from users.models import OrderItem
     
     # Get search query
@@ -319,7 +330,11 @@ def library(request):
 
 @never_cache
 def user_login(request):
-
+    """
+    Handle user login.
+    Authenticates user with email and password.
+    Redirects to appropriate dashboard based on user role (admin/user).
+    """
     errors = {}
     found_error = False
     user_check = None
@@ -372,6 +387,10 @@ def user_login(request):
 
 @never_cache
 def logout_user(request):
+    """
+    Handle user logout.
+    Clears session data and redirects to home page with cache-busting headers.
+    """
     # Log out the user and clear all session data
     logout(request)
     request.session.flush()
@@ -388,6 +407,11 @@ def logout_user(request):
 
 
 def product_details(request, id):
+    """
+    Display details of a specific product.
+    Includes variants, reviews, and related books.
+    Handles review submission for purchased products.
+    """
     try:
         book = get_object_or_404(Product, id=id, is_active=True, genre__is_active=True)
     except:
@@ -491,7 +515,10 @@ def product_details(request, id):
 
 
 def get_variant_details(request, variant_id):
-    """API endpoint to get variant details via AJAX"""
+    """
+    API endpoint to get variant details via AJAX.
+    Returns JSON with price, images, and other variant info.
+    """
     variant = get_object_or_404(Variant, id=variant_id, is_active=True)
     variant_image = variant.productimage_set.first()
     product = variant.product
@@ -531,6 +558,10 @@ def get_variant_details(request, variant_id):
 
 
 def search_book(request):
+    """
+    Handle book search and filtering in listing page.
+    Supports filtering by genre, price range, and sorting.
+    """
 
     search_string = request.GET.get('search_string', "").strip()
     # Start with all active books with min price in its variant
@@ -602,6 +633,10 @@ def search_book(request):
 @never_cache
 @login_required(login_url='login')
 def user_profile(request):
+    """
+    Display and edit user profile information.
+    Handles profile picture upload and personal details update.
+    """
     has_error = False
     user = request.user
     error = {}
@@ -668,6 +703,10 @@ def user_profile(request):
 
 @login_required(login_url='login')
 def profile_password_change(request):
+    """
+    Handle password change for logged-in users.
+    Validates current password and new password strength.
+    """
 
     errors = {}
     user = request.user
@@ -722,7 +761,8 @@ def profile_password_change(request):
 @login_required(login_url='login')
 def profile_email_change(request):
     """
-    Handle email verification with OTP
+    Handle email change request with OTP verification.
+    First sends OTP to new email, then validates it before updating.
     """
     error = {}
     if request.method == 'POST':
@@ -795,6 +835,9 @@ def profile_email_change(request):
 
 @login_required(login_url='login')
 def user_address(request):
+    """
+    Display user's saved addresses.
+    """
 
     print(request.session.get('address_update'))
 
